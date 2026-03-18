@@ -1,0 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pas-black: #1a1a1a;
+  --pas-cream: #f5f0e8;
+  --pas-muted: #6a6055;
+  --pas-dark-border: #2a2a2a;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  background-color: var(--pas-cream);
+  color: var(--pas-black);
+  font-family: 'Inter', system-ui, sans-serif;
+  overscroll-behavior: none;
+}
+
+/* Mobile-first: constrain to 390px on desktop */
+#__next,
+main {
+  max-width: 390px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  background-color: var(--pas-cream);
+  position: relative;
+}
+
+/* Scrollable content area above bottom nav */
+.scrollable-content {
+  padding-bottom: 80px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Bottom nav safe area */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 390px;
+  z-index: 50;
+  background-color: var(--pas-black);
+  border-top: 1px solid var(--pas-dark-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
