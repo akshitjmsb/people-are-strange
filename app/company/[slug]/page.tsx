@@ -38,24 +38,28 @@ export default function CompanyProfilePage() {
       setLoading(true);
 
       // Fetch company
-      const { data: co } = await supabase
+      const { data: coData } = await supabase
         .from('companies')
         .select('*')
         .eq('slug', slug)
         .single();
+
+      const co = coData as Company | null;
 
       if (!co) {
         setLoading(false);
         return;
       }
 
-      setCompany(co as Company);
+      setCompany(co);
+
+      const companyId = co.id;
 
       // Parallel fetch
       const [peopleRes, jobsRes, signalsRes] = await Promise.all([
-        supabase.from('people').select('*').eq('company_id', co.id).order('role_type'),
-        supabase.from('job_postings').select('*').eq('company_id', co.id).eq('is_active', true).order('posted_at', { ascending: false }),
-        supabase.from('signals').select('*').eq('company_id', co.id).order('detected_at', { ascending: false }).limit(30),
+        supabase.from('people').select('*').eq('company_id', companyId).order('role_type'),
+        supabase.from('job_postings').select('*').eq('company_id', companyId).eq('is_active', true).order('posted_at', { ascending: false }),
+        supabase.from('signals').select('*').eq('company_id', companyId).order('detected_at', { ascending: false }).limit(30),
       ]);
 
       if (peopleRes.data) setPeople(peopleRes.data as Person[]);
