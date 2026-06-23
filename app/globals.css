@@ -1,55 +1,58 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,600&family=Inter:wght@400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --pas-black: #1a1a1a;
-  --pas-cream: #f5f0e8;
-  --pas-muted: #6a6055;
-  --pas-dark-border: #2a2a2a;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #2d3436; /* asphalt */
+  color: #f8f9fa; /* snow white */
+  overscroll-behavior: none;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-html,
-body {
-  background-color: var(--pas-cream);
-  color: var(--pas-black);
-  font-family: 'Inter', system-ui, sans-serif;
-  overscroll-behavior: none;
-}
-
-/* Mobile-first: constrain to 390px on desktop */
-#__next,
-main {
-  max-width: 390px;
-  margin: 0 auto;
-  min-height: 100dvh;
-  background-color: var(--pas-cream);
-  position: relative;
-}
-
-/* Scrollable content area above bottom nav */
-.scrollable-content {
-  padding-bottom: 80px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Bottom nav safe area */
-.bottom-nav {
+/* The map owns the whole viewport. */
+#app-root {
   position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 390px;
-  z-index: 50;
-  background-color: var(--pas-black);
-  border-top: 1px solid var(--pas-dark-border);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  inset: 0;
+  overflow: hidden;
+}
+
+/* MapLibre attribution — keep it legible but unobtrusive on dark. */
+.maplibregl-ctrl-attrib {
+  background: rgba(45, 52, 54, 0.6) !important;
+  backdrop-filter: blur(8px);
+}
+.maplibregl-ctrl-attrib a {
+  color: rgba(248, 249, 250, 0.6) !important;
+}
+
+.maplibregl-ctrl-group {
+  background: rgba(45, 52, 54, 0.7) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.maplibregl-ctrl-group button + button {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+.maplibregl-ctrl button .maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
 }

@@ -1,93 +1,187 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { Company } from '@/lib/types';
-import CompanyCard from '@/components/CompanyCard';
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo, useState } from 'react';
+
 import FilterChips from '@/components/FilterChips';
+import POISheet from '@/components/POISheet';
+import SearchBar from '@/components/SearchBar';
+import type { ColorMode } from '@/components/HexLayer';
+import { loadPOIs } from '@/lib/pois';
+import type { HexCell, POI, POICategory } from '@/lib/types';
 
-export default function ExplorePage() {
-  const [companies, setCompanies] = useState<Company[]>([]);
+// Map touches browser-only APIs (WebGL, maplibre) — load it client-side only.
+const Map = dynamic(() => import('@/components/Map'), {
+  ssr: false,
+  loading: () => <MapSkeleton />,
+});
+
+export default function Page() {
+  const [allPois, setAllPois] = useState<POI[]>([]);
+  const [source, setSource] = useState<'supabase' | 'local' | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedIndustry, setSelectedIndustry] = useState('All');
 
-  const fetchCompanies = useCallback(async (industry: string) => {
-    setLoading(true);
-    let query = supabase
-      .from('companies')
-      .select('*')
-      .order('name', { ascending: true });
+  const [query, setQuery] = useState('');
+  const [activeCats, setActiveCats] = useState<Set<POICategory>>(new Set());
+  const [colorMode, setColorMode] = useState<ColorMode>('category');
 
-    if (industry !== 'All') {
-      query = query.eq('industry', industry);
-    }
-
-    const { data, error } = await query;
-    if (!error && data) setCompanies(data as Company[]);
-    setLoading(false);
-  }, []);
+  const [selectedHexId, setSelectedHexId] = useState<string | null>(null);
+  const [sheetPois, setSheetPois] = useState<POI[]>([]);
 
   useEffect(() => {
-    fetchCompanies(selectedIndustry);
-  }, [selectedIndustry, fetchCompanies]);
+    let alive = true;
+    loadPOIs().then((res) => {
+      if (!alive) return;
+      setAllPois(res.pois);
+      setSource(res.source);
+      setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const handleFilterChange = (industry: string) => {
-    setSelectedIndustry(industry);
+  // count per category across the full dataset (for the chips)
+  const counts = useMemo(() => {
+    const c: Record<string, number> = {};
+    for (const p of allPois) c[p.category] = (c[p.category] ?? 0) + 1;
+    return c;
+  }, [allPois]);
+
+  // apply search + category filters
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return allPois.filter((p) => {
+      if (activeCats.size > 0 && !activeCats.has(p.category)) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.subcategory?.toLowerCase().includes(q) ||
+        p.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    });
+  }, [allPois, query, activeCats]);
+
+  const handleSelectHex = (cell: HexCell) => {
+    const inHex = filtered.filter(
+      (p) => p.h3_res7 === cell.hexId || p.h3_res9 === cell.hexId,
+    );
+    setSelectedHexId(cell.hexId);
+    setSheetPois(inHex);
   };
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#f5f0e8]">
-      {/* Dark header */}
-      <header className="bg-[#1a1a1a] px-4 pt-5 pb-4">
-        <p className="text-[10px] tracking-widest text-[#6a6055] uppercase mb-1">
-          Montréal · Downtown
-        </p>
-        <h1 className="font-serif text-[22px] text-[#f5f0e8] leading-tight">
-          People Are <em>Strange</em>
-        </h1>
-        <p className="text-[12px] italic text-[#6a6055] mt-1">when you&apos;re a stranger</p>
-      </header>
+  const closeSheet = () => {
+    setSelectedHexId(null);
+    setSheetPois([]);
+  };
 
-      {/* Section title */}
-      <div className="px-4 pt-4 pb-1">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-[17px] font-semibold text-[#1a1a1a]">
-            Companies
-          </h2>
-          {!loading && (
-            <span className="text-[12px] text-[#6a6055]">
-              {companies.length} found
-            </span>
-          )}
+  const toggleCat = (cat: POICategory) => {
+    setActiveCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
+
+  const showEmpty = !loading && filtered.length === 0;
+
+  return (
+    <main className="relative h-full w-full">
+      <Map
+        pois={filtered}
+        colorMode={colorMode}
+        selectedHexId={selectedHexId}
+        onSelectHex={handleSelectHex}
+      />
+
+      {/* top chrome */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="flex items-start gap-2">
+          <div className="flex-1">
+            <SearchBar
+              value={query}
+              onChange={setQuery}
+              resultCount={filtered.length}
+              source={source}
+            />
+          </div>
+          <ColorModeToggle mode={colorMode} onChange={setColorMode} />
         </div>
+        <FilterChips
+          active={activeCats}
+          counts={counts}
+          onToggle={toggleCat}
+          onClear={() => setActiveCats(new Set())}
+        />
       </div>
 
-      {/* Filter chips */}
-      <FilterChips selected={selectedIndustry} onChange={handleFilterChange} />
+      {/* brand mark */}
+      <div className="pointer-events-none absolute bottom-3 left-3 z-10">
+        <p className="font-display text-xs font-bold tracking-tight text-snow-white/70">
+          People Are Strange
+          <span className="ml-1 text-plateau-pink">MTL</span>
+        </p>
+      </div>
 
-      {/* Company list */}
-      <div className="flex-1 px-4 pb-24">
-        {loading ? (
-          <div className="flex flex-col gap-3">
-            {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-2xl border border-[#ece7df] p-4 h-28 animate-pulse"
-              />
-            ))}
-          </div>
-        ) : companies.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <p className="font-serif text-[18px] text-[#1a1a1a] italic mb-2">
-              No strangers here.
-            </p>
-            <p className="text-[13px] text-[#6a6055]">Try a different filter.</p>
-          </div>
-        ) : (
-          companies.map((company) => (
-            <CompanyCard key={company.id} company={company} />
-          ))
-        )}
+      {loading && <LoadingOverlay />}
+      {showEmpty && <EmptyState filtered={allPois.length > 0} />}
+
+      <POISheet
+        open={sheetPois.length > 0}
+        pois={sheetPois}
+        hexId={selectedHexId}
+        onClose={closeSheet}
+      />
+    </main>
+  );
+}
+
+function ColorModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: ColorMode;
+  onChange: (m: ColorMode) => void;
+}) {
+  return (
+    <button
+      onClick={() => onChange(mode === 'category' ? 'density' : 'category')}
+      className="pointer-events-auto shrink-0 rounded-2xl border border-white/10 bg-asphalt/70 px-3 py-3 text-xs font-semibold text-snow-white/80 shadow-lg backdrop-blur-2xl transition hover:bg-asphalt/90"
+      title="Toggle hex coloring"
+    >
+      {mode === 'category' ? '🎨 Category' : '🔥 Density'}
+    </button>
+  );
+}
+
+function MapSkeleton() {
+  return <div className="h-full w-full bg-asphalt" />;
+}
+
+function LoadingOverlay() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-asphalt/70 px-5 py-3 backdrop-blur-2xl">
+        <span className="h-3 w-3 animate-pulse-slow rounded-full bg-plateau-pink" />
+        <span className="text-sm font-medium text-snow-white/80">Mapping Montréal…</span>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ filtered }: { filtered: boolean }) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6">
+      <div className="max-w-sm rounded-3xl border border-white/10 bg-asphalt/70 p-6 text-center backdrop-blur-2xl">
+        <div className="mb-2 text-4xl">🗺️</div>
+        <h2 className="text-lg font-bold text-snow-white">Kuch nahi mila yahan</h2>
+        <p className="mt-1 text-sm text-snow-white/60">
+          {filtered
+            ? 'No places match your search or filters. Try clearing them.'
+            : 'POIs loading soon — the city is waking up.'}
+        </p>
       </div>
     </div>
   );

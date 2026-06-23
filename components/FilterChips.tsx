@@ -1,37 +1,59 @@
 'use client';
 
-const INDUSTRIES = [
-  'All',
-  'Tech & AI',
-  'Finance & Fintech',
-  'Gaming & Creative',
-  'Health & Life Sciences',
-  'Aerospace & Engineering',
-  'Retail & Consumer',
-  'Telecom & Infrastructure',
-];
+import { CATEGORIES, CATEGORY_ORDER } from '@/lib/categories';
+import type { POICategory } from '@/lib/types';
 
 interface FilterChipsProps {
-  selected: string;
-  onChange: (industry: string) => void;
+  active: Set<POICategory>;
+  counts: Record<string, number>;
+  onToggle: (cat: POICategory) => void;
+  onClear: () => void;
 }
 
-export default function FilterChips({ selected, onChange }: FilterChipsProps) {
+/** Horizontally-scrolling category filter chips. */
+export default function FilterChips({ active, counts, onToggle, onClear }: FilterChipsProps) {
+  const hasFilters = active.size > 0;
+
   return (
-    <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide">
-      {INDUSTRIES.map((industry) => {
-        const active = selected === industry;
+    <div className="pointer-events-auto flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <button
+        onClick={onClear}
+        className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold backdrop-blur-xl transition ${
+          hasFilters
+            ? 'border-white/10 bg-asphalt/70 text-snow-white/70 hover:bg-asphalt/90'
+            : 'border-snow-white/30 bg-snow-white/15 text-snow-white'
+        }`}
+      >
+        All
+      </button>
+
+      {CATEGORY_ORDER.map((cat) => {
+        const def = CATEGORIES[cat];
+        const isActive = active.has(cat);
+        const count = counts[cat] ?? 0;
+        if (count === 0) return null;
         return (
           <button
-            key={industry}
-            onClick={() => onChange(industry)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all border ${
-              active
-                ? 'bg-[#1a1a1a] text-[#f5f0e8] border-[#1a1a1a]'
-                : 'bg-transparent text-[#6a6055] border-[#d4cdc3] hover:border-[#1a1a1a]'
-            }`}
+            key={cat}
+            onClick={() => onToggle(cat)}
+            className="shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold backdrop-blur-xl transition"
+            style={
+              isActive
+                ? {
+                    backgroundColor: `${def.color}33`,
+                    borderColor: `${def.color}`,
+                    color: def.color,
+                  }
+                : {
+                    backgroundColor: 'rgba(45,52,54,0.7)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    color: 'rgba(248,249,250,0.7)',
+                  }
+            }
           >
-            {industry}
+            <span aria-hidden className="mr-1">{def.emoji}</span>
+            {def.label}
+            <span className="ml-1.5 opacity-60">{count}</span>
           </button>
         );
       })}
