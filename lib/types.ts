@@ -45,6 +45,10 @@ export interface AICompany {
   lng: number;
   address?: string;
   neighborhood?: string; // Mile-End, Plateau, Downtown, Griffintown…
+  // Honesty flag: 'exact' = pin sits on a verified street address;
+  // 'approximate' = we only know the neighbourhood, so the pin is
+  // neighbourhood-level, not a precise location. Derived in the loader.
+  locationPrecision?: 'exact' | 'approximate';
 
   // What it is.
   type: CompanyType;

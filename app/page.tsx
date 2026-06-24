@@ -85,7 +85,7 @@ export default function Page() {
         />
       </div>
 
-      {/* brand mark */}
+      {/* brand mark + honesty legend */}
       <div className="pointer-events-none absolute bottom-3 left-3 z-10">
         <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
           People Are Strange
@@ -94,6 +94,16 @@ export default function Page() {
         <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
           Montreal&apos;s AI scene, mapped
         </p>
+        <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-white/70 px-2 py-1 backdrop-blur-sm">
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-asphalt/70" />
+            exact address
+          </span>
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
+            <span className="inline-block h-2.5 w-2.5 rounded-full border-[1.5px] border-asphalt/70 bg-transparent" />
+            approx. area
+          </span>
+        </div>
       </div>
 
       {loading && <LoadingOverlay />}

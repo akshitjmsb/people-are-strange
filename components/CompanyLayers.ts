@@ -39,6 +39,10 @@ export function createCompanyLayers({ companies, selectedId, showLabels, onClick
     updateTriggers: { getFillColor: selectedId },
   });
 
+  // Verified address → solid filled dot. Neighbourhood-only → hollow ring,
+  // so the map never pretends an approximate pin is a precise location.
+  const isExact = (c: AICompany) => c.locationPrecision !== 'approximate';
+
   const core = new ScatterplotLayer<AICompany>({
     id: 'company-core',
     data: companies,
@@ -47,14 +51,21 @@ export function createCompanyLayers({ companies, selectedId, showLabels, onClick
     radiusUnits: 'meters',
     radiusMinPixels: 6,
     radiusMaxPixels: 26,
-    getFillColor: (c) => [...hexToRgb(typeColor(c.type)), 255],
+    getFillColor: (c) => [...hexToRgb(typeColor(c.type)), isExact(c) ? 255 : 38],
     stroked: true,
-    getLineColor: (c) => (c.id === selectedId ? [255, 255, 255, 255] : [255, 255, 255, 170]),
-    getLineWidth: (c) => (c.id === selectedId ? 3 : 1.5),
+    getLineColor: (c) => {
+      if (c.id === selectedId) return [255, 255, 255, 255];
+      return isExact(c) ? [255, 255, 255, 180] : [...hexToRgb(typeColor(c.type)), 255];
+    },
+    getLineWidth: (c) => (c.id === selectedId ? 3 : isExact(c) ? 1.5 : 2.5),
     lineWidthUnits: 'pixels',
     pickable: true,
     onClick: (info) => info.object && onClick(info.object as AICompany),
-    updateTriggers: { getLineColor: selectedId, getLineWidth: selectedId },
+    updateTriggers: {
+      getFillColor: selectedId,
+      getLineColor: selectedId,
+      getLineWidth: selectedId,
+    },
   });
 
   const layers: (ScatterplotLayer<AICompany> | TextLayer<AICompany>)[] = [glow, core];

@@ -121,12 +121,19 @@ export default function CompanyDetail({ company, onClose }: Props) {
             </div>
           )}
 
-          {company.address && (
-            <div>
-              <SectionTitle>Location</SectionTitle>
+          <div>
+            <SectionTitle>Location</SectionTitle>
+            {company.address ? (
               <p className="text-sm text-asphalt/80">📍 {company.address}</p>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-asphalt/80">
+                📍 {company.neighborhood ?? 'Montréal'}{' '}
+                <span className="text-asphalt/45">
+                  · approximate — neighbourhood-level only, exact address not public
+                </span>
+              </p>
+            )}
+          </div>
 
           <div className="flex flex-wrap gap-2 pt-1">
             {company.website && (
