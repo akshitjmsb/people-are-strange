@@ -10,9 +10,9 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'People Are Strange MTL',
+  title: 'People Are Strange MTL — Montreal AI Map',
   description:
-    'Montreal spatial intelligence — the whole island in glowing H3 hexagons. Tap a hex, drill into the city.',
+    "Montreal's AI scene on one living map. Every lab and startup, what they're building, where they are.",
   manifest: '/manifest.json',
   applicationName: 'People Are Strange MTL',
   appleWebApp: {
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#2D3436',
+  themeColor: '#E84393',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

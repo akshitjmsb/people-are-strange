@@ -5,21 +5,22 @@ import MapGL, { NavigationControl, useControl } from 'react-map-gl/maplibre';
 import { MapboxOverlay, type MapboxOverlayProps } from '@deck.gl/mapbox';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { aggregateToHexes, maxCount, resolutionForZoom } from '@/lib/h3-utils';
-import type { HexCell, POI } from '@/lib/types';
-import { createHexLayer, type ColorMode } from './HexLayer';
+import type { AICompany } from '@/lib/types';
+import { createCompanyLayers } from './CompanyLayers';
 
-// Montreal — centred on the island, zoomed to see the whole thing.
+// Montreal — centred on the island, framed on the AI corridor (Mile-Ex →
+// downtown), tilted for that street-level, walk-the-city feel.
 const INITIAL_VIEW = {
-  longitude: -73.5673,
-  latitude: 45.5017,
-  zoom: 12,
-  pitch: 38,
-  bearing: -8,
+  longitude: -73.585,
+  latitude: 45.512,
+  zoom: 12.4,
+  pitch: 40,
+  bearing: -10,
 };
 
-// CARTO dark-matter — free vector tiles, no API key, matches our dark UI.
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+// CARTO Voyager — bright, colourful streets. The vibrant Montreal canvas the
+// glowing company markers are painted on.
+const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
 
 function DeckOverlay(props: MapboxOverlayProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
@@ -28,31 +29,18 @@ function DeckOverlay(props: MapboxOverlayProps) {
 }
 
 interface MapProps {
-  pois: POI[];
-  colorMode: ColorMode;
-  selectedHexId: string | null;
-  onSelectHex: (cell: HexCell) => void;
+  companies: AICompany[];
+  selectedId: string | null;
+  onSelect: (c: AICompany) => void;
 }
 
-export default function Map({ pois, colorMode, selectedHexId, onSelectHex }: MapProps) {
+export default function Map({ companies, selectedId, onSelect }: MapProps) {
   const [zoom, setZoom] = useState(INITIAL_VIEW.zoom);
+  const showLabels = zoom >= 13;
 
-  const resolution = useMemo(() => resolutionForZoom(zoom), [zoom]);
-
-  const cells = useMemo(() => aggregateToHexes(pois, resolution), [pois, resolution]);
-  const max = useMemo(() => maxCount(cells), [cells]);
-
-  const layer = useMemo(
-    () =>
-      createHexLayer({
-        cells,
-        maxCount: max,
-        resolution,
-        colorMode,
-        selectedHexId,
-        onClick: onSelectHex,
-      }),
-    [cells, max, resolution, colorMode, selectedHexId, onSelectHex],
+  const layers = useMemo(
+    () => createCompanyLayers({ companies, selectedId, showLabels, onClick: onSelect }),
+    [companies, selectedId, showLabels, onSelect],
   );
 
   return (
@@ -64,7 +52,7 @@ export default function Map({ pois, colorMode, selectedHexId, onSelectHex }: Map
       reuseMaps
       style={{ width: '100%', height: '100%' }}
     >
-      <DeckOverlay layers={[layer]} interleaved />
+      <DeckOverlay layers={layers} interleaved />
       <NavigationControl position="bottom-right" showCompass visualizePitch />
     </MapGL>
   );

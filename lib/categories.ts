@@ -1,53 +1,57 @@
 import { MONTREAL } from './colors';
-import type { POICategory } from './types';
+import type { AIDomain, CompanyType } from './types';
 
-export interface CategoryDef {
-  key: POICategory;
+export interface TypeDef {
+  key: CompanyType;
   label: string;
   emoji: string;
-  color: string; // hex
+  color: string; // hex — drives the marker colour
 }
 
-// Each POI category gets its own slice of the Montreal palette.
-export const CATEGORIES: Record<POICategory, CategoryDef> = {
-  company: { key: 'company', label: 'Companies', emoji: '🏢', color: MONTREAL.jazzBlue },
-  job: { key: 'job', label: 'Jobs', emoji: '💼', color: MONTREAL.mileendViolet },
-  restaurant: { key: 'restaurant', label: 'Restaurants', emoji: '🍽️', color: MONTREAL.stlaurentRed },
-  cafe: { key: 'cafe', label: 'Cafés', emoji: '☕', color: MONTREAL.bagelGold },
-  bar: { key: 'bar', label: 'Bars', emoji: '🍸', color: MONTREAL.plateauPink },
-  park: { key: 'park', label: 'Parks', emoji: '🌳', color: MONTREAL.parcEmerald },
-  culture: { key: 'culture', label: 'Culture', emoji: '🎨', color: MONTREAL.mileendViolet },
-  shopping: { key: 'shopping', label: 'Shopping', emoji: '🛍️', color: MONTREAL.plateauPink },
-  transit: { key: 'transit', label: 'Transit', emoji: '🚇', color: MONTREAL.metroOrange },
-  health: { key: 'health', label: 'Health', emoji: '🏥', color: MONTREAL.stlaurentRed },
-  education: { key: 'education', label: 'Education', emoji: '🎓', color: MONTREAL.jazzBlue },
-  entertainment: { key: 'entertainment', label: 'Entertainment', emoji: '🎭', color: MONTREAL.montroyalAmber },
-  service: { key: 'service', label: 'Services', emoji: '🔧', color: MONTREAL.metroOrange },
-  other: { key: 'other', label: 'Other', emoji: '📍', color: MONTREAL.snowWhite },
+// Each kind of AI player gets its own slice of the Montreal street-art palette.
+export const COMPANY_TYPES: Record<CompanyType, TypeDef> = {
+  'research-lab': { key: 'research-lab', label: 'Research Lab', emoji: '🧠', color: MONTREAL.mileendViolet },
+  'big-tech-lab': { key: 'big-tech-lab', label: 'Big-Tech AI Lab', emoji: '🛰️', color: MONTREAL.jazzBlue },
+  startup: { key: 'startup', label: 'Startup', emoji: '🚀', color: MONTREAL.plateauPink },
+  scaleup: { key: 'scaleup', label: 'Scaleup', emoji: '📈', color: MONTREAL.parcEmerald },
+  'applied-ai': { key: 'applied-ai', label: 'Applied AI', emoji: '⚙️', color: MONTREAL.montroyalAmber },
+  incubator: { key: 'incubator', label: 'Incubator / Fund', emoji: '🌱', color: MONTREAL.bagelGold },
 };
 
 // Order shown in the filter chips row.
-export const CATEGORY_ORDER: POICategory[] = [
-  'company',
-  'job',
-  'restaurant',
-  'cafe',
-  'bar',
-  'park',
-  'culture',
-  'entertainment',
-  'transit',
-  'education',
-  'health',
-  'shopping',
-  'service',
-  'other',
+export const TYPE_ORDER: CompanyType[] = [
+  'research-lab',
+  'big-tech-lab',
+  'scaleup',
+  'startup',
+  'applied-ai',
+  'incubator',
 ];
 
-export function categoryDef(cat: POICategory): CategoryDef {
-  return CATEGORIES[cat] ?? CATEGORIES.other;
+export function typeDef(t: CompanyType): TypeDef {
+  return COMPANY_TYPES[t] ?? COMPANY_TYPES.startup;
 }
 
-export function categoryColor(cat: POICategory): string {
-  return categoryDef(cat).color;
+export function typeColor(t: CompanyType): string {
+  return typeDef(t).color;
+}
+
+// Human labels for AI domains (used in the detail panel + domain filter).
+export const DOMAIN_LABELS: Record<AIDomain, string> = {
+  LLM: 'LLMs',
+  NLP: 'NLP',
+  'generative-ai': 'Generative AI',
+  'computer-vision': 'Computer Vision',
+  'reinforcement-learning': 'Reinforcement Learning',
+  robotics: 'Robotics',
+  speech: 'Speech / Voice',
+  'ml-platform': 'ML Platform / MLOps',
+  recommendation: 'Recommendation',
+  forecasting: 'Forecasting',
+  'edge-ai': 'Edge AI',
+  research: 'Fundamental Research',
+};
+
+export function domainLabel(d: AIDomain): string {
+  return DOMAIN_LABELS[d] ?? d;
 }

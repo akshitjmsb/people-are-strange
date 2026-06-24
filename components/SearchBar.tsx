@@ -4,46 +4,35 @@ interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
   resultCount: number;
-  source: 'supabase' | 'local' | null;
 }
 
-/** Floating frosted-glass search bar pinned to the top of the map. */
-export default function SearchBar({ value, onChange, resultCount, source }: SearchBarProps) {
+/** Floating search bar pinned to the top of the map. */
+export default function SearchBar({ value, onChange, resultCount }: SearchBarProps) {
   return (
     <div className="pointer-events-auto w-full">
-      <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-asphalt/70 px-4 py-3 shadow-lg backdrop-blur-2xl">
-        <span aria-hidden className="text-snow-white/50">🔎</span>
+      <div className="flex items-center gap-2 rounded-2xl border border-black/5 bg-white/90 px-4 py-3 shadow-lg backdrop-blur-xl">
+        <span aria-hidden className="text-asphalt/40">🔎</span>
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search Montreal — Mila, Schwartz's, Mont-Royal…"
-          className="w-full bg-transparent text-sm text-snow-white placeholder:text-snow-white/35 focus:outline-none"
-          aria-label="Search POIs"
+          placeholder="Search Montreal AI — Mila, LLMs, healthtech, Mile-End…"
+          className="w-full bg-transparent text-sm text-asphalt placeholder:text-asphalt/35 focus:outline-none"
+          aria-label="Search AI companies"
         />
         {value && (
           <button
             onClick={() => onChange('')}
-            className="text-snow-white/40 transition hover:text-snow-white"
+            className="text-asphalt/35 transition hover:text-asphalt"
             aria-label="Clear search"
           >
             ✕
           </button>
         )}
       </div>
-      <div className="mt-1.5 flex items-center justify-between px-1">
-        <p className="text-[11px] text-snow-white/45">
-          {resultCount} {resultCount === 1 ? 'place' : 'places'}
+      <div className="mt-1.5 px-1">
+        <p className="text-[11px] font-medium text-asphalt/55 drop-shadow-sm">
+          {resultCount} {resultCount === 1 ? 'company' : 'companies'}
         </p>
-        {source && (
-          <span className="flex items-center gap-1 text-[11px] text-snow-white/40">
-            <span
-              className={`inline-block h-1.5 w-1.5 rounded-full ${
-                source === 'supabase' ? 'bg-parc-emerald' : 'bg-bagel-gold'
-              }`}
-            />
-            {source === 'supabase' ? 'live' : 'seed data'}
-          </span>
-        )}
       </div>
     </div>
   );

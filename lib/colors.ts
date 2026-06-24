@@ -1,6 +1,6 @@
 // ── Vibrant Montreal palette ─────────────────────────────────────────────
 // The city itself: mural alleys, painted staircases, jazz fest neon, autumn
-// on Mont-Royal, the blue/white of Montreal winters.
+// on Mont-Royal. These are the street-art colours the whole map is built from.
 
 export const MONTREAL = {
   plateauPink: '#E84393', // iconic painted doors & staircases
@@ -11,7 +11,7 @@ export const MONTREAL = {
   stlaurentRed: '#FF6B6B', // the Main, neon signs
   metroOrange: '#E17055', // the rubber-tired metro
   snowWhite: '#F8F9FA', // Montreal winters
-  asphalt: '#2D3436', // the city grid, dark mode base
+  asphalt: '#2D3436', // the city grid
   bagelGold: '#FDCB6E', // Fairmount vs St-Viateur, warm accent
 } as const;
 
@@ -31,22 +31,4 @@ export function hexToRgb(hex: string): [number, number, number] {
 export function hexToRgba(hex: string, alpha = 255): [number, number, number, number] {
   const [r, g, b] = hexToRgb(hex);
   return [r, g, b, alpha];
-}
-
-// Density ramp — cold/quiet → hot/alive. Used to color hexes by POI count.
-export const DENSITY_RAMP: string[] = [
-  MONTREAL.jazzBlue, // 1 POI — quiet
-  MONTREAL.mileendViolet,
-  MONTREAL.plateauPink,
-  MONTREAL.stlaurentRed,
-  MONTREAL.metroOrange,
-  MONTREAL.montroyalAmber, // many POIs — buzzing
-];
-
-/** Map a POI count to a glowing density color. `max` scales the ramp. */
-export function densityColor(count: number, max: number): string {
-  if (count <= 0) return MONTREAL.asphalt;
-  const t = Math.min(1, Math.log(count + 1) / Math.log(Math.max(2, max) + 1));
-  const idx = Math.min(DENSITY_RAMP.length - 1, Math.floor(t * DENSITY_RAMP.length));
-  return DENSITY_RAMP[idx];
 }
