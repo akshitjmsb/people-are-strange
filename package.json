@@ -13,7 +13,6 @@
     "@deck.gl/geo-layers": "^9.0.33",
     "@deck.gl/layers": "^9.0.33",
     "@deck.gl/mapbox": "^9.0.33",
-    "@supabase/supabase-js": "^2.45.4",
     "h3-js": "^4.1.0",
     "maplibre-gl": "^4.7.1",
     "next": "14.2.15",
