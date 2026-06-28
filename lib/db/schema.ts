@@ -6,12 +6,16 @@
 // from whether a verified street `address` exists (see lib/companies.ts).
 
 import { pgTable, text, doublePrecision, integer, boolean, jsonb } from 'drizzle-orm/pg-core';
-import type { AIDomain, CompanyType, Funding } from '../types';
+import type { Domain, CompanyType, Funding, Industry } from '../types';
 
 export const companies = pgTable('companies', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   aka: text('aka'),
+
+  // Which industry layer this company belongs to. Existing rows backfill to
+  // 'ai' via the column default.
+  industry: text('industry').$type<Industry>().notNull().default('ai'),
 
   // Map position (real Montreal coordinates).
   lat: doublePrecision('lat').notNull(),
@@ -26,7 +30,7 @@ export const companies = pgTable('companies', {
   solution: text('solution'),
 
   // What they work on.
-  aiDomains: text('ai_domains').array().$type<AIDomain[]>().notNull(),
+  aiDomains: text('ai_domains').array().$type<Domain[]>().notNull(),
   industries: text('industries').array(),
   tags: text('tags').array(),
 

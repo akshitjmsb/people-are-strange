@@ -1,8 +1,9 @@
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
 import { companies, type CompanyRow } from '@/lib/db/schema';
-import type { AICompany } from '@/lib/types';
+import type { AICompany, Industry } from '@/lib/types';
 
 // Always read live from the database; the dataset can change without a redeploy.
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,7 @@ function toCompany(r: CompanyRow): AICompany {
     id: r.id,
     name: r.name,
     aka: r.aka ?? undefined,
+    industry: r.industry,
     lat: r.lat,
     lng: r.lng,
     address: r.address ?? undefined,
@@ -36,7 +38,15 @@ function toCompany(r: CompanyRow): AICompany {
   };
 }
 
-export async function GET() {
-  const rows = await db.select().from(companies);
+export async function GET(req: Request) {
+  // Optional `?industry=ai|aerospace` filter; anything else returns all rows.
+  const param = new URL(req.url).searchParams.get('industry');
+  const industry: Industry | null =
+    param === 'ai' || param === 'aerospace' ? param : null;
+
+  const rows = industry
+    ? await db.select().from(companies).where(eq(companies.industry, industry))
+    : await db.select().from(companies);
+
   return NextResponse.json({ companies: rows.map(toCompany) });
 }

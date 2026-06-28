@@ -8,6 +8,13 @@
       "when": 1782676379963,
       "tag": "0000_safe_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782686690069,
+      "tag": "0001_legal_stranger",
+      "breakpoints": true
     }
   ]
 }

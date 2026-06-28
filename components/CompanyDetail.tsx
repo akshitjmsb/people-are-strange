@@ -102,7 +102,11 @@ export default function CompanyDetail({ company, onClose }: Props) {
           </div>
 
           {company.aiDomains?.length > 0 && (
-            <Chips title="AI focus" items={company.aiDomains.map(domainLabel)} accent={t.color} />
+            <Chips
+              title={company.industry === 'aerospace' ? 'Aerospace focus' : 'AI focus'}
+              items={company.aiDomains.map(domainLabel)}
+              accent={t.color}
+            />
           )}
           {company.industries && company.industries.length > 0 && (
             <Chips title="Industries" items={company.industries} muted />

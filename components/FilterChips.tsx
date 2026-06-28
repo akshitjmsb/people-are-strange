@@ -8,10 +8,18 @@ interface FilterChipsProps {
   counts: Record<string, number>;
   onToggle: (t: CompanyType) => void;
   onClear: () => void;
+  /** Which types to show (in order). Defaults to every type across industries. */
+  typeOrder?: CompanyType[];
 }
 
 /** Horizontally-scrolling company-type filter chips. */
-export default function FilterChips({ active, counts, onToggle, onClear }: FilterChipsProps) {
+export default function FilterChips({
+  active,
+  counts,
+  onToggle,
+  onClear,
+  typeOrder = TYPE_ORDER,
+}: FilterChipsProps) {
   const hasFilters = active.size > 0;
 
   return (
@@ -27,7 +35,7 @@ export default function FilterChips({ active, counts, onToggle, onClear }: Filte
         All
       </button>
 
-      {TYPE_ORDER.map((t) => {
+      {typeOrder.map((t) => {
         const def = COMPANY_TYPES[t];
         const isActive = active.has(t);
         const count = counts[t] ?? 0;

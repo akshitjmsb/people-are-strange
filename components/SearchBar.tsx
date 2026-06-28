@@ -15,9 +15,9 @@ export default function SearchBar({ value, onChange, resultCount }: SearchBarPro
         <input
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search Montreal AI — Mila, LLMs, healthtech, Mile-End…"
+          placeholder="Search Montreal — Mila, Bombardier, avionics, Mirabel…"
           className="w-full bg-transparent text-sm text-asphalt placeholder:text-asphalt/35 focus:outline-none"
-          aria-label="Search AI companies"
+          aria-label="Search companies"
         />
         {value && (
           <button

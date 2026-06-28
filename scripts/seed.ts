@@ -19,6 +19,7 @@ async function main() {
     id: c.id,
     name: c.name,
     aka: c.aka ?? null,
+    industry: c.industry ?? 'ai',
     lat: c.lat,
     lng: c.lng,
     address: c.address ?? null,

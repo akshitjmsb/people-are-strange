@@ -5,9 +5,10 @@ import type { AICompany } from '@/lib/types';
 
 // Rough size signal: bigger dot = bigger / more notable player.
 function radiusFor(c: AICompany): number {
-  const big = ['research-lab', 'big-tech-lab', 'scaleup'];
+  const big = ['research-lab', 'big-tech-lab', 'scaleup', 'oem', 'tier1', 'mro'];
+  const mid = ['applied-ai', 'defense', 'space', 'tier2'];
   if (big.includes(c.type)) return 90;
-  if (c.type === 'applied-ai') return 70;
+  if (mid.includes(c.type)) return 70;
   return 58;
 }
 
