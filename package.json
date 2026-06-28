@@ -6,13 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@deck.gl/core": "^9.0.33",
     "@deck.gl/geo-layers": "^9.0.33",
     "@deck.gl/layers": "^9.0.33",
     "@deck.gl/mapbox": "^9.0.33",
+    "@neondatabase/serverless": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
     "h3-js": "^4.1.0",
     "maplibre-gl": "^4.7.1",
     "next": "14.2.15",
@@ -26,10 +32,13 @@
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.4.2",
+    "drizzle-kit": "^0.31.10",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.15",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
+    "tsx": "^4.22.4",
     "typescript": "^5.6.3"
   }
 }
