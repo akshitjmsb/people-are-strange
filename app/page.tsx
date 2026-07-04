@@ -45,7 +45,13 @@ export default function Page() {
 
   // count per industry across the whole dataset (for the top-level toggle)
   const industryCounts = useMemo(() => {
-    const c: Record<IndustrySelection, number> = { all: all.length, ai: 0, aerospace: 0 };
+    const c: Record<IndustrySelection, number> = {
+      all: all.length,
+      ai: 0,
+      aerospace: 0,
+      energy: 0,
+      marine: 0,
+    };
     for (const co of all) c[industryOf(co)] += 1;
     return c;
   }, [all]);
@@ -148,7 +154,7 @@ export default function Page() {
           <span className="mtl-gradient-text ml-1">MTL</span>
         </p>
         <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
-          Montreal&apos;s AI &amp; aerospace scene, mapped
+          Montreal&apos;s AI, aerospace, energy &amp; marine scene, mapped
         </p>
         <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-white/70 px-2 py-1 backdrop-blur-sm">
           <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">

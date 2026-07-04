@@ -11,12 +11,15 @@ interface Option {
   color: string; // active pill colour
 }
 
-// AI keeps the street-art violet; aerospace gets its industrial jet-navy; "All"
-// is the neutral asphalt of the city grid.
+// AI keeps the street-art violet; aerospace gets its industrial jet-navy;
+// energy its sun amber; marine its deep-sea blue; "All" is the neutral
+// asphalt of the city grid.
 const OPTIONS: Option[] = [
   { key: 'all', label: 'All', emoji: '🗺️', color: '#2D3436' },
   { key: 'ai', label: 'AI', emoji: '🧠', color: '#6C5CE7' },
   { key: 'aerospace', label: 'Aerospace', emoji: '✈️', color: '#1F4E79' },
+  { key: 'energy', label: 'Energy', emoji: '⚡', color: '#F59E0B' },
+  { key: 'marine', label: 'Marine', emoji: '🚢', color: '#0D4F6E' },
 ];
 
 interface Props {
@@ -28,14 +31,14 @@ interface Props {
 /** Top-level segmented control switching between the AI and aerospace layers. */
 export default function IndustryToggle({ value, counts, onChange }: Props) {
   return (
-    <div className="pointer-events-auto inline-flex gap-1 self-start rounded-2xl border border-black/5 bg-white/90 p-1 shadow-lg backdrop-blur-xl">
+    <div className="pointer-events-auto inline-flex max-w-full gap-1 self-start overflow-x-auto rounded-2xl border border-black/5 bg-white/90 p-1 shadow-lg backdrop-blur-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {OPTIONS.map((o) => {
         const isActive = value === o.key;
         return (
           <button
             key={o.key}
             onClick={() => onChange(o.key)}
-            className="rounded-xl px-3 py-1.5 text-xs font-bold transition"
+            className="shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition"
             style={
               isActive
                 ? { backgroundColor: o.color, color: '#fff' }

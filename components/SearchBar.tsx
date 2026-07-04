@@ -88,7 +88,7 @@ export default function SearchBar({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={onKeyDown}
-          placeholder="Search Montreal — Mila, Bombardier, avionics, Mirabel…"
+          placeholder="Search Montreal — Mila, Bombardier, Énergir, CSL…"
           className="w-full bg-transparent text-sm text-asphalt placeholder:text-asphalt/35 focus:outline-none"
           aria-label="Search companies"
           role="combobox"

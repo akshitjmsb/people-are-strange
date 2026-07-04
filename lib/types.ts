@@ -1,12 +1,15 @@
 // ── People Are Strange MTL — Montreal's tech scene, on one map ───────────────
-// Two industries share one map and one data shape: the AI scene (every lab and
-// startup in the city) and the aerospace scene (Montreal is a top-3 global
-// aerospace hub). Each company is placed on the map with as much real knowledge
-// about it as we can gather.
+// Four industries share one map and one data shape: the AI scene (every lab
+// and startup in the city), the aerospace scene (Montreal is a top-3 global
+// aerospace hub), the energy scene (producers, storage tech, installers and
+// distributors powering Québec's energy transition), and the marine scene
+// (the port, shipowners and services that make Montreal a great inland port).
+// Each company is placed on the map with as much real knowledge about it as
+// we can gather.
 
 /** Which industry layer a company belongs to. Drives the top-level toggle and
  *  the marker palette family. Existing rows default to 'ai'. */
-export type Industry = 'ai' | 'aerospace';
+export type Industry = 'ai' | 'aerospace' | 'energy' | 'marine';
 
 /** What kind of player in an ecosystem this is. Drives marker colour. The union
  *  spans both industries; AI types and aerospace types never collide. */
@@ -27,7 +30,19 @@ export type CompanyType =
   | 'space' // space & satellite (MDA, Magellan, GHGSat)
   | 'aero-research' // research lab, NRC, CRIAQ, university / training
   | 'aero-startup' // aerospace startup / scale-up (eVTOL, drones, clean aviation)
-  | 'aero-incubator'; // aerospace cluster / association / accelerator / fund
+  | 'aero-incubator' // aerospace cluster / association / accelerator / fund
+  // ── Energy ecosystem ──
+  | 'energy-producer' // producer / project developer / utility (Hydro-Québec, Innergex)
+  | 'energy-storage' // energy storage & smart home energy tech (EVLO, dcbel)
+  | 'energy-installer' // installer / EPC / engineering (Quebec Solar, WSP)
+  | 'energy-distributor' // energy & equipment distribution (Énergir, Rematek)
+  | 'energy-research' // research lab / university centre (Concordia CZEBS)
+  | 'energy-org' // association / cluster (Énergie Solaire Québec)
+  // ── Marine ecosystem ──
+  | 'marine-shipping' // shipowners & carriers (CSL, Fednav, Oceanex)
+  | 'marine-port' // port authority & container terminals (MPA, MGT, Termont)
+  | 'marine-services' // cargo handling, towing, harbour services (Logistec, Océan)
+  | 'marine-org'; // cluster / association (CargoM)
 
 /** Broad AI capability areas — used for filtering and tags. */
 export type AIDomain =
@@ -62,9 +77,34 @@ export type AerospaceDomain =
   | 'aero-research'
   | 'sustainable-aviation';
 
-/** Any capability area, across both industries. Stored in the `aiDomains`
+/** Broad energy capability areas. */
+export type EnergyDomain =
+  | 'photovoltaics'
+  | 'energy-storage'
+  | 'solar-thermal'
+  | 'grid-services'
+  | 'ev-charging'
+  | 'building-solar'
+  | 'off-grid'
+  | 'project-development'
+  | 'wind'
+  | 'hydro'
+  | 'gas-distribution';
+
+/** Broad marine capability areas. */
+export type MarineDomain =
+  | 'shipping'
+  | 'port-operations'
+  | 'cargo-handling'
+  | 'towing-salvage'
+  | 'marine-logistics'
+  | 'arctic-shipping'
+  | 'green-shipping'
+  | 'ship-services';
+
+/** Any capability area, across all industries. Stored in the `aiDomains`
  *  column/field (kept that name so the data shape is identical). */
-export type Domain = AIDomain | AerospaceDomain;
+export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain;
 
 export interface Funding {
   totalRaised?: string; // e.g. "$45M"

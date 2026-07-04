@@ -39,10 +39,13 @@ function toCompany(r: CompanyRow): AICompany {
 }
 
 export async function GET(req: Request) {
-  // Optional `?industry=ai|aerospace` filter; anything else returns all rows.
+  // Optional `?industry=ai|aerospace|energy|marine` filter; anything else
+  // returns all rows.
   const param = new URL(req.url).searchParams.get('industry');
   const industry: Industry | null =
-    param === 'ai' || param === 'aerospace' ? param : null;
+    param === 'ai' || param === 'aerospace' || param === 'energy' || param === 'marine'
+      ? param
+      : null;
 
   // Fail soft: a DB outage returns a clean 503 JSON body, and the client
   // falls back to the bundled dataset — the map never goes blank.

@@ -103,7 +103,15 @@ export default function CompanyDetail({ company, onClose }: Props) {
 
           {company.aiDomains?.length > 0 && (
             <Chips
-              title={company.industry === 'aerospace' ? 'Aerospace focus' : 'AI focus'}
+              title={
+                company.industry === 'aerospace'
+                  ? 'Aerospace focus'
+                  : company.industry === 'energy'
+                    ? 'Energy focus'
+                    : company.industry === 'marine'
+                      ? 'Marine focus'
+                      : 'AI focus'
+              }
               items={company.aiDomains.map(domainLabel)}
               accent={t.color}
             />

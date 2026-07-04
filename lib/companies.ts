@@ -1,5 +1,5 @@
 import { COMPANIES } from './companies-data';
-import type { AICompany } from './types';
+import type { AICompany, Industry } from './types';
 
 export interface LoadResult {
   companies: AICompany[];
@@ -52,7 +52,7 @@ async function fetchCompanies(url: string): Promise<AICompany[]> {
  * the bundled dataset so the map always renders. Pass an `industry` to fetch
  * just one layer.
  */
-export async function loadCompanies(industry?: 'ai' | 'aerospace'): Promise<LoadResult> {
+export async function loadCompanies(industry?: Industry): Promise<LoadResult> {
   const url = industry ? `/api/companies?industry=${industry}` : '/api/companies';
   try {
     const companies = await fetchCompanies(url);

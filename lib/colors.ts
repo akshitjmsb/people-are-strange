@@ -35,6 +35,34 @@ export const AERO = {
 
 export type AeroColor = keyof typeof AERO;
 
+// ── Energy palette ───────────────────────────────────────────────────────
+// A warm power family — amber, dusk orange, copper, gold — with one battery
+// lime for storage, so the energy layer reads as its own sunrise against the
+// AI street-art colours and the aerospace steel/teal fleet.
+export const ENERGY = {
+  sunAmber: '#F59E0B', // high noon — producers & developers
+  duskOrange: '#EA580C', // sunset over the grid — installers & EPC
+  voltLime: '#65A30D', // battery charge — storage & smart energy
+  copperHeat: '#B45309', // copper wiring — distribution & equipment
+  solarFlare: '#FACC15', // pure sunlight — research & education
+  terracotta: '#C97B5C', // rooftop tiles — associations & clusters
+} as const;
+
+export type EnergyColor = keyof typeof ENERGY;
+
+// ── Marine palette ───────────────────────────────────────────────────────
+// The St. Lawrence at work — deep-sea blue, container rust, sea-glass teal,
+// harbour indigo — so the marine layer reads as the river against the other
+// industries' palettes.
+export const MARINE = {
+  deepSea: '#0D4F6E', // open-water blue — shipowners & carriers
+  containerRust: '#B34233', // weathered container steel — port & terminals
+  seaGlass: '#00838F', // river teal — marine services
+  harbourIndigo: '#455A9E', // dusk over the harbour — clusters & associations
+} as const;
+
+export type MarineColor = keyof typeof MARINE;
+
 /** Convert a #rrggbb hex string to a deck.gl [r,g,b] tuple. */
 export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
