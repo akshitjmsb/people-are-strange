@@ -10,9 +10,9 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'People Are Strange MTL — Montreal AI Map',
+  title: 'People Are Strange MTL — Montreal AI & Aerospace Map',
   description:
-    "Montreal's AI scene on one living map. Every lab and startup, what they're building, where they are.",
+    "Montreal's AI and aerospace scenes on one living map. Every lab, startup and plant — what they're building, where they are.",
   manifest: '/manifest.json',
   applicationName: 'People Are Strange MTL',
   appleWebApp: {

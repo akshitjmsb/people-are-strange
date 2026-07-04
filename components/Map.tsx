@@ -1,12 +1,18 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import MapGL, { NavigationControl, useControl } from 'react-map-gl/maplibre';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import MapGL, {
+  GeolocateControl,
+  NavigationControl,
+  useControl,
+  type MapRef,
+} from 'react-map-gl/maplibre';
 import { MapboxOverlay, type MapboxOverlayProps } from '@deck.gl/mapbox';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
+import { typeColor, typeDef } from '@/lib/categories';
 import type { AICompany } from '@/lib/types';
-import { createCompanyLayers } from './CompanyLayers';
+import { createCompanyLayers, labelText, radiusFor } from './CompanyLayers';
 
 // Montreal — centred on the island, framed on the AI corridor (Mile-Ex →
 // downtown), tilted for that street-level, walk-the-city feel.
@@ -18,14 +24,79 @@ const INITIAL_VIEW = {
   bearing: -10,
 };
 
-// CARTO Voyager — bright, colourful streets. The vibrant Montreal canvas the
-// glowing company markers are painted on.
-const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+// Basemap fallback chain, most graceful first:
+//  1. CARTO Voyager — bright, colourful streets; the vibrant Montreal canvas.
+//  2. CARTO Positron — quieter, but same CDN family.
+//  3. Raw OSM raster tiles — independent of CARTO entirely, so the map still
+//     draws streets even if the whole CDN is down.
+const OSM_RASTER_STYLE = {
+  version: 8 as const,
+  sources: {
+    osm: {
+      type: 'raster' as const,
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '© OpenStreetMap contributors',
+    },
+  },
+  layers: [{ id: 'osm', type: 'raster' as const, source: 'osm' }],
+};
+
+const MAP_STYLES: (string | typeof OSM_RASTER_STYLE)[] = [
+  'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+  'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  OSM_RASTER_STYLE,
+];
 
 function DeckOverlay(props: MapboxOverlayProps) {
   const overlay = useControl<MapboxOverlay>(() => new MapboxOverlay(props));
   overlay.setProps(props);
+  if (process.env.NODE_ENV === 'development') {
+    (window as unknown as Record<string, unknown>).__overlay = overlay;
+  }
   return null;
+}
+
+/**
+ * Screen-space label decluttering: project every company to pixels, walk them
+ * by priority (selected first, then bigger players) and keep only labels whose
+ * estimated text box doesn't overlap one already kept.
+ */
+function declutterLabels(
+  map: MapRef,
+  companies: AICompany[],
+  selectedId: string | null,
+): Set<string> {
+  const kept: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  const ids = new Set<string>();
+  const ordered = [...companies].sort(
+    (a, b) =>
+      Number(b.id === selectedId) - Number(a.id === selectedId) ||
+      radiusFor(b) - radiusFor(a) ||
+      a.name.localeCompare(b.name),
+  );
+  for (const c of ordered) {
+    const p = map.project([c.lng, c.lat]);
+    // 12px bold Space Grotesk ≈ 6.8px/char; label floats ~20px above the dot
+    const w = labelText(c).length * 6.8 + 8;
+    const box = { x0: p.x - w / 2, x1: p.x + w / 2, y0: p.y - 36, y1: p.y - 18 };
+    const collides = kept.some(
+      (k) => box.x0 < k.x1 + 4 && box.x1 > k.x0 - 4 && box.y0 < k.y1 + 2 && box.y1 > k.y0 - 2,
+    );
+    if (collides) continue;
+    kept.push(box);
+    ids.add(c.id);
+  }
+  return ids;
+}
+
+function webglSupported(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
 }
 
 interface MapProps {
@@ -35,25 +106,211 @@ interface MapProps {
 }
 
 export default function Map({ companies, selectedId, onSelect }: MapProps) {
+  const mapRef = useRef<MapRef>(null);
+  const styleLoadedRef = useRef(false);
   const [zoom, setZoom] = useState(INITIAL_VIEW.zoom);
+  // bumped on every camera move so label decluttering tracks the projection
+  const [viewTick, setViewTick] = useState(0);
+  const [styleTier, setStyleTier] = useState(0);
+  const [webgl] = useState(() => (typeof window === 'undefined' ? true : webglSupported()));
+
   const showLabels = zoom >= 13;
+  const showIcons = zoom >= 13.5;
+
+  const setHoverCursor = useCallback((hovering: boolean) => {
+    const canvas = mapRef.current?.getCanvas();
+    if (canvas) canvas.style.cursor = hovering ? 'pointer' : '';
+  }, []);
+
+  const labelIds = useMemo(() => {
+    if (!showLabels || !mapRef.current) return null;
+    return declutterLabels(mapRef.current, companies, selectedId);
+    // viewTick keys the recompute to camera moves
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companies, selectedId, showLabels, viewTick]);
 
   const layers = useMemo(
-    () => createCompanyLayers({ companies, selectedId, showLabels, onClick: onSelect }),
-    [companies, selectedId, showLabels, onSelect],
+    () =>
+      createCompanyLayers({
+        companies,
+        selectedId,
+        showLabels,
+        showIcons,
+        labelIds,
+        onClick: onSelect,
+        onHover: setHoverCursor,
+      }),
+    [companies, selectedId, showLabels, showIcons, labelIds, onSelect, setHoverCursor],
   );
+
+  // Glide the camera to the selected company, lifted above the detail sheet.
+  useEffect(() => {
+    if (!selectedId) return;
+    const company = companies.find((c) => c.id === selectedId);
+    const map = mapRef.current;
+    if (!company || !map) return;
+    map.flyTo({
+      center: [company.lng, company.lat],
+      zoom: Math.max(map.getZoom(), 14),
+      // shift the pin up so the bottom sheet doesn't cover it
+      offset: [0, -Math.min(window.innerHeight * 0.18, 160)],
+      duration: 900,
+      essential: true,
+    });
+    // deliberately not reacting to `companies` — a filter change shouldn't re-fly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
+
+  // Resilience net: if the map initialized before layout settled (or its own
+  // resize tracking missed a beat), snap the canvas back to the container.
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return;
+    let ro: ResizeObserver | undefined;
+    let tries = 0;
+    const poll = setInterval(() => {
+      const map = mapRef.current;
+      if (!map) {
+        if (++tries > 40) clearInterval(poll); // give up after ~10s
+        return;
+      }
+      clearInterval(poll);
+      try {
+        map.resize();
+        ro = new ResizeObserver(() => {
+          try {
+            map.resize();
+          } catch {
+            /* map already gone */
+          }
+        });
+        ro.observe(map.getContainer());
+      } catch {
+        /* map already gone */
+      }
+    }, 250);
+    return () => {
+      clearInterval(poll);
+      ro?.disconnect();
+    };
+  }, [webgl]);
+
+  const recenter = useCallback(() => {
+    mapRef.current?.flyTo({
+      center: [INITIAL_VIEW.longitude, INITIAL_VIEW.latitude],
+      zoom: INITIAL_VIEW.zoom,
+      pitch: INITIAL_VIEW.pitch,
+      bearing: INITIAL_VIEW.bearing,
+      duration: 1200,
+      essential: true,
+    });
+  }, []);
+
+  // Style failed before first load → step down the fallback chain.
+  const handleError = useCallback((e: { error?: Error }) => {
+    if (styleLoadedRef.current) return;
+    console.warn('[map] basemap failed, falling back:', e?.error?.message);
+    setStyleTier((t) => Math.min(t + 1, MAP_STYLES.length - 1));
+  }, []);
+
+  if (!webgl) {
+    return <CompanyListFallback companies={companies} onSelect={onSelect} />;
+  }
 
   return (
     <MapGL
+      ref={mapRef}
       initialViewState={INITIAL_VIEW}
-      mapStyle={MAP_STYLE}
-      onMove={(e) => setZoom(e.viewState.zoom)}
+      mapStyle={MAP_STYLES[styleTier] as string}
+      onMove={(e) => {
+        setZoom(e.viewState.zoom);
+        setViewTick((t) => t + 1);
+      }}
+      onLoad={() => {
+        styleLoadedRef.current = true;
+        // belt-and-braces: make sure the canvas matches the container even if
+        // the map initialized before layout settled
+        mapRef.current?.resize();
+        if (process.env.NODE_ENV === 'development') {
+          // debugging handle for the dev console
+          (window as unknown as Record<string, unknown>).__map = mapRef.current?.getMap();
+        }
+      }}
+      onError={handleError}
       maxPitch={60}
-      reuseMaps
       style={{ width: '100%', height: '100%' }}
     >
-      <DeckOverlay layers={layers} interleaved />
+      {/* own-canvas overlay (not interleaved): interleaving the deck layers
+          into the maplibre render pass caused depth-fighting artifacts on the
+          translucent markers. pickingRadius makes small dots tappable. */}
+      <DeckOverlay layers={layers} pickingRadius={8} />
+      <GeolocateControl
+        position="bottom-right"
+        trackUserLocation
+        showUserLocation
+        positionOptions={{ enableHighAccuracy: true }}
+      />
       <NavigationControl position="bottom-right" showCompass visualizePitch />
+
+      {/* recenter to the classic Montreal framing */}
+      <button
+        onClick={recenter}
+        aria-label="Recenter on Montreal"
+        title="Recenter on Montreal"
+        className="absolute bottom-[172px] right-[10px] z-10 flex h-[29px] w-[29px] items-center justify-center rounded-lg border border-black/5 bg-white/85 text-asphalt/70 shadow-md backdrop-blur-xl transition hover:bg-white hover:text-asphalt"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+        </svg>
+      </button>
     </MapGL>
+  );
+}
+
+/** No WebGL (old device, disabled GPU)? The scene is still browsable as a list. */
+function CompanyListFallback({
+  companies,
+  onSelect,
+}: {
+  companies: AICompany[];
+  onSelect: (c: AICompany) => void;
+}) {
+  return (
+    <div className="h-full w-full overflow-y-auto bg-snow-white px-4 pb-8 pt-36">
+      <div className="mx-auto max-w-xl">
+        <p className="mb-3 rounded-2xl border border-black/5 bg-white p-3 text-xs font-medium text-asphalt/60 shadow-sm">
+          This device can&apos;t render the interactive map (WebGL unavailable), so
+          here&apos;s the whole scene as a list instead.
+        </p>
+        <ul className="space-y-2">
+          {companies.map((c) => {
+            const t = typeDef(c.type);
+            return (
+              <li key={c.id}>
+                <button
+                  onClick={() => onSelect(c)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-black/5 bg-white p-3 text-left shadow-sm transition hover:shadow-md"
+                >
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base"
+                    style={{ backgroundColor: `${typeColor(c.type)}22` }}
+                    aria-hidden
+                  >
+                    {t.emoji}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold text-asphalt">{c.name}</span>
+                    <span className="block truncate text-xs text-asphalt/55">
+                      {t.label}
+                      {c.neighborhood ? ` · ${c.neighborhood}` : ''}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }

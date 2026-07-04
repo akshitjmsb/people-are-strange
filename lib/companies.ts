@@ -19,20 +19,44 @@ function normalize(companies: AICompany[]): AICompany[] {
   }));
 }
 
+const FETCH_TIMEOUT_MS = 6000;
+const RETRIES = 1;
+
+/** Fetch with a hard timeout so a hanging DB/network never blanks the map. */
+async function fetchWithTimeout(url: string): Promise<Response> {
+  return fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+}
+
+async function fetchCompanies(url: string): Promise<AICompany[]> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= RETRIES; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url);
+      if (!res.ok) throw new Error(`/api/companies responded ${res.status}`);
+      const json = (await res.json()) as { companies?: AICompany[] };
+      if (!json.companies?.length) throw new Error('no companies returned');
+      return json.companies;
+    } catch (err) {
+      lastErr = err;
+      // brief pause before the retry; the first failure is often transient
+      if (attempt < RETRIES) await new Promise((r) => setTimeout(r, 400));
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * Load the Montreal companies (AI + aerospace). Queries the Neon Postgres
- * database via the `/api/companies` route. If that fails (network, missing
- * DATABASE_URL, empty table), it falls back to the bundled dataset so the map
- * always renders. Pass an `industry` to fetch just one layer.
+ * database via the `/api/companies` route with a timeout and one retry. If
+ * that fails (network, missing DATABASE_URL, empty table), it falls back to
+ * the bundled dataset so the map always renders. Pass an `industry` to fetch
+ * just one layer.
  */
 export async function loadCompanies(industry?: 'ai' | 'aerospace'): Promise<LoadResult> {
   const url = industry ? `/api/companies?industry=${industry}` : '/api/companies';
   try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`/api/companies responded ${res.status}`);
-    const json = (await res.json()) as { companies?: AICompany[] };
-    if (!json.companies?.length) throw new Error('no companies returned');
-    return { companies: normalize(json.companies), source: 'db' };
+    const companies = await fetchCompanies(url);
+    return { companies: normalize(companies), source: 'db' };
   } catch (err) {
     console.warn('[companies] DB load failed, using bundled dataset:', err);
     const local = industry

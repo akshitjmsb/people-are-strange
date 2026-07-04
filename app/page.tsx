@@ -23,6 +23,7 @@ const Map = dynamic(() => import('@/components/Map'), {
 export default function Page() {
   const [all, setAll] = useState<AICompany[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dataSource, setDataSource] = useState<'db' | 'local' | null>(null);
 
   const [query, setQuery] = useState('');
   const [industry, setIndustry] = useState<IndustrySelection>('all');
@@ -34,6 +35,7 @@ export default function Page() {
     loadCompanies().then((res) => {
       if (!alive) return;
       setAll(res.companies);
+      setDataSource(res.source);
       setLoading(false);
     });
     return () => {
@@ -79,6 +81,20 @@ export default function Page() {
     });
   }, [inIndustry, query, activeTypes]);
 
+  // dropdown suggestions: name matches float above everything else
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    const score = (co: AICompany) => {
+      const name = co.name.toLowerCase();
+      if (name.startsWith(q)) return 0;
+      if (name.includes(q)) return 1;
+      if (co.aka?.toLowerCase().includes(q)) return 2;
+      return 3;
+    };
+    return [...filtered].sort((a, b) => score(a) - score(b)).slice(0, 6);
+  }, [filtered, query]);
+
   const toggleType = (t: CompanyType) => {
     setActiveTypes((prev) => {
       const next = new Set(prev);
@@ -100,10 +116,22 @@ export default function Page() {
     <main className="relative h-full w-full">
       <Map companies={filtered} selectedId={selected?.id ?? null} onSelect={setSelected} />
 
+      {/* Montreal-palette hairline across the very top */}
+      <div aria-hidden className="mtl-hairline pointer-events-none absolute inset-x-0 top-0 z-30 h-[3px]" />
+
       {/* top chrome */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <IndustryToggle value={industry} counts={industryCounts} onChange={changeIndustry} />
-        <SearchBar value={query} onChange={setQuery} resultCount={filtered.length} />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2">
+          <IndustryToggle value={industry} counts={industryCounts} onChange={changeIndustry} />
+          {dataSource === 'local' && <OfflineBadge />}
+        </div>
+        <SearchBar
+          value={query}
+          onChange={setQuery}
+          resultCount={filtered.length}
+          suggestions={suggestions}
+          onPick={setSelected}
+        />
         <FilterChips
           active={activeTypes}
           counts={counts}
@@ -117,7 +145,7 @@ export default function Page() {
       <div className="pointer-events-none absolute bottom-3 left-3 z-10">
         <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
           People Are Strange
-          <span className="ml-1 text-plateau-pink">MTL</span>
+          <span className="mtl-gradient-text ml-1">MTL</span>
         </p>
         <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
           Montreal&apos;s AI &amp; aerospace scene, mapped
@@ -146,11 +174,28 @@ function MapSkeleton() {
   return <div className="h-full w-full bg-snow-white" />;
 }
 
+/** Shown when the live DB was unreachable and the bundled dataset kicked in. */
+function OfflineBadge() {
+  return (
+    <span
+      className="pointer-events-auto inline-flex items-center gap-1.5 self-start rounded-full border border-montroyal-amber/30 bg-white/90 px-2.5 py-1.5 text-[10px] font-bold text-asphalt/70 shadow-sm backdrop-blur-xl"
+      title="The live database is unreachable — showing the bundled dataset."
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-montroyal-amber" aria-hidden />
+      offline data
+    </span>
+  );
+}
+
 function LoadingOverlay() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
       <div className="flex items-center gap-3 rounded-2xl border border-black/5 bg-white/85 px-5 py-3 shadow-lg backdrop-blur-xl">
-        <span className="h-3 w-3 animate-pulse-slow rounded-full bg-plateau-pink" />
+        <span className="flex items-center gap-1" aria-hidden>
+          <span className="h-2 w-2 animate-bounce rounded-full bg-plateau-pink" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-montroyal-amber [animation-delay:120ms]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-jazz-blue [animation-delay:240ms]" />
+        </span>
         <span className="text-sm font-semibold text-asphalt/80">Mapping Montréal…</span>
       </div>
     </div>

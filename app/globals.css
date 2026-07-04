@@ -21,6 +21,28 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ── Montreal-palette gradient accents ──────────────────────────────────
+   Plateau pink → Mont-Royal amber → bagel gold → Parc emerald → jazz blue
+   → Mile-End violet: the whole city palette in one ribbon. */
+.mtl-hairline {
+  background: linear-gradient(
+    90deg,
+    #e84393,
+    #f39c12,
+    #fdcb6e,
+    #00b894,
+    #0984e3,
+    #6c5ce7
+  );
+}
+
+.mtl-gradient-text {
+  background: linear-gradient(90deg, #e84393, #f39c12, #0984e3);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* The map owns the whole viewport. */
 #app-root {
   position: fixed;

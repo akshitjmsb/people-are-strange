@@ -44,9 +44,19 @@ export async function GET(req: Request) {
   const industry: Industry | null =
     param === 'ai' || param === 'aerospace' ? param : null;
 
-  const rows = industry
-    ? await db.select().from(companies).where(eq(companies.industry, industry))
-    : await db.select().from(companies);
+  // Fail soft: a DB outage returns a clean 503 JSON body, and the client
+  // falls back to the bundled dataset — the map never goes blank.
+  try {
+    const rows = industry
+      ? await db.select().from(companies).where(eq(companies.industry, industry))
+      : await db.select().from(companies);
 
-  return NextResponse.json({ companies: rows.map(toCompany) });
+    return NextResponse.json({ companies: rows.map(toCompany) });
+  } catch (err) {
+    console.error('[api/companies] database query failed:', err);
+    return NextResponse.json(
+      { companies: [], error: 'database unavailable' },
+      { status: 503 },
+    );
+  }
 }
