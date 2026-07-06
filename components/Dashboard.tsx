@@ -17,6 +17,10 @@ interface Props {
   onClose: () => void;
   /** Jump to a neighborhood cluster from the "top areas" list. */
   onPickNeighborhood: (name: string) => void;
+  /** Download the currently-filtered list as CSV. */
+  onExport: () => void;
+  /** How many companies the export will contain (the current filtered list). */
+  exportCount: number;
 }
 
 /**
@@ -24,7 +28,14 @@ interface Props {
  * derived from the currently-selected industry lens, so it stays truthful
  * against the live DB or the bundled offline dataset alike.
  */
-export default function Dashboard({ stats, industry, onClose, onPickNeighborhood }: Props) {
+export default function Dashboard({
+  stats,
+  industry,
+  onClose,
+  onPickNeighborhood,
+  onExport,
+  exportCount,
+}: Props) {
   const lens = industry === 'all' ? INDUSTRY_META.ai : INDUSTRY_META[industry];
   const lensLabel = industry === 'all' ? 'All industries' : lens.label;
   const hiringPct = stats.total ? Math.round((stats.hiringCount / stats.total) * 100) : 0;
@@ -60,12 +71,25 @@ export default function Dashboard({ stats, industry, onClose, onPickNeighborhood
               {lensLabel} · {stats.total} {stats.total === 1 ? 'company' : 'companies'} mapped
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="shrink-0 rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-asphalt/70 transition hover:bg-black/10"
-          >
-            Close
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={onExport}
+              disabled={exportCount === 0}
+              title={`Download the current list (${exportCount}) as CSV`}
+              className="flex items-center gap-1.5 rounded-full border border-black/5 bg-white px-3 py-1.5 text-xs font-bold text-asphalt/70 shadow-sm transition hover:text-asphalt disabled:opacity-40"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+              </svg>
+              CSV
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-asphalt/70 transition hover:bg-black/10"
+            >
+              Close
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-8">

@@ -60,6 +60,33 @@ export function canonicalNeighborhood(raw?: string | null): string | null {
   return CANONICAL[t] ?? t;
 }
 
+/** URL-safe slug for a canonical neighborhood name ("Mile-Ex" → "mile-ex",
+ *  "Côte-des-Neiges" → "cote-des-neiges", "Old Montreal & Old Port" →
+ *  "old-montreal-and-old-port"). Used for shareable deep links. */
+export function neighborhoodSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // strip accents
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** Resolve a URL slug back to the canonical neighborhood name present in the
+ *  data, or null if no cluster matches. */
+export function resolveNeighborhoodSlug(slug: string, companies: AICompany[]): string | null {
+  const target = slug.toLowerCase();
+  const seen = new Set<string>();
+  for (const c of companies) {
+    const name = canonicalNeighborhood(c.neighborhood);
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    if (neighborhoodSlug(name) === target) return name;
+  }
+  return null;
+}
+
 export interface NeighborhoodCluster {
   name: string;
   companies: AICompany[];

@@ -6,17 +6,28 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import CompanyDetail from '@/components/CompanyDetail';
 import Dashboard from '@/components/Dashboard';
 import FilterChips from '@/components/FilterChips';
+import HiringToggle from '@/components/HiringToggle';
 import IndustryToggle, { type IndustrySelection } from '@/components/IndustryToggle';
 import ListView from '@/components/ListView';
 import NeighborhoodPanel from '@/components/NeighborhoodPanel';
 import NeighborhoodSummary from '@/components/NeighborhoodSummary';
 import SearchBar from '@/components/SearchBar';
 import ViewSwitcher, { type ViewMode } from '@/components/ViewSwitcher';
-import { AREA_ACCENT, typeOrderFor } from '@/lib/categories';
+import { AREA_ACCENT, COMPANY_TYPES, typeOrderFor } from '@/lib/categories';
 import { loadCompanies } from '@/lib/companies';
-import { buildNeighborhoodClusters, canonicalNeighborhood } from '@/lib/neighborhoods';
+import { companiesToCsv, downloadCsv } from '@/lib/csv';
+import {
+  buildNeighborhoodClusters,
+  canonicalNeighborhood,
+  neighborhoodSlug,
+  resolveNeighborhoodSlug,
+} from '@/lib/neighborhoods';
 import { buildEcosystemStats } from '@/lib/stats';
-import type { AICompany, CompanyType } from '@/lib/types';
+import type { AICompany, CompanyType, Industry } from '@/lib/types';
+
+const INDUSTRIES: Industry[] = ['ai', 'aerospace', 'energy', 'marine'];
+const isIndustry = (v: string): v is Industry => (INDUSTRIES as string[]).includes(v);
+const isCompanyType = (v: string): v is CompanyType => v in COMPANY_TYPES;
 
 /** A company's industry, defaulting legacy rows to 'ai'. */
 const industryOf = (c: AICompany) => c.industry ?? 'ai';
@@ -35,6 +46,7 @@ export default function Page() {
   const [query, setQuery] = useState('');
   const [industry, setIndustry] = useState<IndustrySelection>('all');
   const [activeTypes, setActiveTypes] = useState<Set<CompanyType>>(new Set());
+  const [hiringOnly, setHiringOnly] = useState(false);
   const [selected, setSelected] = useState<AICompany | null>(null);
 
   // additive views
@@ -43,9 +55,39 @@ export default function Page() {
   const [areasOpen, setAreasOpen] = useState(false);
   const [activeArea, setActiveArea] = useState<string | null>(null);
 
+  // deep-link plumbing: `urlReady` gates the URL writer until the initial read
+  // is done; `pending` holds params that can't resolve until data has loaded.
+  const [urlReady, setUrlReady] = useState(false);
+  const pending = useRef<{ company?: string; neighborhood?: string }>({});
+
   // measured height of the top chrome, so the list view can clear it exactly
   const chromeRef = useRef<HTMLDivElement>(null);
   const [topInset, setTopInset] = useState(184);
+
+  // Restore view state from the URL on first paint. Data-dependent params
+  // (company, neighborhood) are stashed in `pending` and applied once loaded.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+
+    const ind = p.get('industry');
+    if (ind && isIndustry(ind)) setIndustry(ind);
+
+    const types = (p.get('type') ?? '').split(',').filter(isCompanyType);
+    if (types.length) setActiveTypes(new Set(types));
+
+    const q = p.get('q');
+    if (q) setQuery(q);
+
+    if (p.get('view') === 'list') setView('list');
+    if (p.get('hiring') === '1') setHiringOnly(true);
+
+    pending.current = {
+      company: p.get('company') ?? undefined,
+      neighborhood: p.get('neighborhood') ?? undefined,
+    };
+
+    setUrlReady(true);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -60,6 +102,21 @@ export default function Page() {
     };
   }, []);
 
+  // Apply the data-dependent deep-link params once companies have loaded.
+  useEffect(() => {
+    if (!all.length) return;
+    const { company, neighborhood } = pending.current;
+    if (company) {
+      const c = all.find((x) => x.id === company);
+      if (c) setSelected(c);
+    }
+    if (neighborhood) {
+      const name = resolveNeighborhoodSlug(neighborhood, all);
+      if (name) setActiveArea(name);
+    }
+    pending.current = {};
+  }, [all]);
+
   // keep the list view's top padding in sync with the actual chrome height
   useEffect(() => {
     const el = chromeRef.current;
@@ -69,6 +126,22 @@ export default function Page() {
     setTopInset(el.offsetHeight + 10);
     return () => ro.disconnect();
   }, []);
+
+  // Mirror the view state into the URL (replaceState — no history spam), so the
+  // current map/list, filters, search, area and open company are shareable.
+  useEffect(() => {
+    if (!urlReady) return;
+    const p = new URLSearchParams();
+    if (industry !== 'all') p.set('industry', industry);
+    if (activeTypes.size) p.set('type', [...activeTypes].join(','));
+    if (activeArea) p.set('neighborhood', neighborhoodSlug(activeArea));
+    if (query.trim()) p.set('q', query.trim());
+    if (hiringOnly) p.set('hiring', '1');
+    if (view === 'list') p.set('view', 'list');
+    if (selected) p.set('company', selected.id);
+    const qs = p.toString();
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [urlReady, industry, activeTypes, activeArea, query, hiringOnly, view, selected]);
 
   // count per industry across the whole dataset (for the top-level toggle)
   const industryCounts = useMemo(() => {
@@ -103,10 +176,17 @@ export default function Page() {
     return c;
   }, [inIndustry]);
 
-  // apply neighborhood + search + type filters within the selected industry
+  // number of companies hiring within the current industry lens (for the chip)
+  const hiringCount = useMemo(
+    () => inIndustry.reduce((n, co) => n + (co.hiring ? 1 : 0), 0),
+    [inIndustry],
+  );
+
+  // apply hiring + neighborhood + search + type filters within the industry
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return inIndustry.filter((co) => {
+      if (hiringOnly && !co.hiring) return false;
       if (activeArea && canonicalNeighborhood(co.neighborhood) !== activeArea) return false;
       if (activeTypes.size > 0 && !activeTypes.has(co.type)) return false;
       if (!q) return true;
@@ -120,7 +200,7 @@ export default function Page() {
         co.tags?.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [inIndustry, query, activeTypes, activeArea]);
+  }, [inIndustry, query, activeTypes, activeArea, hiringOnly]);
 
   // dropdown suggestions: name matches float above everything else
   const suggestions = useMemo(() => {
@@ -170,6 +250,17 @@ export default function Page() {
     setSelected(c);
   };
 
+  // export the currently-filtered list as CSV, with a filter-aware filename
+  const exportCsv = () => {
+    if (!filtered.length) return;
+    const parts = ['montreal'];
+    if (hiringOnly) parts.push('hiring');
+    if (industry !== 'all') parts.push(industry);
+    if (activeArea) parts.push(neighborhoodSlug(activeArea));
+    parts.push('companies');
+    downloadCsv(`${parts.join('-')}.csv`, companiesToCsv(filtered));
+  };
+
   const neighborhoodShape = activeCluster
     ? {
         name: activeCluster.name,
@@ -197,6 +288,7 @@ export default function Page() {
           selectedId={selected?.id ?? null}
           onSelect={setSelected}
           onShowOnMap={showOnMap}
+          onExport={exportCsv}
           topInset={topInset}
         />
       )}
@@ -220,13 +312,22 @@ export default function Page() {
           suggestions={suggestions}
           onPick={setSelected}
         />
-        <FilterChips
-          active={activeTypes}
-          counts={counts}
-          onToggle={toggleType}
-          onClear={() => setActiveTypes(new Set())}
-          typeOrder={typeOrderFor(industry)}
-        />
+        <div className="flex items-center gap-2">
+          <HiringToggle
+            active={hiringOnly}
+            count={hiringCount}
+            onToggle={() => setHiringOnly((v) => !v)}
+          />
+          <div className="min-w-0 flex-1">
+            <FilterChips
+              active={activeTypes}
+              counts={counts}
+              onToggle={toggleType}
+              onClear={() => setActiveTypes(new Set())}
+              typeOrder={typeOrderFor(industry)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* brand mark + honesty legend (map view only) */}
@@ -284,6 +385,8 @@ export default function Page() {
           industry={industry}
           onClose={() => setDashboardOpen(false)}
           onPickNeighborhood={pickNeighborhood}
+          onExport={exportCsv}
+          exportCount={filtered.length}
         />
       )}
 

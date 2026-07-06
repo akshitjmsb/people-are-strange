@@ -13,6 +13,8 @@ interface Props {
   onSelect: (c: AICompany) => void;
   /** Switch to the map, centred on a company. */
   onShowOnMap: (c: AICompany) => void;
+  /** Download the current list as CSV. */
+  onExport: () => void;
   /** Pixels of top chrome (industry toggle + search + chips) to clear. */
   topInset: number;
 }
@@ -37,6 +39,7 @@ export default function ListView({
   selectedId,
   onSelect,
   onShowOnMap,
+  onExport,
   topInset,
 }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('name');
@@ -61,12 +64,22 @@ export default function ListView({
       style={{ paddingTop: topInset, paddingBottom: '7rem' }}
     >
       <div className="mx-auto w-full max-w-4xl px-3">
-        {/* result count */}
+        {/* result count + export */}
         <div className="flex items-center justify-between px-1 pb-2 pt-1">
           <p className="text-[11px] font-semibold text-asphalt/55">
             <span className="font-bold tabular-nums text-asphalt/75">{rows.length}</span>{' '}
             {rows.length === 1 ? 'company' : 'companies'}
           </p>
+          <button
+            onClick={onExport}
+            disabled={rows.length === 0}
+            className="flex items-center gap-1.5 rounded-full border border-black/5 bg-white px-3 py-1.5 text-[11px] font-bold text-asphalt/70 shadow-sm transition hover:bg-black/[0.03] hover:text-asphalt disabled:opacity-40"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+            </svg>
+            Export CSV
+          </button>
         </div>
 
         {/* mobile sort chips */}
