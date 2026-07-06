@@ -1,0 +1,288 @@
+'use client';
+
+import {
+  INDUSTRY_META,
+  INDUSTRY_ORDER,
+  typeDef,
+  AREA_ACCENT,
+} from '@/lib/categories';
+import { formatMoney } from '@/lib/funding';
+import type { EcosystemStats } from '@/lib/stats';
+import type { IndustrySelection } from './IndustryToggle';
+
+interface Props {
+  stats: EcosystemStats;
+  /** The lens the dashboard is showing (drives the header + which split). */
+  industry: IndustrySelection;
+  onClose: () => void;
+  /** Jump to a neighborhood cluster from the "top areas" list. */
+  onPickNeighborhood: (name: string) => void;
+}
+
+/**
+ * Slide-up ecosystem dashboard — Montreal's scene at a glance. Everything is
+ * derived from the currently-selected industry lens, so it stays truthful
+ * against the live DB or the bundled offline dataset alike.
+ */
+export default function Dashboard({ stats, industry, onClose, onPickNeighborhood }: Props) {
+  const lens = industry === 'all' ? INDUSTRY_META.ai : INDUSTRY_META[industry];
+  const lensLabel = industry === 'all' ? 'All industries' : lens.label;
+  const hiringPct = stats.total ? Math.round((stats.hiringCount / stats.total) * 100) : 0;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-30 bg-black/30 backdrop-blur-[1px] animate-fade-in"
+        onClick={onClose}
+        aria-hidden
+      />
+
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ecosystem dashboard"
+        className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-h-[88vh] w-full max-w-3xl animate-sheet-up flex-col overflow-hidden rounded-t-3xl border border-black/5 bg-snow-white shadow-2xl"
+      >
+        <div aria-hidden className="mtl-hairline h-1.5 w-full shrink-0" />
+
+        <button
+          onClick={onClose}
+          className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-black/15 transition hover:bg-black/30"
+          aria-label="Close"
+        />
+
+        <header className="flex items-start justify-between gap-3 px-5 pb-3 pt-2">
+          <div>
+            <h2 className="font-display text-xl font-extrabold leading-tight text-asphalt">
+              Ecosystem <span className="mtl-gradient-text">at a glance</span>
+            </h2>
+            <p className="text-xs font-semibold text-asphalt/50">
+              {lensLabel} · {stats.total} {stats.total === 1 ? 'company' : 'companies'} mapped
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-asphalt/70 transition hover:bg-black/10"
+          >
+            Close
+          </button>
+        </header>
+
+        <div className="flex-1 space-y-6 overflow-y-auto px-5 pb-8">
+          {/* headline stat tiles */}
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <StatTile label="Companies" value={String(stats.total)} accent="#6C5CE7" />
+            <StatTile
+              label="Funding raised"
+              value={formatMoney(stats.totalFunding)}
+              hint={`${stats.fundedCount} disclosed`}
+              accent="#00B894"
+            />
+            <StatTile
+              label="Hiring now"
+              value={String(stats.hiringCount)}
+              hint={`${hiringPct}% of scene`}
+              accent="#E84393"
+            />
+            <StatTile
+              label="Neighbourhoods"
+              value={String(stats.neighborhoodCount)}
+              accent="#F39C12"
+            />
+          </div>
+
+          {/* industry (or type) split */}
+          <Section title={industry === 'all' ? 'By industry' : `${lensLabel} — by type`}>
+            {industry === 'all' ? (
+              <div className="space-y-2">
+                {INDUSTRY_ORDER.map((ind) => (
+                  <Bar
+                    key={ind}
+                    label={`${INDUSTRY_META[ind].emoji} ${INDUSTRY_META[ind].label}`}
+                    count={stats.perIndustry[ind]}
+                    max={Math.max(1, ...INDUSTRY_ORDER.map((i) => stats.perIndustry[i]))}
+                    color={INDUSTRY_META[ind].color}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {stats.perType.map(({ type, count }) => {
+                  const def = typeDef(type);
+                  return (
+                    <Bar
+                      key={type}
+                      label={`${def.emoji} ${def.label}`}
+                      count={count}
+                      max={Math.max(1, ...stats.perType.map((t) => t.count))}
+                      color={def.color}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </Section>
+
+          {/* founding-era histogram */}
+          <Section
+            title="Founded"
+            aside={stats.oldestFounded ? `oldest ${stats.oldestFounded}` : undefined}
+          >
+            <Histogram buckets={stats.founding} color={lens.color} />
+          </Section>
+
+          {/* hiring heat */}
+          <Section title="Hiring heat">
+            <div className="rounded-2xl bg-black/[0.03] p-3.5">
+              <div className="mb-2 flex items-baseline justify-between">
+                <span className="text-sm font-bold text-asphalt">
+                  {stats.hiringCount} of {stats.total} hiring
+                </span>
+                <span className="text-xs font-bold text-plateau-pink">{hiringPct}%</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/[0.06]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-plateau-pink to-montroyal-amber transition-all"
+                  style={{ width: `${hiringPct}%` }}
+                />
+              </div>
+            </div>
+          </Section>
+
+          {/* densest neighborhoods */}
+          {stats.topNeighborhoods.length > 0 && (
+            <Section title="Top neighbourhoods">
+              <div className="space-y-1.5">
+                {stats.topNeighborhoods.slice(0, 6).map((n, i) => (
+                  <button
+                    key={n.name}
+                    onClick={() => onPickNeighborhood(n.name)}
+                    className="flex w-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition hover:bg-black/[0.04]"
+                  >
+                    <span className="w-4 shrink-0 text-center text-xs font-black text-asphalt/35">
+                      {i + 1}
+                    </span>
+                    <span className="w-32 shrink-0 truncate text-sm font-bold text-asphalt">
+                      {n.name}
+                    </span>
+                    <span className="h-2 flex-1 overflow-hidden rounded-full bg-black/[0.06]">
+                      <span
+                        className="block h-full rounded-full"
+                        style={{
+                          width: `${(n.count / stats.topNeighborhoods[0].count) * 100}%`,
+                          backgroundColor: AREA_ACCENT,
+                        }}
+                      />
+                    </span>
+                    <span className="w-6 shrink-0 text-right text-xs font-bold tabular-nums text-asphalt/60">
+                      {n.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Section>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
+
+function StatTile({
+  label,
+  value,
+  hint,
+  accent,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  accent: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-black/5 bg-white p-3 shadow-sm">
+      <div className="font-display text-2xl font-extrabold leading-none" style={{ color: accent }}>
+        {value}
+      </div>
+      <div className="mt-1.5 text-[11px] font-bold uppercase tracking-wide text-asphalt/45">
+        {label}
+      </div>
+      {hint && <div className="text-[10px] font-semibold text-asphalt/35">{hint}</div>}
+    </div>
+  );
+}
+
+function Section({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-baseline justify-between">
+        <h3 className="text-[11px] font-bold uppercase tracking-wider text-asphalt/45">{title}</h3>
+        {aside && <span className="text-[11px] font-semibold text-asphalt/35">{aside}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Bar({
+  label,
+  count,
+  max,
+  color,
+}: {
+  label: string;
+  count: number;
+  max: number;
+  color: string;
+}) {
+  const pct = max ? Math.max(count > 0 ? 6 : 0, (count / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-28 shrink-0 truncate text-xs font-semibold text-asphalt/80 sm:w-40">
+        {label}
+      </span>
+      <span className="h-3 flex-1 overflow-hidden rounded-full bg-black/[0.05]">
+        <span
+          className="block h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, backgroundColor: color }}
+        />
+      </span>
+      <span className="w-6 shrink-0 text-right text-xs font-bold tabular-nums text-asphalt/70">
+        {count}
+      </span>
+    </div>
+  );
+}
+
+function Histogram({ buckets, color }: { buckets: { label: string; count: number }[]; color: string }) {
+  const max = Math.max(1, ...buckets.map((b) => b.count));
+  return (
+    <div className="flex items-end justify-between gap-1.5 rounded-2xl bg-black/[0.03] p-3.5">
+      {buckets.map((b) => (
+        <div key={b.label} className="flex flex-1 flex-col items-center gap-1.5">
+          <span className="text-[10px] font-bold tabular-nums text-asphalt/60">{b.count}</span>
+          <div className="flex h-20 w-full items-end">
+            <div
+              className="w-full rounded-t-md transition-all"
+              style={{
+                height: `${(b.count / max) * 100}%`,
+                minHeight: b.count > 0 ? 4 : 0,
+                backgroundColor: color,
+                opacity: b.count > 0 ? 1 : 0.15,
+              }}
+            />
+          </div>
+          <span className="text-[10px] font-semibold text-asphalt/45">{b.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}

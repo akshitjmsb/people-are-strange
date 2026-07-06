@@ -12,7 +12,12 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { typeColor, typeDef } from '@/lib/categories';
 import type { AICompany } from '@/lib/types';
-import { createCompanyLayers, labelText, radiusFor } from './CompanyLayers';
+import {
+  createCompanyLayers,
+  labelText,
+  radiusFor,
+  type NeighborhoodShape,
+} from './CompanyLayers';
 
 // Montreal — centred on the island, framed on the AI corridor (Mile-Ex →
 // downtown), tilted for that street-level, walk-the-city feel.
@@ -103,9 +108,19 @@ interface MapProps {
   companies: AICompany[];
   selectedId: string | null;
   onSelect: (c: AICompany) => void;
+  /** Active neighborhood district to outline + frame, if any. */
+  neighborhood?: NeighborhoodShape | null;
+  /** Bounds to fit when a neighborhood becomes active. */
+  neighborhoodBounds?: [[number, number], [number, number]] | null;
 }
 
-export default function Map({ companies, selectedId, onSelect }: MapProps) {
+export default function Map({
+  companies,
+  selectedId,
+  onSelect,
+  neighborhood = null,
+  neighborhoodBounds = null,
+}: MapProps) {
   const mapRef = useRef<MapRef>(null);
   const styleLoadedRef = useRef(false);
   const [zoom, setZoom] = useState(INITIAL_VIEW.zoom);
@@ -137,10 +152,11 @@ export default function Map({ companies, selectedId, onSelect }: MapProps) {
         showLabels,
         showIcons,
         labelIds,
+        neighborhood,
         onClick: onSelect,
         onHover: setHoverCursor,
       }),
-    [companies, selectedId, showLabels, showIcons, labelIds, onSelect, setHoverCursor],
+    [companies, selectedId, showLabels, showIcons, labelIds, neighborhood, onSelect, setHoverCursor],
   );
 
   // Glide the camera to the selected company, lifted above the detail sheet.
@@ -160,6 +176,21 @@ export default function Map({ companies, selectedId, onSelect }: MapProps) {
     // deliberately not reacting to `companies` — a filter change shouldn't re-fly
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
+
+  // Frame the active neighborhood: fit its bounds, leaving room at the bottom
+  // for the cluster summary card. Keyed to the neighborhood name so re-picking
+  // the same one doesn't re-fly on every filter tweak.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !neighborhood || !neighborhoodBounds) return;
+    map.fitBounds(neighborhoodBounds, {
+      padding: { top: 120, bottom: 220, left: 60, right: 60 },
+      maxZoom: 15,
+      duration: 900,
+      essential: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [neighborhood?.name]);
 
   // Resilience net: if the map initialized before layout settled (or its own
   // resize tracking missed a beat), snap the canvas back to the container.

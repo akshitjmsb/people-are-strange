@@ -9,6 +9,23 @@ export interface TypeDef {
   industry: Industry;
 }
 
+/** Per-industry identity — label, emoji and the accent colour each layer is
+ *  built from. Shared by the industry toggle, dashboard, list and neighborhood
+ *  views so every surface reads the same palette. */
+export const INDUSTRY_META: Record<Industry, { label: string; emoji: string; color: string }> = {
+  ai: { label: 'AI', emoji: '🧠', color: MONTREAL.mileendViolet },
+  aerospace: { label: 'Aerospace', emoji: '✈️', color: AERO.jetNavy },
+  energy: { label: 'Energy', emoji: '⚡', color: ENERGY.sunAmber },
+  marine: { label: 'Marine', emoji: '🚢', color: MARINE.deepSea },
+};
+
+/** Fixed display order for the four industries. */
+export const INDUSTRY_ORDER: Industry[] = ['ai', 'aerospace', 'energy', 'marine'];
+
+/** The neutral "city grid" accent used for neighborhood / area chrome, so it
+ *  reads as distinct from any one industry's colour. */
+export const AREA_ACCENT = MONTREAL.asphalt;
+
 // Each kind of player gets its own slice of its industry's palette: the AI
 // scene draws from the vibrant Montreal street-art colours, the aerospace
 // scene from a cool industrial steel/teal family so the two read as distinct

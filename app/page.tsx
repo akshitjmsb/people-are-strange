@@ -1,14 +1,21 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import CompanyDetail from '@/components/CompanyDetail';
+import Dashboard from '@/components/Dashboard';
 import FilterChips from '@/components/FilterChips';
 import IndustryToggle, { type IndustrySelection } from '@/components/IndustryToggle';
+import ListView from '@/components/ListView';
+import NeighborhoodPanel from '@/components/NeighborhoodPanel';
+import NeighborhoodSummary from '@/components/NeighborhoodSummary';
 import SearchBar from '@/components/SearchBar';
-import { typeOrderFor } from '@/lib/categories';
+import ViewSwitcher, { type ViewMode } from '@/components/ViewSwitcher';
+import { AREA_ACCENT, typeOrderFor } from '@/lib/categories';
 import { loadCompanies } from '@/lib/companies';
+import { buildNeighborhoodClusters, canonicalNeighborhood } from '@/lib/neighborhoods';
+import { buildEcosystemStats } from '@/lib/stats';
 import type { AICompany, CompanyType } from '@/lib/types';
 
 /** A company's industry, defaulting legacy rows to 'ai'. */
@@ -30,6 +37,16 @@ export default function Page() {
   const [activeTypes, setActiveTypes] = useState<Set<CompanyType>>(new Set());
   const [selected, setSelected] = useState<AICompany | null>(null);
 
+  // additive views
+  const [view, setView] = useState<ViewMode>('map');
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [areasOpen, setAreasOpen] = useState(false);
+  const [activeArea, setActiveArea] = useState<string | null>(null);
+
+  // measured height of the top chrome, so the list view can clear it exactly
+  const chromeRef = useRef<HTMLDivElement>(null);
+  const [topInset, setTopInset] = useState(184);
+
   useEffect(() => {
     let alive = true;
     loadCompanies().then((res) => {
@@ -41,6 +58,16 @@ export default function Page() {
     return () => {
       alive = false;
     };
+  }, []);
+
+  // keep the list view's top padding in sync with the actual chrome height
+  useEffect(() => {
+    const el = chromeRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setTopInset(el.offsetHeight + 10));
+    ro.observe(el);
+    setTopInset(el.offsetHeight + 10);
+    return () => ro.disconnect();
   }, []);
 
   // count per industry across the whole dataset (for the top-level toggle)
@@ -62,6 +89,13 @@ export default function Page() {
     [all, industry],
   );
 
+  // neighborhood clusters within the current industry lens
+  const clusters = useMemo(() => buildNeighborhoodClusters(inIndustry), [inIndustry]);
+  const activeCluster = useMemo(
+    () => (activeArea ? clusters.find((c) => c.name === activeArea) ?? null : null),
+    [clusters, activeArea],
+  );
+
   // count per type within the selected industry (for the chips)
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -69,10 +103,11 @@ export default function Page() {
     return c;
   }, [inIndustry]);
 
-  // apply search + type filters within the selected industry
+  // apply neighborhood + search + type filters within the selected industry
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return inIndustry.filter((co) => {
+      if (activeArea && canonicalNeighborhood(co.neighborhood) !== activeArea) return false;
       if (activeTypes.size > 0 && !activeTypes.has(co.type)) return false;
       if (!q) return true;
       return (
@@ -85,7 +120,7 @@ export default function Page() {
         co.tags?.some((t) => t.toLowerCase().includes(q))
       );
     });
-  }, [inIndustry, query, activeTypes]);
+  }, [inIndustry, query, activeTypes, activeArea]);
 
   // dropdown suggestions: name matches float above everything else
   const suggestions = useMemo(() => {
@@ -101,6 +136,9 @@ export default function Page() {
     return [...filtered].sort((a, b) => score(a) - score(b)).slice(0, 6);
   }, [filtered, query]);
 
+  // ecosystem stats for the dashboard (industry lens, ignores search/type)
+  const stats = useMemo(() => buildEcosystemStats(inIndustry), [inIndustry]);
+
   const toggleType = (t: CompanyType) => {
     setActiveTypes((prev) => {
       const next = new Set(prev);
@@ -110,23 +148,67 @@ export default function Page() {
     });
   };
 
-  // switching industries clears any now-irrelevant type chips
+  // switching industries clears now-irrelevant type chips + neighborhood
   const changeIndustry = (next: IndustrySelection) => {
     setIndustry(next);
     setActiveTypes(new Set());
+    setActiveArea(null);
   };
 
-  const showEmpty = !loading && filtered.length === 0;
+  // pick a neighborhood cluster: filter to it and show it framed on the map
+  const pickNeighborhood = (name: string) => {
+    setActiveArea((cur) => (cur === name ? null : name));
+    setAreasOpen(false);
+    setDashboardOpen(false);
+    setSelected(null);
+    setView('map');
+  };
+
+  // open a company's detail from either view
+  const showOnMap = (c: AICompany) => {
+    setView('map');
+    setSelected(c);
+  };
+
+  const neighborhoodShape = activeCluster
+    ? {
+        name: activeCluster.name,
+        polygon: activeCluster.polygon,
+        centroid: activeCluster.centroid,
+        color: AREA_ACCENT,
+      }
+    : null;
+
+  const showEmpty = !loading && view === 'map' && filtered.length === 0;
 
   return (
     <main className="relative h-full w-full">
-      <Map companies={filtered} selectedId={selected?.id ?? null} onSelect={setSelected} />
+      <Map
+        companies={filtered}
+        selectedId={selected?.id ?? null}
+        onSelect={setSelected}
+        neighborhood={neighborhoodShape}
+        neighborhoodBounds={activeCluster?.bounds ?? null}
+      />
+
+      {view === 'list' && (
+        <ListView
+          companies={filtered}
+          selectedId={selected?.id ?? null}
+          onSelect={setSelected}
+          onShowOnMap={showOnMap}
+          topInset={topInset}
+        />
+      )}
 
       {/* Montreal-palette hairline across the very top */}
       <div aria-hidden className="mtl-hairline pointer-events-none absolute inset-x-0 top-0 z-30 h-[3px]" />
 
       {/* top chrome */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]">
+      <div
+        ref={chromeRef}
+        className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]"
+      >
         <div className="flex items-center gap-2">
           <IndustryToggle value={industry} counts={industryCounts} onChange={changeIndustry} />
           {dataSource === 'local' && <OfflineBadge />}
@@ -147,29 +229,63 @@ export default function Page() {
         />
       </div>
 
-      {/* brand mark + honesty legend */}
-      <div className="pointer-events-none absolute bottom-3 left-3 z-10">
-        <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
-          People Are Strange
-          <span className="mtl-gradient-text ml-1">MTL</span>
-        </p>
-        <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
-          Montreal&apos;s AI, aerospace, energy &amp; marine scene, mapped
-        </p>
-        <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-white/70 px-2 py-1 backdrop-blur-sm">
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-asphalt/70" />
-            exact address
-          </span>
-          <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
-            <span className="inline-block h-2.5 w-2.5 rounded-full border-[1.5px] border-asphalt/70 bg-transparent" />
-            approx. area
-          </span>
+      {/* brand mark + honesty legend (map view only) */}
+      {view === 'map' && (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-10">
+          <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+            People Are Strange
+            <span className="mtl-gradient-text ml-1">MTL</span>
+          </p>
+          <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+            Montreal&apos;s AI, aerospace, energy &amp; marine scene, mapped
+          </p>
+          <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-white/70 px-2 py-1 backdrop-blur-sm">
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-asphalt/70" />
+              exact address
+            </span>
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
+              <span className="inline-block h-2.5 w-2.5 rounded-full border-[1.5px] border-asphalt/70 bg-transparent" />
+              approx. area
+            </span>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* active neighborhood cluster readout */}
+      {activeCluster && (
+        <NeighborhoodSummary cluster={activeCluster} onClear={() => setActiveArea(null)} />
+      )}
+
+      {/* bottom view switcher */}
+      <ViewSwitcher
+        view={view}
+        onView={setView}
+        onOpenAreas={() => setAreasOpen(true)}
+        onOpenDashboard={() => setDashboardOpen(true)}
+        activeArea={activeArea}
+      />
 
       {loading && <LoadingOverlay />}
       {showEmpty && <EmptyState hasData={all.length > 0} />}
+
+      {areasOpen && (
+        <NeighborhoodPanel
+          clusters={clusters}
+          activeName={activeArea}
+          onPick={pickNeighborhood}
+          onClose={() => setAreasOpen(false)}
+        />
+      )}
+
+      {dashboardOpen && (
+        <Dashboard
+          stats={stats}
+          industry={industry}
+          onClose={() => setDashboardOpen(false)}
+          onPickNeighborhood={pickNeighborhood}
+        />
+      )}
 
       <CompanyDetail company={selected} onClose={() => setSelected(null)} />
     </main>

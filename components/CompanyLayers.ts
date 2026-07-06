@@ -1,8 +1,16 @@
 import type { Layer } from '@deck.gl/core';
-import { IconLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { IconLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
 import { COMPANY_TYPES, typeColor } from '@/lib/categories';
 import { hexToRgb } from '@/lib/colors';
 import type { AICompany } from '@/lib/types';
+
+/** A neighborhood boundary + label drawn beneath the company markers. */
+export interface NeighborhoodShape {
+  name: string;
+  polygon: [number, number][];
+  centroid: [number, number];
+  color: string; // hex
+}
 
 // Rough size signal: bigger dot = bigger / more notable player.
 export function radiusFor(c: AICompany): number {
@@ -57,6 +65,8 @@ interface LayerOpts {
   showIcons: boolean;
   /** Which companies get a label (screen-space decluttered). null = all. */
   labelIds?: Set<string> | null;
+  /** Active neighborhood boundary to outline beneath the markers, if any. */
+  neighborhood?: NeighborhoodShape | null;
   onClick: (c: AICompany) => void;
   onHover?: (hovering: boolean) => void;
 }
@@ -75,9 +85,32 @@ export function createCompanyLayers({
   showLabels,
   showIcons,
   labelIds,
+  neighborhood,
   onClick,
   onHover,
 }: LayerOpts) {
+  const layers: Layer[] = [];
+
+  // Active neighborhood: a soft filled boundary with a dashed-feel outline,
+  // drawn first so it sits under every marker like a highlighted district.
+  if (neighborhood) {
+    const rgb = hexToRgb(neighborhood.color);
+    layers.push(
+      new PolygonLayer<{ polygon: [number, number][] }>({
+        id: 'neighborhood-area',
+        data: [{ polygon: neighborhood.polygon }],
+        getPolygon: (d) => d.polygon,
+        getFillColor: [...rgb, 26],
+        getLineColor: [...rgb, 200],
+        getLineWidth: 2,
+        lineWidthUnits: 'pixels',
+        stroked: true,
+        filled: true,
+        pickable: false,
+      }),
+    );
+  }
+
   const glow = new ScatterplotLayer<AICompany>({
     id: 'company-glow',
     data: companies,
@@ -122,7 +155,7 @@ export function createCompanyLayers({
     },
   });
 
-  const layers: Layer[] = [glow, core];
+  layers.push(glow, core);
 
   // Selected company gets a calm, oversized white ring — easy to find again
   // after the detail sheet opens and the camera glides over.
@@ -202,6 +235,31 @@ export function createCompanyLayers({
         characterSet: 'auto',
         getTextAnchor: 'middle',
         getAlignmentBaseline: 'bottom',
+        pickable: false,
+        background: false,
+      }),
+    );
+  }
+
+  // Neighborhood name, floated at the district centroid above everything.
+  if (neighborhood) {
+    layers.push(
+      new TextLayer<NeighborhoodShape>({
+        id: 'neighborhood-label',
+        data: [neighborhood],
+        getPosition: (n) => n.centroid,
+        getText: (n) => n.name.toUpperCase(),
+        getSize: 13,
+        sizeUnits: 'pixels',
+        getColor: [...hexToRgb(neighborhood.color), 255],
+        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+        fontWeight: 800,
+        outlineWidth: 4,
+        outlineColor: [255, 255, 255, 240],
+        fontSettings: { sdf: true },
+        characterSet: 'auto',
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'center',
         pickable: false,
         background: false,
       }),
