@@ -330,8 +330,9 @@ export default function Page() {
         </div>
       </div>
 
-      {/* brand mark + honesty legend (map view only) */}
-      {view === 'map' && (
+      {/* brand mark + honesty legend (map view only; hidden while a cluster
+          summary card occupies the bottom so the corner doesn't clutter) */}
+      {view === 'map' && !activeCluster && (
         <div className="pointer-events-none absolute bottom-3 left-3 z-10">
           <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
             People Are Strange
