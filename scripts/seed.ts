@@ -35,11 +35,13 @@ async function main() {
     headcount: c.headcount ?? null,
     funding: c.funding ?? null,
     hiring: c.hiring ?? null,
+    careersUrl: c.careersUrl ?? null,
     notable: c.notable ?? null,
     status: c.status ?? null,
     website: c.website ?? null,
     linkedin: c.linkedin ?? null,
     sources: c.sources ?? null,
+    verifiedAt: c.verifiedAt ?? null,
   }));
 
   await db.delete(companies);

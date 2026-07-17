@@ -39,6 +39,7 @@ export const companies = pgTable('companies', {
   headcount: text('headcount'),
   funding: jsonb('funding').$type<Funding>(),
   hiring: boolean('hiring'),
+  careersUrl: text('careers_url'),
   notable: text('notable'),
   status: text('status'),
 
@@ -46,6 +47,7 @@ export const companies = pgTable('companies', {
   website: text('website'),
   linkedin: text('linkedin'),
   sources: text('sources').array(),
+  verifiedAt: text('verified_at'),
 });
 
 export type CompanyRow = typeof companies.$inferSelect;

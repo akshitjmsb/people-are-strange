@@ -30,11 +30,13 @@ function toCompany(r: CompanyRow): AICompany {
     headcount: r.headcount ?? undefined,
     funding: r.funding ?? undefined,
     hiring: r.hiring ?? undefined,
+    careersUrl: r.careersUrl ?? undefined,
     notable: r.notable ?? undefined,
     status: r.status ?? undefined,
     website: r.website ?? undefined,
     linkedin: r.linkedin ?? undefined,
     sources: r.sources ?? undefined,
+    verifiedAt: r.verifiedAt ?? undefined,
   };
 }
 

@@ -1,17 +1,46 @@
 'use client';
 
+import { useState } from 'react';
+
 import { domainLabel, typeDef } from '@/lib/categories';
+import { reportCompanyUrl } from '@/lib/feedback';
 import type { AICompany } from '@/lib/types';
 
 interface Props {
   company: AICompany | null;
   onClose: () => void;
+  /** Whether this company is in the user's saved shortlist. */
+  saved?: boolean;
+  /** Toggle the company in/out of the saved shortlist. */
+  onToggleSave?: (id: string) => void;
 }
 
 /** Slide-up panel with everything we know about one AI company. */
-export default function CompanyDetail({ company, onClose }: Props) {
+export default function CompanyDetail({ company, onClose, saved = false, onToggleSave }: Props) {
+  const [copied, setCopied] = useState(false);
+
   if (!company) return null;
   const t = typeDef(company.type);
+
+  // The URL already mirrors the open company (deep-link plumbing in page.tsx),
+  // so sharing the current address is sharing this exact view.
+  const share = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: company.name, text: company.oneLiner, url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // user dismissed the share sheet — nothing to do
+    }
+  };
+
+  // Make the hiring badge actionable: careers page if we have one, site if not.
+  const rolesUrl = company.careersUrl ?? company.website;
 
   return (
     <>
@@ -57,12 +86,49 @@ export default function CompanyDetail({ company, onClose }: Props) {
               <p className="text-xs font-medium text-asphalt/50">{company.aka}</p>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="shrink-0 rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-asphalt/70 transition hover:bg-black/10"
-          >
-            Close
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {onToggleSave && (
+              <button
+                onClick={() => onToggleSave(company.id)}
+                aria-pressed={saved}
+                aria-label={saved ? `Remove ${company.name} from saved` : `Save ${company.name}`}
+                title={saved ? 'Remove from saved' : 'Save for later'}
+                className={`rounded-full p-2 transition ${
+                  saved
+                    ? 'bg-montroyal-amber/15 text-montroyal-amber'
+                    : 'bg-black/5 text-asphalt/50 hover:bg-black/10 hover:text-asphalt'
+                }`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={share}
+              aria-label={`Share ${company.name}`}
+              title="Share this company"
+              className="relative rounded-full bg-black/5 p-2 text-asphalt/50 transition hover:bg-black/10 hover:text-asphalt"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <path d="m8.6 10.6 6.8-4.2M8.6 13.4l6.8 4.2" />
+              </svg>
+              {copied && (
+                <span className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-asphalt px-2.5 py-1 text-[10px] font-bold text-white shadow-lg">
+                  Link copied
+                </span>
+              )}
+            </button>
+            <button
+              onClick={onClose}
+              className="rounded-full bg-black/5 px-3 py-1.5 text-sm font-medium text-asphalt/70 transition hover:bg-black/10"
+            >
+              Close
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-8">
@@ -148,6 +214,16 @@ export default function CompanyDetail({ company, onClose }: Props) {
           </div>
 
           <div className="flex flex-wrap gap-2 pt-1">
+            {company.hiring && rolesUrl && (
+              <a
+                href={rolesUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full bg-parc-emerald px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
+              >
+                See open roles ↗
+              </a>
+            )}
             {company.website && (
               <a
                 href={company.website}
@@ -184,6 +260,20 @@ export default function CompanyDetail({ company, onClose }: Props) {
               ))}
             </p>
           )}
+
+          {/* freshness + community fix loop */}
+          <p className="text-[11px] text-asphalt/40">
+            {company.verifiedAt && <>Data verified {company.verifiedAt} · </>}
+            Spotted something wrong or stale?{' '}
+            <a
+              href={reportCompanyUrl(company)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold underline"
+            >
+              Suggest an edit
+            </a>
+          </p>
         </div>
       </section>
     </>

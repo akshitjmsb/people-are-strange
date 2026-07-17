@@ -15,6 +15,13 @@
       "when": 1782686690069,
       "tag": "0001_legal_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784260192376,
+      "tag": "0002_damp_sebastian_shaw",
+      "breakpoints": true
     }
   ]
 }

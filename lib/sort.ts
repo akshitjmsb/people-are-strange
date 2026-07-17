@@ -5,9 +5,10 @@
 
 import { typeDef } from './categories';
 import { parseFundingAmount } from './funding';
+import { distanceKm, type LatLng } from './geo';
 import type { AICompany } from './types';
 
-export type SortKey = 'name' | 'industry' | 'founded' | 'funding' | 'headcount';
+export type SortKey = 'name' | 'industry' | 'founded' | 'funding' | 'headcount' | 'distance';
 export type SortDir = 'asc' | 'desc';
 
 export const SORT_LABELS: Record<SortKey, string> = {
@@ -16,6 +17,7 @@ export const SORT_LABELS: Record<SortKey, string> = {
   founded: 'Founded',
   funding: 'Funding',
   headcount: 'Team',
+  distance: 'Near me',
 };
 
 /** Lower bound of a "51-200"/"1000+" style headcount band, for ranking. */
@@ -31,9 +33,15 @@ const industryOf = (c: AICompany) => c.industry ?? 'ai';
  * Sort a copy of the companies by the given key/direction. `name` sorts
  * alphabetically; every other key sorts by its metric with a stable name
  * tiebreak, and missing values (no founded year, no funding, no headcount)
- * are pinned last in both directions.
+ * are pinned last in both directions. `distance` needs an `origin` (the
+ * user's location) — without one it falls back to name order.
  */
-export function sortCompanies(companies: AICompany[], key: SortKey, dir: SortDir): AICompany[] {
+export function sortCompanies(
+  companies: AICompany[],
+  key: SortKey,
+  dir: SortDir,
+  origin?: LatLng | null,
+): AICompany[] {
   const sign = dir === 'asc' ? 1 : -1;
   const byName = (a: AICompany, b: AICompany) => a.name.localeCompare(b.name);
 
@@ -68,6 +76,12 @@ export function sortCompanies(companies: AICompany[], key: SortKey, dir: SortDir
         const br = headcountRank(b.headcount);
         const av = ar < 0 ? missing : ar;
         const bv = br < 0 ? missing : br;
+        return av === bv ? byName(a, b) : sign * (av - bv);
+      }
+      case 'distance': {
+        if (!origin) return byName(a, b);
+        const av = distanceKm(origin, a);
+        const bv = distanceKm(origin, b);
         return av === bv ? byName(a, b) : sign * (av - bv);
       }
     }

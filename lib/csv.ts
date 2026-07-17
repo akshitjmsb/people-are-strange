@@ -17,8 +17,10 @@ const COLUMNS: { header: string; value: (c: AICompany) => string | number | unde
   { header: 'Headcount', value: (c) => c.headcount },
   { header: 'Funding Raised', value: (c) => c.funding?.totalRaised },
   { header: 'Hiring', value: (c) => (c.hiring ? 'Yes' : 'No') },
+  { header: 'Careers URL', value: (c) => c.careersUrl },
   { header: 'Website', value: (c) => c.website },
   { header: 'One-liner', value: (c) => c.oneLiner },
+  { header: 'Verified', value: (c) => c.verifiedAt },
 ];
 
 /** Escape a single CSV cell: wrap in quotes when it contains a comma, quote or

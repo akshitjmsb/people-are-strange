@@ -11,11 +11,15 @@ import IndustryToggle, { type IndustrySelection } from '@/components/IndustryTog
 import ListView from '@/components/ListView';
 import NeighborhoodPanel from '@/components/NeighborhoodPanel';
 import NeighborhoodSummary from '@/components/NeighborhoodSummary';
+import SavedToggle from '@/components/SavedToggle';
 import SearchBar from '@/components/SearchBar';
 import ViewSwitcher, { type ViewMode } from '@/components/ViewSwitcher';
 import { AREA_ACCENT, COMPANY_TYPES, typeOrderFor } from '@/lib/categories';
 import { loadCompanies } from '@/lib/companies';
 import { companiesToCsv, downloadCsv } from '@/lib/csv';
+import { suggestCompanyUrl } from '@/lib/feedback';
+import { useSavedCompanies } from '@/lib/saved';
+import { fold } from '@/lib/text';
 import {
   buildNeighborhoodClusters,
   canonicalNeighborhood,
@@ -47,7 +51,11 @@ export default function Page() {
   const [industry, setIndustry] = useState<IndustrySelection>('all');
   const [activeTypes, setActiveTypes] = useState<Set<CompanyType>>(new Set());
   const [hiringOnly, setHiringOnly] = useState(false);
+  const [savedOnly, setSavedOnly] = useState(false);
   const [selected, setSelected] = useState<AICompany | null>(null);
+
+  // star-shortlist (localStorage) — one instance, shared by every star button
+  const { saved, toggleSaved } = useSavedCompanies();
 
   // additive views
   const [view, setView] = useState<ViewMode>('map');
@@ -80,6 +88,7 @@ export default function Page() {
 
     if (p.get('view') === 'list') setView('list');
     if (p.get('hiring') === '1') setHiringOnly(true);
+    if (p.get('saved') === '1') setSavedOnly(true);
 
     pending.current = {
       company: p.get('company') ?? undefined,
@@ -137,11 +146,12 @@ export default function Page() {
     if (activeArea) p.set('neighborhood', neighborhoodSlug(activeArea));
     if (query.trim()) p.set('q', query.trim());
     if (hiringOnly) p.set('hiring', '1');
+    if (savedOnly) p.set('saved', '1');
     if (view === 'list') p.set('view', 'list');
     if (selected) p.set('company', selected.id);
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [urlReady, industry, activeTypes, activeArea, query, hiringOnly, view, selected]);
+  }, [urlReady, industry, activeTypes, activeArea, query, hiringOnly, savedOnly, view, selected]);
 
   // count per industry across the whole dataset (for the top-level toggle)
   const industryCounts = useMemo(() => {
@@ -182,35 +192,43 @@ export default function Page() {
     [inIndustry],
   );
 
-  // apply hiring + neighborhood + search + type filters within the industry
+  // number of saved companies within the current industry lens (for the chip)
+  const savedCount = useMemo(
+    () => inIndustry.reduce((n, co) => n + (saved.has(co.id) ? 1 : 0), 0),
+    [inIndustry, saved],
+  );
+
+  // apply saved + hiring + neighborhood + search + type filters within the
+  // industry; matching is accent-insensitive ("energir" finds Énergir)
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = fold(query.trim());
     return inIndustry.filter((co) => {
+      if (savedOnly && !saved.has(co.id)) return false;
       if (hiringOnly && !co.hiring) return false;
       if (activeArea && canonicalNeighborhood(co.neighborhood) !== activeArea) return false;
       if (activeTypes.size > 0 && !activeTypes.has(co.type)) return false;
       if (!q) return true;
       return (
-        co.name.toLowerCase().includes(q) ||
-        co.aka?.toLowerCase().includes(q) ||
-        co.oneLiner.toLowerCase().includes(q) ||
-        co.neighborhood?.toLowerCase().includes(q) ||
-        co.aiDomains.some((d) => d.toLowerCase().includes(q)) ||
-        co.industries?.some((i) => i.toLowerCase().includes(q)) ||
-        co.tags?.some((t) => t.toLowerCase().includes(q))
+        fold(co.name).includes(q) ||
+        (co.aka && fold(co.aka).includes(q)) ||
+        fold(co.oneLiner).includes(q) ||
+        (co.neighborhood && fold(co.neighborhood).includes(q)) ||
+        co.aiDomains.some((d) => fold(d).includes(q)) ||
+        co.industries?.some((i) => fold(i).includes(q)) ||
+        co.tags?.some((t) => fold(t).includes(q))
       );
     });
-  }, [inIndustry, query, activeTypes, activeArea, hiringOnly]);
+  }, [inIndustry, query, activeTypes, activeArea, hiringOnly, savedOnly, saved]);
 
   // dropdown suggestions: name matches float above everything else
   const suggestions = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = fold(query.trim());
     if (!q) return [];
     const score = (co: AICompany) => {
-      const name = co.name.toLowerCase();
+      const name = fold(co.name);
       if (name.startsWith(q)) return 0;
       if (name.includes(q)) return 1;
-      if (co.aka?.toLowerCase().includes(q)) return 2;
+      if (co.aka && fold(co.aka).includes(q)) return 2;
       return 3;
     };
     return [...filtered].sort((a, b) => score(a) - score(b)).slice(0, 6);
@@ -290,6 +308,8 @@ export default function Page() {
           onShowOnMap={showOnMap}
           onExport={exportCsv}
           topInset={topInset}
+          savedIds={saved}
+          onToggleSave={toggleSaved}
         />
       )}
 
@@ -317,6 +337,11 @@ export default function Page() {
             active={hiringOnly}
             count={hiringCount}
             onToggle={() => setHiringOnly((v) => !v)}
+          />
+          <SavedToggle
+            active={savedOnly}
+            count={savedCount}
+            onToggle={() => setSavedOnly((v) => !v)}
           />
           <div className="min-w-0 flex-1">
             <FilterChips
@@ -391,7 +416,12 @@ export default function Page() {
         />
       )}
 
-      <CompanyDetail company={selected} onClose={() => setSelected(null)} />
+      <CompanyDetail
+        company={selected}
+        onClose={() => setSelected(null)}
+        saved={selected ? saved.has(selected.id) : false}
+        onToggleSave={toggleSaved}
+      />
     </main>
   );
 }
@@ -431,7 +461,7 @@ function LoadingOverlay() {
 function EmptyState({ hasData }: { hasData: boolean }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-6">
-      <div className="max-w-sm rounded-3xl border border-black/5 bg-white/90 p-6 text-center shadow-xl backdrop-blur-xl">
+      <div className="pointer-events-auto max-w-sm rounded-3xl border border-black/5 bg-white/90 p-6 text-center shadow-xl backdrop-blur-xl">
         <div className="mb-2 text-4xl">🛰️</div>
         <h2 className="text-lg font-bold text-asphalt">Nothing matches</h2>
         <p className="mt-1 text-sm text-asphalt/60">
@@ -439,6 +469,19 @@ function EmptyState({ hasData }: { hasData: boolean }) {
             ? 'No companies match your search or filters. Try clearing them.'
             : 'Loading the Montreal tech scene…'}
         </p>
+        {hasData && (
+          <p className="mt-2 text-xs font-semibold text-asphalt/50">
+            Looking for a company we don&apos;t have?{' '}
+            <a
+              href={suggestCompanyUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold text-asphalt/70 underline"
+            >
+              Suggest it
+            </a>
+          </p>
+        )}
       </div>
     </div>
   );

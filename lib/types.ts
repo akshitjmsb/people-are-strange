@@ -150,6 +150,7 @@ export interface AICompany {
   headcount?: string; // e.g. "51-200"
   funding?: Funding;
   hiring?: boolean;
+  careersUrl?: string; // careers / jobs page — makes the hiring flag actionable
   notable?: string; // founders, flagship products, claims to fame
   status?: string; // "active", "acquired by X", "wound down"…
 
@@ -157,4 +158,5 @@ export interface AICompany {
   website?: string;
   linkedin?: string;
   sources?: string[]; // URLs the data was gathered from
+  verifiedAt?: string; // when this row was last checked against sources, e.g. "2026-06"
 }
