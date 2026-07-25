@@ -4,7 +4,8 @@ import { useState } from 'react';
 
 import { domainLabel, typeDef } from '@/lib/categories';
 import { reportCompanyUrl } from '@/lib/feedback';
-import type { AICompany } from '@/lib/types';
+import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
+import type { AICompany, Person } from '@/lib/types';
 
 interface Props {
   company: AICompany | null;
@@ -41,6 +42,9 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
 
   // Make the hiring badge actionable: careers page if we have one, site if not.
   const rolesUrl = company.careersUrl ?? company.website;
+
+  // The people layer: a pin is only useful if it turns into a conversation.
+  const people = peopleFor(company.id);
 
   return (
     <>
@@ -192,6 +196,34 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
             </Block>
           )}
 
+          {people.length > 0 && (
+            <div>
+              <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                <SectionTitle>People to know</SectionTitle>
+                <span className="text-[11px] font-semibold text-asphalt/35">
+                  {people.length} {people.length === 1 ? 'contact' : 'contacts'}
+                </span>
+              </div>
+              <ul className="space-y-1.5">
+                {people.map((p) => (
+                  <PersonRow key={p.id} person={p} companyName={company.name} accent={t.color} />
+                ))}
+              </ul>
+              <p className="mt-2 text-[11px] leading-snug text-asphalt/40">
+                Profile links are built from name patterns and may not all resolve —{' '}
+                <a
+                  href={linkedinSearchUrl(company.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline"
+                >
+                  search this company on LinkedIn
+                </a>{' '}
+                if one misses.
+              </p>
+            </div>
+          )}
+
           {company.funding?.investors && company.funding.investors.length > 0 && (
             <div>
               <SectionTitle>Investors</SectionTitle>
@@ -286,6 +318,87 @@ function hostOf(url: string): string {
   } catch {
     return 'link';
   }
+}
+
+/** Initials for the avatar chip — first letter of the first and last word. */
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
+/**
+ * One person, as a single tap target — the whole row opens their LinkedIn so
+ * it stays comfortable on a phone. People who've left are muted and badged
+ * rather than hidden: still useful context, just not a live lead.
+ */
+function PersonRow({
+  person,
+  companyName,
+  accent,
+}: {
+  person: Person;
+  companyName: string;
+  accent: string;
+}) {
+  const href = person.former
+    ? linkedinSearchUrl(person.name)
+    : person.linkedinUrl;
+
+  return (
+    <li>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5 transition hover:bg-black/[0.07] active:bg-black/[0.09] ${
+          person.former ? 'opacity-60' : ''
+        }`}
+      >
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
+          style={{ backgroundColor: `${accent}1a`, color: accent }}
+          aria-hidden
+        >
+          {initialsOf(person.name)}
+        </span>
+
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-bold text-asphalt">{person.name}</span>
+            {person.former && (
+              <span className="shrink-0 rounded-full bg-black/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-asphalt/55">
+                Former
+              </span>
+            )}
+          </span>
+          <span className="block text-xs font-medium leading-snug text-asphalt/60">
+            {person.role}
+          </span>
+          {person.note && (
+            <span className="mt-0.5 block text-[11px] leading-snug text-asphalt/45">
+              {person.note}
+            </span>
+          )}
+        </span>
+
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0A66C2] text-white"
+          aria-label={
+            person.former
+              ? `Search LinkedIn for ${person.name}`
+              : `Open ${person.name} on LinkedIn — ${person.role} at ${companyName}`
+          }
+          title={person.former ? 'Search on LinkedIn' : 'Open LinkedIn profile'}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.4c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.07 1.4-2.07 2.85V21H9z" />
+          </svg>
+        </span>
+      </a>
+    </li>
+  );
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {

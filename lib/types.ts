@@ -160,3 +160,20 @@ export interface AICompany {
   sources?: string[]; // URLs the data was gathered from
   verifiedAt?: string; // when this row was last checked against sources, e.g. "2026-06"
 }
+
+/** One person worth knowing at a company — the "who do I actually message?"
+ *  layer on top of the map. Only curated for companies that are hiring. */
+export interface Person {
+  id: string; // slug, unique across the dataset (e.g. "mila-valerie-pisano")
+  companyId: string; // matches AICompany.id
+  name: string;
+  role: string; // title as it reads on the company's own site
+
+  /** Best-effort profile URL, built from the lowercase first-last pattern.
+   *  Not every one resolves — the UI offers a LinkedIn search fallback. */
+  linkedinUrl: string;
+
+  note?: string; // why they're worth a message, or context on the role
+  /** True when they've left the company — kept for context, never a live lead. */
+  former?: boolean;
+}
