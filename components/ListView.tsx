@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { INDUSTRY_META, typeDef } from '@/lib/categories';
 import { suggestCompanyUrl } from '@/lib/feedback';
 import { distanceKm, formatDistance, type LatLng } from '@/lib/geo';
+import { roleSummary } from '@/lib/roles';
 import { SORT_LABELS, sortCompanies, type SortKey, type SortDir } from '@/lib/sort';
 import type { AICompany, Industry } from '@/lib/types';
 
@@ -297,7 +298,7 @@ function Row({
               <span className="truncate text-sm font-bold text-asphalt">{c.name}</span>
               {c.hiring && (
                 <span className="shrink-0 rounded-full bg-parc-emerald/15 px-1.5 py-px text-[9px] font-black uppercase text-parc-emerald">
-                  Jobs
+                  {roleSummary(c).badge}
                 </span>
               )}
             </span>

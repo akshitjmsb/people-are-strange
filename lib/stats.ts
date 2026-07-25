@@ -16,6 +16,11 @@ export interface FoundingBucket {
 export interface EcosystemStats {
   total: number;
   hiringCount: number;
+  /** Live postings whose location names Montreal, summed across every company
+   *  whose ATS board we poll. Zero boards polled → 0, so the dashboard reads
+   *  `liveBoards` alongside it rather than showing a bare, meaningless 0. */
+  openRolesMontreal: number;
+  liveBoards: number;
   totalFunding: number; // raw dollars
   fundedCount: number; // companies with a known raised amount
   neighborhoodCount: number;
@@ -49,12 +54,19 @@ export function buildEcosystemStats(companies: AICompany[]): EcosystemStats {
   let totalFunding = 0;
   let fundedCount = 0;
   let oldestFounded: number | null = null;
+  let openRolesMontreal = 0;
+  let liveBoards = 0;
 
   for (const c of companies) {
     perIndustry[industryOf(c)] += 1;
     typeCounts.set(c.type, (typeCounts.get(c.type) ?? 0) + 1);
 
     if (c.hiring) hiringCount += 1;
+
+    if (c.openRolesMontreal !== undefined) {
+      liveBoards += 1;
+      openRolesMontreal += c.openRolesMontreal;
+    }
 
     const raised = parseFundingAmount(c.funding?.totalRaised);
     if (raised > 0) {
@@ -75,6 +87,8 @@ export function buildEcosystemStats(companies: AICompany[]): EcosystemStats {
   return {
     total: companies.length,
     hiringCount,
+    openRolesMontreal,
+    liveBoards,
     totalFunding,
     fundedCount,
     neighborhoodCount: neighborhoods.size,

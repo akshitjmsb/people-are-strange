@@ -102,12 +102,23 @@ export default function Dashboard({
               hint={`${stats.fundedCount} disclosed`}
               accent="#00B894"
             />
-            <StatTile
-              label="Careers page"
-              value={String(stats.hiringCount)}
-              hint={`${hiringPct}% linked`}
-              accent="#E84393"
-            />
+            {/* Live roles displace the static careers-link count wherever we
+                actually poll boards — a real number beats a proxy. */}
+            {stats.liveBoards > 0 ? (
+              <StatTile
+                label="Open in Montréal"
+                value={String(stats.openRolesMontreal)}
+                hint={`live · ${stats.liveBoards} board${stats.liveBoards === 1 ? '' : 's'}`}
+                accent="#E84393"
+              />
+            ) : (
+              <StatTile
+                label="Careers page"
+                value={String(stats.hiringCount)}
+                hint={`${hiringPct}% linked`}
+                accent="#E84393"
+              />
+            )}
             <StatTile
               label="Neighbourhoods"
               value={String(stats.neighborhoodCount)}

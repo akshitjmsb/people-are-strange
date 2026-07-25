@@ -10,6 +10,8 @@
     "typecheck": "tsc --noEmit",
     "validate": "tsx scripts/validate-data.ts",
     "check:links": "tsx scripts/check-links.ts",
+    "roles:refresh": "tsx scripts/refresh-roles.ts",
+    "ats:discover": "tsx scripts/discover-ats.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed.ts",

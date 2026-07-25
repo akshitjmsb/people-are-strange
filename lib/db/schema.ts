@@ -43,6 +43,14 @@ export const companies = pgTable('companies', {
   notable: text('notable'),
   status: text('status'),
 
+  // Live open-role counts, written only by scripts/refresh-roles.ts on a
+  // schedule. NOT part of the curated dataset, so the seed deliberately leaves
+  // these columns alone (see ROLE_COLUMNS in scripts/seed.ts) — otherwise every
+  // deploy would blank them until the next refresh ran.
+  openRolesMontreal: integer('open_roles_montreal'),
+  openRolesTotal: integer('open_roles_total'),
+  rolesFetchedAt: text('roles_fetched_at'),
+
   // Provenance.
   website: text('website'),
   linkedin: text('linkedin'),

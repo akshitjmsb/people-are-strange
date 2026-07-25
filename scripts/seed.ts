@@ -85,9 +85,16 @@ async function main() {
   // On conflict, take the incoming row's value for every column but the key.
   // Must reference `excluded.<db_column>` — pointing at the table's own column
   // would set each field to itself and silently no-op every update.
-  const overwriteAll = Object.fromEntries(
+  //
+  // ROLE_COLUMNS are owned by scripts/refresh-roles.ts, not by this file. They
+  // are excluded from both the INSERT and the UPDATE: the dataset carries no
+  // values for them, so including them would overwrite live open-role counts
+  // with NULL on every single deploy.
+  const ROLE_COLUMNS = new Set(['openRolesMontreal', 'openRolesTotal', 'rolesFetchedAt']);
+
+  const overwrite = Object.fromEntries(
     (Object.keys(companies) as (keyof typeof companies)[])
-      .filter((k) => k !== 'id')
+      .filter((k) => k !== 'id' && !ROLE_COLUMNS.has(k as string))
       .map((k) => {
         const dbName = (companies[k] as unknown as { name: string }).name;
         return [k, sql`excluded.${sql.identifier(dbName)}`];
@@ -98,7 +105,7 @@ async function main() {
     await db
       .insert(companies)
       .values(rows.slice(i, i + BATCH))
-      .onConflictDoUpdate({ target: companies.id, set: overwriteAll });
+      .onConflictDoUpdate({ target: companies.id, set: overwrite });
   }
 
   // Drop anything no longer in the dataset (renamed ids, removed companies).

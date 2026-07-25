@@ -1,0 +1,36 @@
+name: Refresh open roles
+
+# Pulls live open-role counts from each company's ATS board and writes them to
+# the database. Twice daily: job boards change through the day, and a count
+# that's a week old is barely better than no count at all.
+#
+# Requires a DATABASE_URL repository secret (Settings → Secrets and variables →
+# Actions). Without it the job fails loudly rather than serving stale numbers
+# under a "live" label.
+on:
+  schedule:
+    - cron: '0 11,23 * * *' # 06:00 and 18:00 Montreal
+  workflow_dispatch:
+
+# Never let two refreshes write at once.
+concurrency:
+  group: refresh-roles
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Fetch and store role counts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run roles:refresh

@@ -9,7 +9,18 @@
 import { COMPANIES } from '../lib/companies-data';
 import { PEOPLE } from '../lib/people-data';
 import { COMPANY_TYPES, INDUSTRY_ORDER } from '../lib/categories';
+import type { AtsProvider } from '../lib/ats';
 import type { Industry } from '../lib/types';
+
+const ATS_PROVIDERS: AtsProvider[] = [
+  'ashby',
+  'greenhouse',
+  'lever',
+  'smartrecruiters',
+  'workable',
+  'bamboohr',
+  'ubisoft-mtl',
+];
 
 // Impossible-coordinate bounds: anything outside this is a sign flip, a
 // transposed lat/lng, a 0/0, or a pin in another province.
@@ -86,6 +97,20 @@ for (const c of COMPANIES) {
 
   // Signals.
   if (c.hiring && !c.careersUrl) warn('hiring:true but no careersUrl', at);
+
+  // ATS board reference — a typo'd provider silently drops the company from
+  // the role refresh, so it fails the build rather than going unnoticed.
+  if (c.ats) {
+    if (!ATS_PROVIDERS.includes(c.ats.provider)) {
+      err(`${at}: unknown ats provider "${c.ats.provider}" (known: ${ATS_PROVIDERS.join(', ')})`);
+    }
+    if (!c.ats.token?.trim()) err(`${at}: ats reference has an empty token`);
+    if (!c.careersUrl) warn('ats board but no careersUrl', at);
+  }
+  // Live counts are written by the refresh job, never by hand.
+  if (c.openRolesMontreal !== undefined || c.openRolesTotal !== undefined) {
+    err(`${at}: open-role counts must not be hand-edited into the dataset — they live in the database`);
+  }
   if (c.founded && (c.founded < 1800 || c.founded > new Date().getFullYear())) {
     err(`${at}: implausible founded year ${c.founded}`);
   }

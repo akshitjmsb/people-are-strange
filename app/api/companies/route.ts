@@ -37,6 +37,11 @@ function toCompany(r: CompanyRow): AICompany {
     linkedin: r.linkedin ?? undefined,
     sources: r.sources ?? undefined,
     verifiedAt: r.verifiedAt ?? undefined,
+    // Live board counts. Left undefined when we have no data at all, which the
+    // UI must distinguish from a genuine zero ("no open roles here").
+    openRolesMontreal: r.openRolesMontreal ?? undefined,
+    openRolesTotal: r.openRolesTotal ?? undefined,
+    rolesFetchedAt: r.rolesFetchedAt ?? undefined,
   };
 }
 

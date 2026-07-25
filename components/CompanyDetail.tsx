@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { domainLabel, typeDef } from '@/lib/categories';
 import { reportCompanyUrl } from '@/lib/feedback';
 import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
+import { roleSummary } from '@/lib/roles';
 import type { AICompany, Person } from '@/lib/types';
 
 interface Props {
@@ -45,6 +46,10 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
   // the copy across the app says so plainly rather than overclaiming.
   const rolesUrl = company.careersUrl ?? company.website;
 
+  // Live board counts where we poll one; `roles.live` is false otherwise, and
+  // nothing about open roles is claimed in that case.
+  const roles = roleSummary(company);
+
   // The people layer: a pin is only useful if it turns into a conversation.
   const people = peopleFor(company.id);
 
@@ -79,9 +84,14 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
               >
                 {t.emoji} {t.label}
               </span>
-              {company.hiring && (
+              {company.hiring && !roles.live && (
                 <span className="rounded-full bg-parc-emerald px-2 py-0.5 text-[11px] font-bold text-white">
                   Jobs page
+                </span>
+              )}
+              {roles.live && roles.montreal > 0 && (
+                <span className="rounded-full bg-parc-emerald px-2 py-0.5 text-[11px] font-bold text-white">
+                  {roles.montreal} open in MTL
                 </span>
               )}
             </div>
@@ -247,6 +257,21 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
             )}
           </div>
 
+          {/* Live board readout — only rendered when a board is actually
+              polled, so "nothing open" is a fact rather than an absence. */}
+          {roles.live && (
+            <div className="rounded-2xl bg-black/[0.03] px-3.5 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-bold text-asphalt">{roles.detail}</span>
+                {roles.freshness && (
+                  <span className="shrink-0 text-[11px] font-semibold text-asphalt/45">
+                    {roles.freshness}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 pt-1">
             {company.hiring && rolesUrl && (
               <a
@@ -255,7 +280,9 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
                 rel="noopener noreferrer"
                 className="rounded-full bg-parc-emerald px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90"
               >
-                See open roles ↗
+                {roles.live && roles.montreal > 0
+                  ? `See ${roles.montreal} open role${roles.montreal === 1 ? '' : 's'} ↗`
+                  : 'See open roles ↗'}
               </a>
             )}
             {company.website && (

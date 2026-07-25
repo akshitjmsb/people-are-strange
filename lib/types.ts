@@ -149,6 +149,10 @@ export type LifeSciDomain =
  *  column/field (kept that name so the data shape is identical). */
 export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain | GamingDomain | LifeSciDomain;
 
+import type { AtsRef } from './ats';
+
+export type { AtsRef };
+
 export interface Funding {
   totalRaised?: string; // e.g. "$45M"
   lastRound?: string; // e.g. "Series B"
@@ -193,12 +197,24 @@ export interface AICompany {
   headcount?: string; // e.g. "51-200"
   funding?: Funding;
   /** We hold a verified link to this company's jobs page — NOT a claim that
-   *  they have open roles. It currently tracks `careersUrl` 1:1, so a false
-   *  here means "no link curated yet", never "not hiring". The UI is worded
-   *  accordingly ("Careers page", not "Hiring now"); if open-role counts ever
-   *  get fetched, this is the field that becomes a real signal. */
+   *  they have open roles. It tracks `careersUrl` 1:1, so a false here means
+   *  "no link curated yet", never "not hiring". The UI is worded accordingly
+   *  ("Careers page", not "Hiring now"). Companies with an `ats` below get a
+   *  real, live signal on top of this. */
   hiring?: boolean;
   careersUrl?: string; // careers / jobs page — what the flag above points at
+
+  /** Applicant-tracking system whose public board API serves this company's
+   *  postings. Present only where the board has been verified to respond; the
+   *  live open-role count is fetched from it on a schedule and stored on the
+   *  row, never in this file. */
+  ats?: AtsRef;
+
+  /** Live counts, filled in by scripts/refresh-roles.ts — never hand-edited.
+   *  Absent means we have no live data, which is different from zero. */
+  openRolesMontreal?: number;
+  openRolesTotal?: number;
+  rolesFetchedAt?: string; // ISO timestamp of the last successful fetch
   notable?: string; // founders, flagship products, claims to fame
   status?: string; // "active", "acquired by X", "wound down"…
 
