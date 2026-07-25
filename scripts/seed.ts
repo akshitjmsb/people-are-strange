@@ -45,7 +45,11 @@ async function main() {
   }));
 
   await db.delete(companies);
-  await db.insert(companies).values(rows);
+
+  const BATCH = 50;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    await db.insert(companies).values(rows.slice(i, i + BATCH));
+  }
 
   console.log(`✓ Seeded ${rows.length} companies.`);
 }
