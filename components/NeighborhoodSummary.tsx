@@ -45,7 +45,7 @@ export default function NeighborhoodSummary({ cluster, onClear }: Props) {
                 <span className="text-parc-emerald">{formatMoney(cluster.totalFunding)} raised</span>
               )}
               {cluster.hiringCount > 0 && (
-                <span className="text-plateau-pink">{cluster.hiringCount} hiring</span>
+                <span className="text-plateau-pink">{cluster.hiringCount} with jobs page</span>
               )}
               {topType && (
                 <span className="hidden sm:inline">

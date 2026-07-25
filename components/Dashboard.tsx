@@ -103,9 +103,9 @@ export default function Dashboard({
               accent="#00B894"
             />
             <StatTile
-              label="Hiring now"
+              label="Careers page"
               value={String(stats.hiringCount)}
-              hint={`${hiringPct}% of scene`}
+              hint={`${hiringPct}% linked`}
               accent="#E84393"
             />
             <StatTile
@@ -155,12 +155,13 @@ export default function Dashboard({
             <Histogram buckets={stats.founding} color={lens.color} />
           </Section>
 
-          {/* hiring heat */}
-          <Section title="Hiring heat">
+          {/* careers-link coverage — how much of the scene is one tap from a
+              job listing. Not a hiring rate: see HiringToggle for why. */}
+          <Section title="Careers coverage">
             <div className="rounded-2xl bg-black/[0.03] p-3.5">
               <div className="mb-2 flex items-baseline justify-between">
                 <span className="text-sm font-bold text-asphalt">
-                  {stats.hiringCount} of {stats.total} hiring
+                  {stats.hiringCount} of {stats.total} link to jobs
                 </span>
                 <span className="text-xs font-bold text-plateau-pink">{hiringPct}%</span>
               </div>

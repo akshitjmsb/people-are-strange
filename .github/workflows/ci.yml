@@ -1,0 +1,36 @@
+name: CI
+
+# Fast, offline checks on every change. Deliberately no network calls here — a
+# flaky third-party host must never block an unrelated PR. Link rot is checked
+# on a schedule instead (see link-check.yml).
+on:
+  push:
+    branches: [dev, prod]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Catches duplicate ids, coords outside Québec, a company type that
+      # doesn't match its industry layer, malformed URLs and broken people
+      # references — the class of bug that used to surface only as a Postgres
+      # constraint violation partway through a manual seed.
+      - name: Validate dataset
+        run: npm run validate

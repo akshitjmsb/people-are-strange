@@ -1,18 +1,49 @@
-// Seeds the `companies` table from the hand-curated dataset in
-// lib/companies-data.ts. Idempotent: clears the table, then bulk-inserts, so it
-// can be re-run safely whenever the source dataset changes.
+// Syncs the `companies` table to the hand-curated dataset in
+// lib/companies-data.ts. Runs by hand (`npm run db:seed`) and automatically as
+// a post-build step on production deploys, so shipping data changes and
+// serving them can't drift apart — the failure that shipped gaming/lifesci to
+// production showing 0 companies.
+//
+// Idempotent and non-destructive: rows are upserted and stale ids pruned, so
+// there is never a moment where the table is empty (the old delete-all-then-
+// insert left exactly that window, and a concurrent request would see a blank
+// map).
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
+import { notInArray, sql } from 'drizzle-orm';
 
 import { COMPANIES } from '../lib/companies-data';
 import { companies, type NewCompanyRow } from '../lib/db/schema';
 
+// Postgres caps bind parameters per statement; 26 columns × 50 rows stays well
+// clear of it. The whole dataset in one INSERT blew that limit at 161 rows.
+const BATCH = 50;
+
 async function main() {
+  // `npm run build` passes --on-deploy so the sync happens on a production
+  // Vercel build and nowhere else. Without this guard a local `npm run build`
+  // on a work-in-progress branch would quietly push that branch's dataset to
+  // the live database. A bare `npm run db:seed` always syncs, by intent.
+  if (process.argv.includes('--on-deploy')) {
+    const vercelEnv = process.env.VERCEL_ENV;
+    if (vercelEnv !== 'production') {
+      console.log(`↷ not a production deploy (VERCEL_ENV=${vercelEnv ?? 'unset'}) — skipping db sync.`);
+      return;
+    }
+  }
+
   const url = process.env.DATABASE_URL;
-  if (!url) throw new Error('DATABASE_URL is not set.');
+  if (!url) {
+    // Don't brick a deploy over a missing build-time env var, but make the
+    // drift impossible to miss in the log.
+    console.warn('⚠ DATABASE_URL is not set — SKIPPING db sync. The live site will serve stale data.');
+    if (process.env.VERCEL) return;
+    throw new Error('DATABASE_URL is not set.');
+  }
+
   const db = drizzle(neon(url));
 
   const rows: NewCompanyRow[] = COMPANIES.map((c) => ({
@@ -44,14 +75,36 @@ async function main() {
     verifiedAt: c.verifiedAt ?? null,
   }));
 
-  await db.delete(companies);
+  // Guard against the duplicate-id class of bug reaching the database, where
+  // it surfaces as an opaque constraint violation mid-seed. (scripts/
+  // validate-data.ts catches this in CI first; this is the backstop.)
+  const ids = rows.map((r) => r.id);
+  const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+  if (dupes.length) throw new Error(`duplicate company ids in dataset: ${[...new Set(dupes)].join(', ')}`);
 
-  const BATCH = 50;
+  // On conflict, take the incoming row's value for every column but the key.
+  // Must reference `excluded.<db_column>` — pointing at the table's own column
+  // would set each field to itself and silently no-op every update.
+  const overwriteAll = Object.fromEntries(
+    (Object.keys(companies) as (keyof typeof companies)[])
+      .filter((k) => k !== 'id')
+      .map((k) => {
+        const dbName = (companies[k] as unknown as { name: string }).name;
+        return [k, sql`excluded.${sql.identifier(dbName)}`];
+      }),
+  );
+
   for (let i = 0; i < rows.length; i += BATCH) {
-    await db.insert(companies).values(rows.slice(i, i + BATCH));
+    await db
+      .insert(companies)
+      .values(rows.slice(i, i + BATCH))
+      .onConflictDoUpdate({ target: companies.id, set: overwriteAll });
   }
 
-  console.log(`✓ Seeded ${rows.length} companies.`);
+  // Drop anything no longer in the dataset (renamed ids, removed companies).
+  const pruned = await db.delete(companies).where(notInArray(companies.id, ids)).returning({ id: companies.id });
+
+  console.log(`✓ Synced ${rows.length} companies${pruned.length ? ` · pruned ${pruned.length}: ${pruned.map((p) => p.id).join(', ')}` : ''}.`);
 }
 
 main()

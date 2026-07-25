@@ -7,16 +7,22 @@ interface Props {
 }
 
 /**
- * One-tap "Hiring now" filter, pinned at the head of the type-chip row. Reads
- * in the parc-emerald "hiring" green used across the app; the live dot pulses
- * when active so it's obvious the map/list is narrowed to who's hiring.
+ * One-tap "Careers page" filter, pinned at the head of the type-chip row.
+ *
+ * Deliberately NOT labelled "Hiring now": the underlying `hiring` flag tracks
+ * whether we have a verified link to the company's jobs page, which is a
+ * subset of who's actually hiring. Bombardier and CAE hire constantly but
+ * carry no link, so "hiring" would tell the user they're not — the failure
+ * mode that matters. This label promises exactly what it delivers: somewhere
+ * to click. Reads in the parc-emerald green used for opportunity across the
+ * app; the dot pulses when active so the narrowed view is obvious.
  */
 export default function HiringToggle({ active, count, onToggle }: Props) {
   return (
     <button
       onClick={onToggle}
       aria-pressed={active}
-      title="Show only companies that are hiring"
+      title="Show only companies with a careers page we link to directly"
       className={`pointer-events-auto flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold shadow-sm backdrop-blur-xl transition ${
         active
           ? 'border-parc-emerald bg-parc-emerald text-white'
@@ -33,7 +39,7 @@ export default function HiringToggle({ active, count, onToggle }: Props) {
           style={{ backgroundColor: active ? '#fff' : '#00B894' }}
         />
       </span>
-      Hiring now
+      Careers page
       <span className={`tabular-nums ${active ? 'opacity-80' : 'opacity-60'}`}>{count}</span>
     </button>
   );

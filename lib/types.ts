@@ -192,8 +192,13 @@ export interface AICompany {
   founded?: number;
   headcount?: string; // e.g. "51-200"
   funding?: Funding;
+  /** We hold a verified link to this company's jobs page — NOT a claim that
+   *  they have open roles. It currently tracks `careersUrl` 1:1, so a false
+   *  here means "no link curated yet", never "not hiring". The UI is worded
+   *  accordingly ("Careers page", not "Hiring now"); if open-role counts ever
+   *  get fetched, this is the field that becomes a real signal. */
   hiring?: boolean;
-  careersUrl?: string; // careers / jobs page — makes the hiring flag actionable
+  careersUrl?: string; // careers / jobs page — what the flag above points at
   notable?: string; // founders, flagship products, claims to fame
   status?: string; // "active", "acquired by X", "wound down"…
 

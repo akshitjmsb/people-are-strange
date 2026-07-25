@@ -40,7 +40,9 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
     }
   };
 
-  // Make the hiring badge actionable: careers page if we have one, site if not.
+  // Make the jobs badge actionable: careers page if we have one, site if not.
+  // NB: `hiring` means "we hold a verified jobs link", not "has open roles" —
+  // the copy across the app says so plainly rather than overclaiming.
   const rolesUrl = company.careersUrl ?? company.website;
 
   // The people layer: a pin is only useful if it turns into a conversation.
@@ -79,7 +81,7 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
               </span>
               {company.hiring && (
                 <span className="rounded-full bg-parc-emerald px-2 py-0.5 text-[11px] font-bold text-white">
-                  Hiring
+                  Jobs page
                 </span>
               )}
             </div>

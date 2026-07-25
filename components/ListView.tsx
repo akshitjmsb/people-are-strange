@@ -297,7 +297,7 @@ function Row({
               <span className="truncate text-sm font-bold text-asphalt">{c.name}</span>
               {c.hiring && (
                 <span className="shrink-0 rounded-full bg-parc-emerald/15 px-1.5 py-px text-[9px] font-black uppercase text-parc-emerald">
-                  Hiring
+                  Jobs
                 </span>
               )}
             </span>

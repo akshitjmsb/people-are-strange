@@ -826,8 +826,10 @@ export const COMPANIES: AICompany[] = [
     industries: ['healthcare', 'microbiome'],
     founded: 2020,
     notable: 'Incubated at Centech and CDL; rebranded from Phyla to Injoy. Focus is gut, not skin, health.',
-    status: 'active',
-    website: 'https://www.injoy.bio/',
+    // injoy.bio went offline (404) as of 2026-07 and no successor site was
+    // found — phyla.com is an unrelated skincare brand. Left without a website
+    // rather than linking the wrong company; needs a human check.
+    status: 'unverified — site offline',
     sources: ['https://centech.co/en/startups/phyla/', 'https://creativedestructionlab.com/companies/injoy/'],
   },
   {
@@ -1243,8 +1245,8 @@ export const COMPANIES: AICompany[] = [
     headcount: '1,000+',
     status: 'subsidiary of Rolls-Royce plc',
     notable: 'One of Rolls-Royce\'s principal global service and test centres; long-standing Montreal-area presence.',
-    website: 'https://www.rolls-royce.com/country-sites/canada.aspx',
-    sources: ['https://www.rolls-royce.com/country-sites/canada.aspx'],
+    website: 'https://www.rolls-royce.com/country-sites/canada-en.aspx',
+    sources: ['https://www.rolls-royce.com/country-sites/canada-en.aspx'],
   },
   {
     id: 'safran-canada',
@@ -1942,8 +1944,8 @@ export const COMPANIES: AICompany[] = [
     founded: 2002,
     status: 'university',
     notable: 'Project-based aerospace institute closely tied to Montreal\'s OEMs and suppliers.',
-    website: 'https://www.concordia.ca/ginacody/aerospace.html',
-    sources: ['https://www.concordia.ca/ginacody/aerospace.html'],
+    website: 'https://www.concordia.ca/ginacody/ciadi.html',
+    sources: ['https://www.concordia.ca/ginacody/ciadi.html'],
   },
   {
     id: 'ena-aerotechnique',
@@ -2760,7 +2762,7 @@ export const COMPANIES: AICompany[] = [
     careersUrl: 'https://montreal.ubisoft.com/en/your-career/jobs/',
     notable: "Largest game studio in the world; created Assassin's Creed (200M+ copies sold across franchise). Anchor of the Mile End gaming corridor.",
     status: 'active',
-    website: 'https://montreal.ubisoft.com',
+    website: 'https://montreal.ubisoft.com/en/',
     sources: [
       'https://montreal.ubisoft.com/en/',
       'https://en.wikipedia.org/wiki/Ubisoft_Montreal',
@@ -3607,7 +3609,7 @@ export const COMPANIES: AICompany[] = [
     founded: 1967,
     headcount: '500-1,000',
     hiring: true,
-    careersUrl: 'https://ircm.qc.ca/en/careers',
+    careersUrl: 'https://www.ircm.qc.ca/en/life-at-the-ircm',
     notable: 'Founded by Québec\'s first cardiologist, Jacques Bhérer, with support from the Québec government. Affiliated with UdeM and McGill.',
     status: 'active',
     website: 'https://ircm.qc.ca/en',
@@ -3634,7 +3636,7 @@ export const COMPANIES: AICompany[] = [
     founded: 1934,
     headcount: '1,000+',
     hiring: true,
-    careersUrl: 'https://www.mcgill.ca/neuro/jobs',
+    careersUrl: 'https://www.mcgill.ca/neuro/about/careers',
     notable: 'Founded by neurosurgery pioneer Wilder Penfield. First institute in the world to adopt institutional open science. Home of the BigBrain atlas.',
     status: 'active',
     website: 'https://www.mcgill.ca/neuro/',
@@ -3661,7 +3663,7 @@ export const COMPANIES: AICompany[] = [
     founded: 2019,
     headcount: '51-200',
     hiring: true,
-    careersUrl: 'https://admarebio.com/careers/',
+    careersUrl: 'https://www.admarebio.com/en/culture',
     notable: 'Successor to the Centre for Drug Research and Development (CDRD). $500M+ invested. Montreal campus in Technoparc.',
     status: 'active',
     website: 'https://admarebio.com',

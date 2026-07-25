@@ -1,0 +1,28 @@
+name: Link check
+
+# Careers pages move constantly and a 404 careers link is worse than none at
+# all — it's the one thing a job hunter actually clicks. This hits the network,
+# so it runs weekly rather than on PRs, where a flaky host would block work.
+#
+# Fails only on confirmed-dead (404/410). Bot-walled hosts (403/429) are
+# reported in the log and never fail the run.
+on:
+  schedule:
+    - cron: '0 13 * * 1' # Mondays, 13:00 UTC (~08:00 Montreal)
+  workflow_dispatch:
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check website and careers links
+        run: npm run check:links

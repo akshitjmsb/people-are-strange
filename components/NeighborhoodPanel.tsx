@@ -105,7 +105,7 @@ export default function NeighborhoodPanel({ clusters, activeName, onPick, onClos
                     )}
                     {c.hiringCount > 0 && (
                       <span className="block text-[11px] font-semibold text-plateau-pink">
-                        {c.hiringCount} hiring
+                        {c.hiringCount} with jobs
                       </span>
                     )}
                   </span>
