@@ -63,6 +63,22 @@ export const MARINE = {
 
 export type MarineColor = keyof typeof MARINE;
 
+// ── Gaming / VFX palette ────────────────────────────────────────────────
+// Montreal is a top-3 global gaming city — 250+ studios and 15,000+ jobs.
+// A neon-lit, screen-glow family: electric purple, pixel green, controller
+// blue, render orange — so the gaming layer reads as the arcade against
+// the other industries' palettes.
+export const GAMING = {
+  neonPurple: '#7B2FF7', // studio-glow purple — AAA studios
+  pixelGreen: '#10B981', // HP-bar green — mid-size studios
+  controllerBlue: '#3B82F6', // screen blue — indie studios
+  renderOrange: '#F97316', // render-farm amber — VFX / animation houses
+  questGold: '#EAB308', // loot-drop gold — game services & QA
+  arcadeMagenta: '#D946EF', // cabinet magenta — industry orgs
+} as const;
+
+export type GamingColor = keyof typeof GAMING;
+
 /** Convert a #rrggbb hex string to a deck.gl [r,g,b] tuple. */
 export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');

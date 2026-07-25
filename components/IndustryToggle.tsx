@@ -20,6 +20,7 @@ const OPTIONS: Option[] = [
   { key: 'aerospace', label: 'Aerospace', emoji: '✈️', color: '#1F4E79' },
   { key: 'energy', label: 'Energy', emoji: '⚡', color: '#F59E0B' },
   { key: 'marine', label: 'Marine', emoji: '🚢', color: '#0D4F6E' },
+  { key: 'gaming', label: 'Gaming', emoji: '🎮', color: '#7B2FF7' },
 ];
 
 interface Props {

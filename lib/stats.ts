@@ -40,7 +40,7 @@ const ERAS: { label: string; test: (y: number) => boolean }[] = [
 ];
 
 export function buildEcosystemStats(companies: AICompany[]): EcosystemStats {
-  const perIndustry: Record<Industry, number> = { ai: 0, aerospace: 0, energy: 0, marine: 0 };
+  const perIndustry: Record<Industry, number> = { ai: 0, aerospace: 0, energy: 0, marine: 0, gaming: 0 };
   const typeCounts = new Map<CompanyType, number>();
   const neighborhoods = new Map<string, number>();
   const founding = ERAS.map((e) => ({ label: e.label, count: 0 }));

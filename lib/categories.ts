@@ -1,4 +1,4 @@
-import { AERO, ENERGY, MARINE, MONTREAL } from './colors';
+import { AERO, ENERGY, GAMING, MARINE, MONTREAL } from './colors';
 import type { Domain, CompanyType, Industry } from './types';
 
 export interface TypeDef {
@@ -17,10 +17,11 @@ export const INDUSTRY_META: Record<Industry, { label: string; emoji: string; col
   aerospace: { label: 'Aerospace', emoji: '✈️', color: AERO.jetNavy },
   energy: { label: 'Energy', emoji: '⚡', color: ENERGY.sunAmber },
   marine: { label: 'Marine', emoji: '🚢', color: MARINE.deepSea },
+  gaming: { label: 'Gaming', emoji: '🎮', color: GAMING.neonPurple },
 };
 
 /** Fixed display order for the four industries. */
-export const INDUSTRY_ORDER: Industry[] = ['ai', 'aerospace', 'energy', 'marine'];
+export const INDUSTRY_ORDER: Industry[] = ['ai', 'aerospace', 'energy', 'marine', 'gaming'];
 
 /** The neutral "city grid" accent used for neighborhood / area chrome, so it
  *  reads as distinct from any one industry's colour. */
@@ -60,6 +61,13 @@ export const COMPANY_TYPES: Record<CompanyType, TypeDef> = {
   'marine-port': { key: 'marine-port', label: 'Port & Terminals', emoji: '⚓', color: MARINE.containerRust, industry: 'marine' },
   'marine-services': { key: 'marine-services', label: 'Marine Services', emoji: '🛟', color: MARINE.seaGlass, industry: 'marine' },
   'marine-org': { key: 'marine-org', label: 'Cluster / Association', emoji: '🌊', color: MARINE.harbourIndigo, industry: 'marine' },
+  // ── Gaming / VFX ──
+  'gaming-aaa': { key: 'gaming-aaa', label: 'AAA Studio', emoji: '🎮', color: GAMING.neonPurple, industry: 'gaming' },
+  'gaming-mid': { key: 'gaming-mid', label: 'Mid-Size Studio', emoji: '🕹️', color: GAMING.pixelGreen, industry: 'gaming' },
+  'gaming-indie': { key: 'gaming-indie', label: 'Indie Studio', emoji: '👾', color: GAMING.controllerBlue, industry: 'gaming' },
+  'gaming-vfx': { key: 'gaming-vfx', label: 'VFX / Animation', emoji: '🎬', color: GAMING.renderOrange, industry: 'gaming' },
+  'gaming-services': { key: 'gaming-services', label: 'Game Services', emoji: '🧪', color: GAMING.questGold, industry: 'gaming' },
+  'gaming-org': { key: 'gaming-org', label: 'Industry Org', emoji: '🏛️', color: GAMING.arcadeMagenta, industry: 'gaming' },
 };
 
 // Order shown in the filter chips row, per industry.
@@ -100,12 +108,22 @@ export const MARINE_TYPE_ORDER: CompanyType[] = [
   'marine-org',
 ];
 
+export const GAMING_TYPE_ORDER: CompanyType[] = [
+  'gaming-aaa',
+  'gaming-mid',
+  'gaming-indie',
+  'gaming-vfx',
+  'gaming-services',
+  'gaming-org',
+];
+
 // Combined order used when all industries are shown at once.
 export const TYPE_ORDER: CompanyType[] = [
   ...AI_TYPE_ORDER,
   ...AERO_TYPE_ORDER,
   ...ENERGY_TYPE_ORDER,
   ...MARINE_TYPE_ORDER,
+  ...GAMING_TYPE_ORDER,
 ];
 
 /** The chip order to show for a given industry selection. */
@@ -114,6 +132,7 @@ export function typeOrderFor(industry: Industry | 'all'): CompanyType[] {
   if (industry === 'aerospace') return AERO_TYPE_ORDER;
   if (industry === 'energy') return ENERGY_TYPE_ORDER;
   if (industry === 'marine') return MARINE_TYPE_ORDER;
+  if (industry === 'gaming') return GAMING_TYPE_ORDER;
   return TYPE_ORDER;
 }
 
@@ -178,6 +197,19 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   'arctic-shipping': 'Arctic Shipping',
   'green-shipping': 'Green Shipping',
   'ship-services': 'Ship Services',
+  // Gaming / VFX
+  'aaa-games': 'AAA Games',
+  'indie-games': 'Indie Games',
+  'mobile-games': 'Mobile Games',
+  'live-service': 'Live Service',
+  'vfx-film': 'Film VFX',
+  'vfx-tv': 'TV VFX',
+  animation: 'Animation',
+  'game-qa': 'Game QA',
+  'co-development': 'Co-Development',
+  horror: 'Horror',
+  'open-world': 'Open World',
+  narrative: 'Narrative',
 };
 
 export function domainLabel(d: Domain): string {

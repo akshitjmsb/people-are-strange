@@ -41,11 +41,11 @@ function toCompany(r: CompanyRow): AICompany {
 }
 
 export async function GET(req: Request) {
-  // Optional `?industry=ai|aerospace|energy|marine` filter; anything else
-  // returns all rows.
+  // Optional `?industry=ai|aerospace|energy|marine|gaming` filter; anything
+  // else returns all rows.
   const param = new URL(req.url).searchParams.get('industry');
   const industry: Industry | null =
-    param === 'ai' || param === 'aerospace' || param === 'energy' || param === 'marine'
+    param === 'ai' || param === 'aerospace' || param === 'energy' || param === 'marine' || param === 'gaming'
       ? param
       : null;
 

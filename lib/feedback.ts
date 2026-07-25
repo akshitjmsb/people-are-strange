@@ -18,7 +18,7 @@ export function suggestCompanyUrl(): string {
     '',
     '**Website:**',
     '',
-    '**Industry (ai / aerospace / energy / marine):**',
+    '**Industry (ai / aerospace / energy / marine / gaming):**',
     '',
     '**What they do (one sentence):**',
     '',

@@ -9,7 +9,7 @@
 
 /** Which industry layer a company belongs to. Drives the top-level toggle and
  *  the marker palette family. Existing rows default to 'ai'. */
-export type Industry = 'ai' | 'aerospace' | 'energy' | 'marine';
+export type Industry = 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming';
 
 /** What kind of player in an ecosystem this is. Drives marker colour. The union
  *  spans both industries; AI types and aerospace types never collide. */
@@ -42,7 +42,14 @@ export type CompanyType =
   | 'marine-shipping' // shipowners & carriers (CSL, Fednav, Oceanex)
   | 'marine-port' // port authority & container terminals (MPA, MGT, Termont)
   | 'marine-services' // cargo handling, towing, harbour services (Logistec, Océan)
-  | 'marine-org'; // cluster / association (CargoM)
+  | 'marine-org' // cluster / association (CargoM)
+  // ── Gaming / VFX ecosystem ──
+  | 'gaming-aaa' // AAA studio (Ubisoft, WB Games, EA Motive)
+  | 'gaming-mid' // mid-size / established studio (Behaviour, Gameloft, Ludia)
+  | 'gaming-indie' // indie / boutique studio (Kitfox, Tribute, Thunder Lotus)
+  | 'gaming-vfx' // VFX / animation house (Rodeo FX, DNEG, Framestore)
+  | 'gaming-services' // QA, co-dev, localisation services (Keywords Studios)
+  | 'gaming-org'; // industry association / cluster / event
 
 /** Broad AI capability areas — used for filtering and tags. */
 export type AIDomain =
@@ -102,9 +109,24 @@ export type MarineDomain =
   | 'green-shipping'
   | 'ship-services';
 
+/** Broad gaming / VFX capability areas. */
+export type GamingDomain =
+  | 'aaa-games'
+  | 'indie-games'
+  | 'mobile-games'
+  | 'live-service'
+  | 'vfx-film'
+  | 'vfx-tv'
+  | 'animation'
+  | 'game-qa'
+  | 'co-development'
+  | 'horror'
+  | 'open-world'
+  | 'narrative';
+
 /** Any capability area, across all industries. Stored in the `aiDomains`
  *  column/field (kept that name so the data shape is identical). */
-export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain;
+export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain | GamingDomain;
 
 export interface Funding {
   totalRaised?: string; // e.g. "$45M"

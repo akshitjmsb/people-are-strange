@@ -29,7 +29,7 @@ import {
 import { buildEcosystemStats } from '@/lib/stats';
 import type { AICompany, CompanyType, Industry } from '@/lib/types';
 
-const INDUSTRIES: Industry[] = ['ai', 'aerospace', 'energy', 'marine'];
+const INDUSTRIES: Industry[] = ['ai', 'aerospace', 'energy', 'marine', 'gaming'];
 const isIndustry = (v: string): v is Industry => (INDUSTRIES as string[]).includes(v);
 const isCompanyType = (v: string): v is CompanyType => v in COMPANY_TYPES;
 
@@ -161,6 +161,7 @@ export default function Page() {
       aerospace: 0,
       energy: 0,
       marine: 0,
+      gaming: 0,
     };
     for (const co of all) c[industryOf(co)] += 1;
     return c;
