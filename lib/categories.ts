@@ -1,4 +1,4 @@
-import { AERO, ENERGY, GAMING, MARINE, MONTREAL } from './colors';
+import { AERO, ENERGY, GAMING, LIFESCI, MARINE, MONTREAL } from './colors';
 import type { Domain, CompanyType, Industry } from './types';
 
 export interface TypeDef {
@@ -18,10 +18,11 @@ export const INDUSTRY_META: Record<Industry, { label: string; emoji: string; col
   energy: { label: 'Energy', emoji: '⚡', color: ENERGY.sunAmber },
   marine: { label: 'Marine', emoji: '🚢', color: MARINE.deepSea },
   gaming: { label: 'Gaming', emoji: '🎮', color: GAMING.neonPurple },
+  lifesci: { label: 'Life Sciences', emoji: '🧬', color: LIFESCI.pharmaTeal },
 };
 
 /** Fixed display order for the four industries. */
-export const INDUSTRY_ORDER: Industry[] = ['ai', 'aerospace', 'energy', 'marine', 'gaming'];
+export const INDUSTRY_ORDER: Industry[] = ['ai', 'aerospace', 'energy', 'marine', 'gaming', 'lifesci'];
 
 /** The neutral "city grid" accent used for neighborhood / area chrome, so it
  *  reads as distinct from any one industry's colour. */
@@ -68,6 +69,12 @@ export const COMPANY_TYPES: Record<CompanyType, TypeDef> = {
   'gaming-vfx': { key: 'gaming-vfx', label: 'VFX / Animation', emoji: '🎬', color: GAMING.renderOrange, industry: 'gaming' },
   'gaming-services': { key: 'gaming-services', label: 'Game Services', emoji: '🧪', color: GAMING.questGold, industry: 'gaming' },
   'gaming-org': { key: 'gaming-org', label: 'Industry Org', emoji: '🏛️', color: GAMING.arcadeMagenta, industry: 'gaming' },
+  // ── Life Sciences ──
+  'lifesci-pharma': { key: 'lifesci-pharma', label: 'Pharma', emoji: '💊', color: LIFESCI.pharmaTeal, industry: 'lifesci' },
+  'lifesci-biotech': { key: 'lifesci-biotech', label: 'Biotech', emoji: '🧬', color: LIFESCI.biotechGreen, industry: 'lifesci' },
+  'lifesci-cro': { key: 'lifesci-cro', label: 'CRO / Services', emoji: '🔬', color: LIFESCI.labCoral, industry: 'lifesci' },
+  'lifesci-research': { key: 'lifesci-research', label: 'Research Institute', emoji: '🏥', color: LIFESCI.researchIndigo, industry: 'lifesci' },
+  'lifesci-org': { key: 'lifesci-org', label: 'Cluster / Association', emoji: '🤝', color: LIFESCI.clusterSlate, industry: 'lifesci' },
 };
 
 // Order shown in the filter chips row, per industry.
@@ -117,6 +124,14 @@ export const GAMING_TYPE_ORDER: CompanyType[] = [
   'gaming-org',
 ];
 
+export const LIFESCI_TYPE_ORDER: CompanyType[] = [
+  'lifesci-pharma',
+  'lifesci-biotech',
+  'lifesci-cro',
+  'lifesci-research',
+  'lifesci-org',
+];
+
 // Combined order used when all industries are shown at once.
 export const TYPE_ORDER: CompanyType[] = [
   ...AI_TYPE_ORDER,
@@ -124,6 +139,7 @@ export const TYPE_ORDER: CompanyType[] = [
   ...ENERGY_TYPE_ORDER,
   ...MARINE_TYPE_ORDER,
   ...GAMING_TYPE_ORDER,
+  ...LIFESCI_TYPE_ORDER,
 ];
 
 /** The chip order to show for a given industry selection. */
@@ -133,6 +149,7 @@ export function typeOrderFor(industry: Industry | 'all'): CompanyType[] {
   if (industry === 'energy') return ENERGY_TYPE_ORDER;
   if (industry === 'marine') return MARINE_TYPE_ORDER;
   if (industry === 'gaming') return GAMING_TYPE_ORDER;
+  if (industry === 'lifesci') return LIFESCI_TYPE_ORDER;
   return TYPE_ORDER;
 }
 
@@ -210,6 +227,19 @@ export const DOMAIN_LABELS: Record<Domain, string> = {
   horror: 'Horror',
   'open-world': 'Open World',
   narrative: 'Narrative',
+  // Life Sciences
+  pharmaceuticals: 'Pharmaceuticals',
+  'biotech-rd': 'Biotech R&D',
+  'clinical-trials': 'Clinical Trials',
+  'precision-medicine': 'Precision Medicine',
+  immunotherapy: 'Immunotherapy',
+  neuroscience: 'Neuroscience',
+  'rare-diseases': 'Rare Diseases',
+  'medical-devices': 'Medical Devices',
+  'contract-research': 'Contract Research',
+  'drug-discovery': 'Drug Discovery',
+  'cell-gene-therapy': 'Cell & Gene Therapy',
+  diagnostics: 'Diagnostics',
 };
 
 export function domainLabel(d: Domain): string {

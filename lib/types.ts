@@ -9,7 +9,7 @@
 
 /** Which industry layer a company belongs to. Drives the top-level toggle and
  *  the marker palette family. Existing rows default to 'ai'. */
-export type Industry = 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming';
+export type Industry = 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming' | 'lifesci';
 
 /** What kind of player in an ecosystem this is. Drives marker colour. The union
  *  spans both industries; AI types and aerospace types never collide. */
@@ -49,7 +49,13 @@ export type CompanyType =
   | 'gaming-indie' // indie / boutique studio (Kitfox, Tribute, Thunder Lotus)
   | 'gaming-vfx' // VFX / animation house (Rodeo FX, DNEG, Framestore)
   | 'gaming-services' // QA, co-dev, localisation services (Keywords Studios)
-  | 'gaming-org'; // industry association / cluster / event
+  | 'gaming-org' // industry association / cluster / event
+  // ── Life Sciences ecosystem ──
+  | 'lifesci-pharma' // big pharma Canadian HQ (Pfizer, Novartis, Merck, AbbVie)
+  | 'lifesci-biotech' // biotech company (Knight, CellCarta, Congruence)
+  | 'lifesci-cro' // contract research / services (Altasciences, Charles River)
+  | 'lifesci-research' // research institute (IRCM, The Neuro, adMare)
+  | 'lifesci-org'; // cluster / association (Montréal InVivo)
 
 /** Broad AI capability areas — used for filtering and tags. */
 export type AIDomain =
@@ -124,9 +130,24 @@ export type GamingDomain =
   | 'open-world'
   | 'narrative';
 
+/** Broad life sciences capability areas. */
+export type LifeSciDomain =
+  | 'pharmaceuticals'
+  | 'biotech-rd'
+  | 'clinical-trials'
+  | 'precision-medicine'
+  | 'immunotherapy'
+  | 'neuroscience'
+  | 'rare-diseases'
+  | 'medical-devices'
+  | 'contract-research'
+  | 'drug-discovery'
+  | 'cell-gene-therapy'
+  | 'diagnostics';
+
 /** Any capability area, across all industries. Stored in the `aiDomains`
  *  column/field (kept that name so the data shape is identical). */
-export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain | GamingDomain;
+export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain | GamingDomain | LifeSciDomain;
 
 export interface Funding {
   totalRaised?: string; // e.g. "$45M"

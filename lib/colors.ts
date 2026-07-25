@@ -79,6 +79,20 @@ export const GAMING = {
 
 export type GamingColor = keyof typeof GAMING;
 
+// ── Life Sciences palette ───────────────────────────────────────────────
+// The health corridor — clinical white-coat teal, pharma blue, biotech
+// green, research violet — so the life sciences layer reads as the lab
+// against the other industries' palettes.
+export const LIFESCI = {
+  pharmaTeal: '#0891B2', // clinical teal — big pharma HQs
+  biotechGreen: '#059669', // growth green — biotech companies
+  labCoral: '#E11D48', // lab-coat coral — CROs / contract research
+  researchIndigo: '#4F46E5', // deep indigo — research institutes
+  clusterSlate: '#64748B', // cool slate — industry orgs
+} as const;
+
+export type LifeSciColor = keyof typeof LIFESCI;
+
 /** Convert a #rrggbb hex string to a deck.gl [r,g,b] tuple. */
 export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
