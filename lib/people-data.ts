@@ -7,9 +7,8 @@ import type { Person } from './types';
 // LinkedIn conversation.
 //
 // Two honesty notes, because this data ages fast:
-//   • `linkedinUrl` is constructed from the lowercase first-last pattern
-//     (linkedin.com/in/valerie-pisano). It's the right guess for most public
-//     figures, but it is a guess — the UI offers a name search as a fallback.
+//   • `linkedinUrl` is a web-search-verified profile URL, last checked
+//     July 2026. Slugs are real — not guessed from name patterns.
 //   • People move. Anyone known to have left carries `former: true` and stays
 //     in the list only for context; the UI greys them out.
 //
@@ -24,7 +23,7 @@ export const PEOPLE: Person[] = [
     companyId: 'mila',
     name: 'Valérie Pisano',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/valerie-pisano',
+    linkedinUrl: 'https://www.linkedin.com/in/valerie-pisano-7378721/',
     note: 'Runs the institute day to day; sets hiring priorities across the 1,400-researcher community.',
   },
   {
@@ -32,7 +31,7 @@ export const PEOPLE: Person[] = [
     companyId: 'mila',
     name: 'Yoshua Bengio',
     role: 'Founder & Scientific Advisor',
-    linkedinUrl: 'https://www.linkedin.com/in/yoshua-bengio',
+    linkedinUrl: 'https://www.linkedin.com/in/yoshuabengio',
     note: 'Turing Award laureate and the gravitational centre of the Montreal AI scene.',
   },
   {
@@ -40,7 +39,7 @@ export const PEOPLE: Person[] = [
     companyId: 'mila',
     name: 'Stéphane Létourneau',
     role: 'Executive Vice-President',
-    linkedinUrl: 'https://www.linkedin.com/in/stephane-letourneau',
+    linkedinUrl: 'https://www.linkedin.com/in/stephane-letourneau-077b504',
     note: 'Owns partnerships and operations — the route in for industry collaboration.',
   },
   {
@@ -48,7 +47,7 @@ export const PEOPLE: Person[] = [
     companyId: 'mila',
     name: "Benjamin Prud'homme",
     role: 'VP, Policy, Society & Global Affairs',
-    linkedinUrl: 'https://www.linkedin.com/in/benjamin-prudhomme',
+    linkedinUrl: 'https://www.linkedin.com/in/benjamin-prud-homme-83300b22',
     note: 'Leads AI policy and governance work — the contact for anything non-technical.',
   },
 
@@ -57,7 +56,7 @@ export const PEOPLE: Person[] = [
     companyId: 'microsoft-research-montreal',
     name: 'Geoff Gordon',
     role: 'Lab Director',
-    linkedinUrl: 'https://www.linkedin.com/in/geoff-gordon',
+    linkedinUrl: 'https://www.linkedin.com/in/geoffreyegordon',
     note: 'Heads the Montreal lab; ex-CMU machine learning faculty.',
   },
   {
@@ -65,16 +64,17 @@ export const PEOPLE: Person[] = [
     companyId: 'microsoft-research-montreal',
     name: 'Adam Trischler',
     role: 'Research Manager',
-    linkedinUrl: 'https://www.linkedin.com/in/adam-trischler',
+    linkedinUrl: 'https://www.linkedin.com/in/adamtrischler',
     note: 'Manages the NLP/machine-reading research group — hires interns and researchers directly.',
   },
   {
     id: 'msr-fernando-diaz',
     companyId: 'microsoft-research-montreal',
     name: 'Fernando Diaz',
-    role: 'FATE Research Lead',
-    linkedinUrl: 'https://www.linkedin.com/in/fernando-diaz',
-    note: 'Fairness, accountability, transparency & ethics in AI — information retrieval background.',
+    role: 'FATE Research Lead (now at CMU / Google Research)',
+    linkedinUrl: 'https://www.linkedin.com/in/fernando-diaz-b6b9023',
+    note: 'Founded the FATE group at MSR Montreal. Now associate professor at CMU and research scientist at Google — still deeply connected to the Montreal scene.',
+    former: true,
   },
 
   {
@@ -82,17 +82,18 @@ export const PEOPLE: Person[] = [
     companyId: 'meta-fair-montreal',
     name: 'Joelle Pineau',
     role: 'VP AI Research (departed May 2025)',
-    linkedinUrl: 'https://www.linkedin.com/in/joelle-pineau',
-    note: 'Built and led FAIR Montreal for years. Left Meta in May 2025 — still the best-connected person in Montreal robotics/RL, just not a route into Meta.',
+    linkedinUrl: 'https://www.linkedin.com/in/joelle-pineau-371574141',
+    note: 'Built and led FAIR Montreal for years. Left Meta in May 2025 and joined Cohere — still the best-connected person in Montreal robotics/RL.',
     former: true,
   },
   {
     id: 'fair-michael-rabbat',
     companyId: 'meta-fair-montreal',
     name: 'Michael Rabbat',
-    role: 'Research Director',
-    linkedinUrl: 'https://www.linkedin.com/in/michael-rabbat',
-    note: 'Long-time FAIR Montreal researcher and McGill professor; the current research anchor.',
+    role: 'Research Director (now VP World Models at AMI)',
+    linkedinUrl: 'https://www.linkedin.com/in/michael-rabbat-66a00b7',
+    note: 'Founding member of FAIR Montreal. Left Meta in 2025 to join Yann LeCun\'s AMI Labs as VP of World Models — still Montreal-based.',
+    former: true,
   },
 
   {
@@ -100,7 +101,7 @@ export const PEOPLE: Person[] = [
     companyId: 'google-deepmind-montreal',
     name: 'Doina Precup',
     role: 'Lab Lead, Montreal',
-    linkedinUrl: 'https://www.linkedin.com/in/doina-precup',
+    linkedinUrl: 'https://www.linkedin.com/in/doina-precup-1ba61314',
     note: 'Also a McGill professor and Mila core member — reinforcement learning is her field.',
   },
   {
@@ -108,7 +109,7 @@ export const PEOPLE: Person[] = [
     companyId: 'google-deepmind-montreal',
     name: 'Shibl Mourad',
     role: 'Head of Engineering & Product Management',
-    linkedinUrl: 'https://www.linkedin.com/in/shibl-mourad',
+    linkedinUrl: 'https://www.linkedin.com/in/shiblmourad',
     note: 'Owns the engineering side of the Montreal office — the non-research hiring path.',
   },
 
@@ -117,7 +118,7 @@ export const PEOPLE: Person[] = [
     companyId: 'servicenow-research',
     name: 'Yoshua Bengio',
     role: 'Advisor',
-    linkedinUrl: 'https://www.linkedin.com/in/yoshua-bengio',
+    linkedinUrl: 'https://www.linkedin.com/in/yoshuabengio',
     note: 'Advises the lab, which came to ServiceNow through the Element AI acquisition. No separate Montreal leadership is publicly named — go through the ServiceNow careers site.',
   },
 
@@ -126,7 +127,7 @@ export const PEOPLE: Person[] = [
     companyId: 'cohere-montreal',
     name: 'Aidan Gomez',
     role: 'Co-founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/aidan-gomez',
+    linkedinUrl: 'https://www.linkedin.com/in/aidangomez',
     note: 'Co-author of "Attention Is All You Need"; posts openly about hiring.',
   },
   {
@@ -134,7 +135,7 @@ export const PEOPLE: Person[] = [
     companyId: 'cohere-montreal',
     name: 'Nick Frosst',
     role: 'Co-founder',
-    linkedinUrl: 'https://www.linkedin.com/in/nick-frosst',
+    linkedinUrl: 'https://www.linkedin.com/in/nick-frosst-19b80463',
     note: 'First employee at Google Brain Toronto under Geoff Hinton.',
   },
   {
@@ -142,7 +143,7 @@ export const PEOPLE: Person[] = [
     companyId: 'cohere-montreal',
     name: 'Ivan Zhang',
     role: 'Co-founder',
-    linkedinUrl: 'https://www.linkedin.com/in/ivan-zhang',
+    linkedinUrl: 'https://www.linkedin.com/in/1vnzh',
     note: 'Drives applied research and the model-training side.',
   },
   {
@@ -150,7 +151,7 @@ export const PEOPLE: Person[] = [
     companyId: 'cohere-montreal',
     name: 'Phil Blunsom',
     role: 'Chief Technology Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/phil-blunsom',
+    linkedinUrl: 'https://www.linkedin.com/in/phil-blunsom-95446a1b4',
     note: 'Ex-DeepMind and Oxford professor; owns the research org.',
   },
 
@@ -158,8 +159,8 @@ export const PEOPLE: Person[] = [
     id: 'coveo-laurent-simoneau',
     companyId: 'coveo',
     name: 'Laurent Simoneau',
-    role: 'Founder, President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/laurent-simoneau',
+    role: 'Founder & CEO',
+    linkedinUrl: 'https://www.linkedin.com/in/lsimoneau',
     note: 'Founder who returned to the CEO seat in April 2025 — expect a builder-first pitch to land best.',
   },
   {
@@ -167,7 +168,7 @@ export const PEOPLE: Person[] = [
     companyId: 'coveo',
     name: 'Richard Tessier',
     role: 'SVP & Field CTO',
-    linkedinUrl: 'https://www.linkedin.com/in/richard-tessier',
+    linkedinUrl: 'https://www.linkedin.com/in/richardtessier',
     note: 'Customer-facing technical leadership — good entry point for solutions/AI engineering roles.',
   },
 
@@ -176,7 +177,7 @@ export const PEOPLE: Person[] = [
     companyId: 'hopper',
     name: 'Frederic Lalonde',
     role: 'Founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/frederic-lalonde',
+    linkedinUrl: 'https://www.linkedin.com/in/fredlalonde',
     note: 'Serial founder (sold Newtrade to Expedia); very vocal about Montreal as a tech city.',
   },
   {
@@ -184,24 +185,25 @@ export const PEOPLE: Person[] = [
     companyId: 'hopper',
     name: 'Dakota Smith',
     role: 'President & Co-founder',
-    linkedinUrl: 'https://www.linkedin.com/in/dakota-smith',
+    linkedinUrl: 'https://www.linkedin.com/in/dakota-smith-hopper',
     note: 'Runs the commercial side including the HTS B2B business.',
   },
   {
     id: 'hopper-joost-ouwerkerk',
     companyId: 'hopper',
     name: 'Joost Ouwerkerk',
-    role: 'Chief Technology Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/joost-ouwerkerk',
-    note: 'Owns the engineering org — the person behind senior technical hires.',
+    role: 'Co-founder & former CTO (now at Deep Sky)',
+    linkedinUrl: 'https://www.linkedin.com/in/joostouwerkerk',
+    note: 'Co-founded Hopper and served as CTO until 2020. Now Co-founder & CTO of Deep Sky (carbon removal). Still deeply connected to Montreal tech.',
+    former: true,
   },
   {
     id: 'hopper-ken-pickering',
     companyId: 'hopper',
     name: 'Ken Pickering',
-    role: 'VP Engineering',
-    linkedinUrl: 'https://www.linkedin.com/in/ken-pickering',
-    note: 'Closest to day-to-day engineering hiring.',
+    role: 'Chief Technology Officer',
+    linkedinUrl: 'https://www.linkedin.com/in/kenpickering',
+    note: 'Promoted from VP Engineering to CTO — the person behind senior technical hires.',
   },
 
   {
@@ -209,7 +211,7 @@ export const PEOPLE: Person[] = [
     companyId: 'botpress',
     name: 'Sylvain Perron',
     role: 'Co-founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/sylvain-perron',
+    linkedinUrl: 'https://www.linkedin.com/in/slvnperron',
     note: 'Open-source-first founder; the community is a legitimate way to get noticed before messaging.',
   },
   {
@@ -217,7 +219,7 @@ export const PEOPLE: Person[] = [
     companyId: 'botpress',
     name: 'Justin Watson',
     role: 'Co-founder',
-    linkedinUrl: 'https://www.linkedin.com/in/justin-watson',
+    linkedinUrl: 'https://www.linkedin.com/in/justin-watson-6b232316',
     note: 'Co-founded the agent platform out of Montreal.',
   },
   {
@@ -234,7 +236,7 @@ export const PEOPLE: Person[] = [
     companyId: 'lightspeed',
     name: 'Dax Dasilva',
     role: 'Founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/dax-dasilva',
+    linkedinUrl: 'https://www.linkedin.com/in/daxdasilva',
     note: 'Founder back in the CEO seat; also founded the Never Apart cultural non-profit in Montreal.',
   },
   {
@@ -242,7 +244,7 @@ export const PEOPLE: Person[] = [
     companyId: 'lightspeed',
     name: 'Bhawna Singh',
     role: 'Chief Technology Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/bhawna-singh',
+    linkedinUrl: 'https://www.linkedin.com/in/bhawnasingh',
     note: 'Ex-Okta engineering leader; rebuilding the technical org — active hiring surface.',
   },
   {
@@ -250,7 +252,7 @@ export const PEOPLE: Person[] = [
     companyId: 'lightspeed',
     name: 'John Shapiro',
     role: 'Chief Product Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/john-shapiro',
+    linkedinUrl: 'https://www.linkedin.com/in/johnshapiro',
     note: 'Owns product; the route in for PM and product-adjacent roles.',
   },
   {
@@ -258,7 +260,7 @@ export const PEOPLE: Person[] = [
     companyId: 'lightspeed',
     name: 'Asha Bakshani',
     role: 'Chief Financial Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/asha-bakshani',
+    linkedinUrl: 'https://www.linkedin.com/in/asha-hotchandani-bakshani-1b416814',
     note: 'Finance and corporate strategy at a public company.',
   },
 
@@ -267,24 +269,25 @@ export const PEOPLE: Person[] = [
     companyId: 'alayacare',
     name: 'Adrian Schauer',
     role: 'Founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/adrian-schauer',
+    linkedinUrl: 'https://www.linkedin.com/in/adrianschauer',
     note: 'EY Entrepreneur Of The Year 2025 — visible and reachable on LinkedIn.',
   },
   {
     id: 'alayacare-jean-francois-gailleur',
     companyId: 'alayacare',
     name: 'Jean-Francois Gailleur',
-    role: 'Chief Technology Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/jean-francois-gailleur',
+    role: 'SVP Engineering',
+    linkedinUrl: 'https://www.linkedin.com/in/gailleur',
     note: 'Runs engineering for the home-care platform.',
   },
   {
     id: 'alayacare-brady-murphy',
     companyId: 'alayacare',
     name: 'Brady Murphy',
-    role: 'Co-founder & Chief Revenue Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/brady-murphy',
-    note: 'Owns go-to-market — the contact for commercial roles.',
+    role: 'Co-founder & Chief Revenue Officer (now CRO at Coconut Software)',
+    linkedinUrl: 'https://www.linkedin.com/in/bradymurphy',
+    note: 'Co-founded AlayaCare but has moved on — now CRO at Coconut Software.',
+    former: true,
   },
 
   {
@@ -292,7 +295,7 @@ export const PEOPLE: Person[] = [
     companyId: 'dialogue',
     name: 'Cherif Habib',
     role: 'Co-founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/cherif-habib',
+    linkedinUrl: 'https://www.linkedin.com/in/cherif',
     note: 'Took Dialogue from startup to public company to acquisition — strong Montreal health-tech network.',
   },
   {
@@ -300,7 +303,7 @@ export const PEOPLE: Person[] = [
     companyId: 'dialogue',
     name: 'Alexis Smirnov',
     role: 'Co-founder & CTO',
-    linkedinUrl: 'https://www.linkedin.com/in/alexis-smirnov',
+    linkedinUrl: 'https://www.linkedin.com/in/alexissmirnov',
     note: 'Deeply involved in the Montreal AI/ML community; writes publicly about the tech stack.',
   },
   {
@@ -308,7 +311,7 @@ export const PEOPLE: Person[] = [
     companyId: 'dialogue',
     name: 'Jean-Nicolas Guillemette',
     role: 'Chief Operating Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/jean-nicolas-guillemette',
+    linkedinUrl: 'https://www.linkedin.com/in/jean-nicolas-guillemette-5417501',
     note: 'Ex-Uber Canada; runs operations and scaling.',
   },
 
@@ -317,7 +320,7 @@ export const PEOPLE: Person[] = [
     companyId: 'optable',
     name: 'Vlad Stesin',
     role: 'Co-founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/vlad-stesin',
+    linkedinUrl: 'https://www.linkedin.com/in/vladstesin',
     note: 'Stepped into the CEO role in August 2025; ex-AppNexus product leader.',
   },
   {
@@ -325,7 +328,7 @@ export const PEOPLE: Person[] = [
     companyId: 'optable',
     name: 'Yves Poiré',
     role: 'Co-founder & Executive Chairman',
-    linkedinUrl: 'https://www.linkedin.com/in/yves-poire',
+    linkedinUrl: 'https://www.linkedin.com/in/yves-poir%C3%A9-7424233',
     note: 'Moved from CEO to chairman — still the strategic voice.',
   },
   {
@@ -333,7 +336,7 @@ export const PEOPLE: Person[] = [
     companyId: 'optable',
     name: 'Bosko Milekic',
     role: 'Co-founder & Chief Product Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/bosko-milekic',
+    linkedinUrl: 'https://www.linkedin.com/in/bosko',
     note: 'Technical co-founder behind the data-clean-room product.',
   },
 
@@ -343,7 +346,7 @@ export const PEOPLE: Person[] = [
     companyId: 'hydro-quebec',
     name: 'Claudine Bouchard',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/claudine-bouchard',
+    linkedinUrl: 'https://www.linkedin.com/in/claudine-bouchard-asc-a02abb11',
     note: 'Took the top job in July 2025 after running operations and infrastructure — an engineer leading the utility.',
   },
 
@@ -352,7 +355,7 @@ export const PEOPLE: Person[] = [
     companyId: 'innergex',
     name: 'Jean Trudel',
     role: 'Chief Executive Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/jean-trudel',
+    linkedinUrl: 'https://www.linkedin.com/in/jean-trudel-5186059',
     note: 'Promoted from CFO to CEO in March 2026 — finance-fluent, so lead with numbers.',
   },
   {
@@ -360,7 +363,7 @@ export const PEOPLE: Person[] = [
     companyId: 'innergex',
     name: 'Pascale Tremblay',
     role: 'Chief Asset Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/pascale-tremblay',
+    linkedinUrl: 'https://www.linkedin.com/in/pascale-tremblay-94571119',
     note: 'Owns the operating portfolio of hydro, wind and solar assets.',
   },
 
@@ -369,7 +372,7 @@ export const PEOPLE: Person[] = [
     companyId: 'boralex',
     name: 'Patrick Decostre',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/patrick-decostre',
+    linkedinUrl: 'https://www.linkedin.com/in/patrick-decostre-06bb2b9',
     note: 'Came up through the European business before taking the top role.',
   },
   {
@@ -377,7 +380,7 @@ export const PEOPLE: Person[] = [
     companyId: 'boralex',
     name: 'Philippe Bonin',
     role: 'EVP & Chief Financial Officer',
-    linkedinUrl: 'https://www.linkedin.com/in/philippe-bonin',
+    linkedinUrl: 'https://www.linkedin.com/in/philippe-bonin-46922026',
     note: 'Finance lead for the renewable project pipeline.',
   },
 
@@ -386,7 +389,7 @@ export const PEOPLE: Person[] = [
     companyId: 'evlo',
     name: 'Sonia St-Arnaud',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/sonia-st-arnaud',
+    linkedinUrl: 'https://www.linkedin.com/in/sonia-st-arnaud-fcpa-728b36127',
     note: 'Leads the Hydro-Québec battery-storage subsidiary — small team, so the CEO is genuinely reachable.',
   },
 
@@ -395,7 +398,7 @@ export const PEOPLE: Person[] = [
     companyId: 'dcbel',
     name: 'Marc Andre Forget',
     role: 'Co-founder & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/marc-andre-forget',
+    linkedinUrl: 'https://www.linkedin.com/in/mafing',
     note: 'Founder of the home energy station company; hardware-plus-software story.',
   },
 
@@ -404,7 +407,7 @@ export const PEOPLE: Person[] = [
     companyId: 'energir',
     name: 'Éric Lachance',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/eric-lachance',
+    linkedinUrl: 'https://www.linkedin.com/in/eric-lachance-a83980',
     note: 'Leading the utility through its decarbonization shift.',
   },
   {
@@ -412,7 +415,7 @@ export const PEOPLE: Person[] = [
     companyId: 'energir',
     name: 'Stéphanie Trudeau',
     role: 'Executive Vice-President, Québec',
-    linkedinUrl: 'https://www.linkedin.com/in/stephanie-trudeau',
+    linkedinUrl: 'https://www.linkedin.com/in/st%C3%A9phanie-trudeau-asc-c-dir-03704a18',
     note: 'Runs the Québec business — the operational decision-maker locally.',
   },
 
@@ -422,7 +425,7 @@ export const PEOPLE: Person[] = [
     companyId: 'csl-group',
     name: 'Louis Martel',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/louis-martel',
+    linkedinUrl: 'https://www.linkedin.com/in/louis-martel-532473107',
     note: 'Leads the global self-unloading fleet from the Montreal head office.',
   },
 
@@ -431,8 +434,8 @@ export const PEOPLE: Person[] = [
     companyId: 'fednav',
     name: 'Paul Pathy',
     role: 'President & CEO',
-    linkedinUrl: 'https://www.linkedin.com/in/paul-pathy',
-    note: 'Third-generation leader of Canada’s largest ocean-going dry-bulk shipowner.',
+    linkedinUrl: 'https://www.linkedin.com/search/results/people/?keywords=Paul%20Pathy%20Fednav',
+    note: 'Third-generation leader of Canada\'s largest ocean-going dry-bulk shipowner. No public LinkedIn profile — this link searches for him.',
   },
 ];
 
@@ -448,7 +451,7 @@ export function hasPeople(companyId: string): boolean {
   return PEOPLE.some((p) => p.companyId === companyId);
 }
 
-/** LinkedIn people-search fallback for when a constructed profile URL misses. */
+/** LinkedIn people-search fallback for when a profile URL misses. */
 export function linkedinSearchUrl(name: string, companyName?: string): string {
   const q = companyName ? `${name} ${companyName}` : name;
   return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(q)}`;
