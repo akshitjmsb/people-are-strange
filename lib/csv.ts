@@ -11,6 +11,10 @@ const industryOf = (c: AICompany): Industry => c.industry ?? 'ai';
 const COLUMNS: { header: string; value: (c: AICompany) => string | number | undefined }[] = [
   { header: 'Name', value: (c) => c.name },
   { header: 'Industry', value: (c) => INDUSTRY_META[industryOf(c)].label },
+  {
+    header: 'Also In',
+    value: (c) => c.secondaryIndustries?.map((i) => INDUSTRY_META[i].label).join('; '),
+  },
   { header: 'Type', value: (c) => typeDef(c.type).label },
   { header: 'Neighborhood', value: (c) => c.neighborhood },
   { header: 'Founded', value: (c) => c.founded },

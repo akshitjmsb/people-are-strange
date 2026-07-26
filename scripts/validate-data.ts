@@ -84,6 +84,21 @@ for (const c of COMPANIES) {
   }
   if (c.industry && !INDUSTRY_ORDER.includes(c.industry)) err(`${at}: unknown industry "${c.industry}"`);
 
+  // Secondary industries: a company's own product must substantively belong
+  // there too — see the doc comment on AICompany.secondaryIndustries. The
+  // structural checks below catch the mechanical ways this can go wrong; the
+  // judgment call about whether a company genuinely belongs is a human one.
+  if (c.secondaryIndustries) {
+    if (c.secondaryIndustries.length === 0) warn('empty secondaryIndustries array', at);
+    const seen = new Set<string>();
+    for (const ind of c.secondaryIndustries) {
+      if (!INDUSTRY_ORDER.includes(ind)) err(`${at}: unknown secondary industry "${ind}"`);
+      if (ind === industryOf(c)) err(`${at}: secondary industry "${ind}" duplicates its own primary industry`);
+      if (seen.has(ind)) err(`${at}: secondary industry "${ind}" listed twice`);
+      seen.add(ind);
+    }
+  }
+
   // Links well-formed (liveness is checked separately, see check-links.ts).
   for (const [field, val] of [
     ['website', c.website],

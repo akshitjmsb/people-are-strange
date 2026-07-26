@@ -1,0 +1,1 @@
+ALTER TABLE "companies" ADD COLUMN "secondary_industries" text[];

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
@@ -15,6 +15,7 @@ function toCompany(r: CompanyRow): AICompany {
     name: r.name,
     aka: r.aka ?? undefined,
     industry: r.industry,
+    secondaryIndustries: r.secondaryIndustries ?? undefined,
     lat: r.lat,
     lng: r.lng,
     address: r.address ?? undefined,
@@ -57,8 +58,19 @@ export async function GET(req: Request) {
   // Fail soft: a DB outage returns a clean 503 JSON body, and the client
   // falls back to the bundled dataset — the map never goes blank.
   try {
+    // A company matches ?industry= via its primary industry OR by carrying it
+    // in secondaryIndustries — e.g. an AI-native drug-discovery startup shows
+    // up under both ?industry=ai and ?industry=lifesci.
     const rows = industry
-      ? await db.select().from(companies).where(eq(companies.industry, industry))
+      ? await db
+          .select()
+          .from(companies)
+          .where(
+            or(
+              eq(companies.industry, industry),
+              sql`${industry} = ANY(${companies.secondaryIndustries})`,
+            ),
+          )
       : await db.select().from(companies);
 
     return NextResponse.json({ companies: rows.map(toCompany) });

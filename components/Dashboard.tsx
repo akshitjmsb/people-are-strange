@@ -142,19 +142,30 @@ export default function Dashboard({
               </div>
             ) : (
               <div className="space-y-2">
-                {stats.perType.map(({ type, count }) => {
-                  const def = typeDef(type);
-                  return (
-                    <Bar
-                      key={type}
-                      label={`${def.emoji} ${def.label}`}
-                      count={count}
-                      max={Math.max(1, ...stats.perType.map((t) => t.count))}
-                      color={def.color}
-                    />
-                  );
-                })}
+                {/* Only this lens's own types — a cross-listed company (e.g.
+                    an AI-native biotech) carries a foreign type here and would
+                    otherwise show as a stray bar with no relation to the rest
+                    of the breakdown. Its presence is noted below instead. */}
+                {stats.perType
+                  .filter(({ type }) => typeDef(type).industry === industry)
+                  .map(({ type, count }) => {
+                    const def = typeDef(type);
+                    return (
+                      <Bar
+                        key={type}
+                        label={`${def.emoji} ${def.label}`}
+                        count={count}
+                        max={Math.max(1, ...stats.perType.map((t) => t.count))}
+                        color={def.color}
+                      />
+                    );
+                  })}
               </div>
+            )}
+            {industry !== 'all' && stats.crossListedCount > 0 && (
+              <p className="mt-2 text-[11px] font-semibold text-asphalt/40">
+                + {stats.crossListedCount} more cross-listed here from another industry
+              </p>
             )}
           </Section>
 

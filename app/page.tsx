@@ -36,6 +36,12 @@ const isCompanyType = (v: string): v is CompanyType => v in COMPANY_TYPES;
 /** A company's industry, defaulting legacy rows to 'ai'. */
 const industryOf = (c: AICompany) => c.industry ?? 'ai';
 
+/** True when a company belongs to an industry lens — its primary industry, or
+ *  any of its secondaryIndustries (e.g. an AI-native drug-discovery startup
+ *  matches both 'ai' and 'lifesci'). */
+const matchesIndustry = (c: AICompany, ind: Industry) =>
+  industryOf(c) === ind || c.secondaryIndustries?.includes(ind) === true;
+
 // Map touches browser-only APIs (WebGL, maplibre) — load it client-side only.
 const Map = dynamic(() => import('@/components/Map'), {
   ssr: false,
@@ -153,7 +159,9 @@ export default function Page() {
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
   }, [urlReady, industry, activeTypes, activeArea, query, hiringOnly, savedOnly, view, selected]);
 
-  // count per industry across the whole dataset (for the top-level toggle)
+  // count per industry across the whole dataset (for the top-level toggle).
+  // A cross-listed company (secondaryIndustries) increments every lens it
+  // belongs to, so these can sum to more than all.length — intentional.
   const industryCounts = useMemo(() => {
     const c: Record<IndustrySelection, number> = {
       all: all.length,
@@ -164,13 +172,16 @@ export default function Page() {
       gaming: 0,
       lifesci: 0,
     };
-    for (const co of all) c[industryOf(co)] += 1;
+    for (const co of all) {
+      c[industryOf(co)] += 1;
+      for (const ind of co.secondaryIndustries ?? []) c[ind] += 1;
+    }
     return c;
   }, [all]);
 
   // the dataset narrowed to the selected industry (drives chips + counts)
   const inIndustry = useMemo(
-    () => (industry === 'all' ? all : all.filter((co) => industryOf(co) === industry)),
+    () => (industry === 'all' ? all : all.filter((co) => matchesIndustry(co, industry))),
     [all, industry],
   );
 
@@ -237,7 +248,10 @@ export default function Page() {
   }, [filtered, query]);
 
   // ecosystem stats for the dashboard (industry lens, ignores search/type)
-  const stats = useMemo(() => buildEcosystemStats(inIndustry), [inIndustry]);
+  const stats = useMemo(
+    () => buildEcosystemStats(inIndustry, industry === 'all' ? undefined : industry),
+    [inIndustry, industry],
+  );
 
   const toggleType = (t: CompanyType) => {
     setActiveTypes((prev) => {

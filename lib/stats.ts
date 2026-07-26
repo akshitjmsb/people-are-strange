@@ -24,8 +24,16 @@ export interface EcosystemStats {
   totalFunding: number; // raw dollars
   fundedCount: number; // companies with a known raised amount
   neighborhoodCount: number;
+  /** Per industry, counting a company once for its primary industry and once
+   *  more for each secondary one it carries — so a cross-listed company (e.g.
+   *  an AI-native biotech) shows up in both bars. Can sum to more than
+   *  `total`; that overlap is the point, not a bug. */
   perIndustry: Record<Industry, number>;
   perType: { type: CompanyType; count: number }[];
+  /** Within a specific industry lens (see `lens` param below), how many of the
+   *  companies present are here only via secondaryIndustries — i.e. their
+   *  primary home is a different industry. 0 when no lens was given. */
+  crossListedCount: number;
   founding: FoundingBucket[];
   oldestFounded: number | null;
   topNeighborhoods: { name: string; count: number }[];
@@ -44,7 +52,12 @@ const ERAS: { label: string; test: (y: number) => boolean }[] = [
   { label: '20s', test: (y) => y >= 2020 },
 ];
 
-export function buildEcosystemStats(companies: AICompany[]): EcosystemStats {
+/**
+ * @param lens When set, `companies` is assumed already narrowed to this
+ *   industry (primary or secondary) — used only to compute `crossListedCount`,
+ *   i.e. how many are here solely via secondaryIndustries.
+ */
+export function buildEcosystemStats(companies: AICompany[], lens?: Industry): EcosystemStats {
   const perIndustry: Record<Industry, number> = { ai: 0, aerospace: 0, energy: 0, marine: 0, gaming: 0, lifesci: 0 };
   const typeCounts = new Map<CompanyType, number>();
   const neighborhoods = new Map<string, number>();
@@ -56,10 +69,14 @@ export function buildEcosystemStats(companies: AICompany[]): EcosystemStats {
   let oldestFounded: number | null = null;
   let openRolesMontreal = 0;
   let liveBoards = 0;
+  let crossListedCount = 0;
 
   for (const c of companies) {
     perIndustry[industryOf(c)] += 1;
+    for (const ind of c.secondaryIndustries ?? []) perIndustry[ind] += 1;
     typeCounts.set(c.type, (typeCounts.get(c.type) ?? 0) + 1);
+
+    if (lens && industryOf(c) !== lens) crossListedCount += 1;
 
     if (c.hiring) hiringCount += 1;
 
@@ -93,6 +110,7 @@ export function buildEcosystemStats(companies: AICompany[]): EcosystemStats {
     fundedCount,
     neighborhoodCount: neighborhoods.size,
     perIndustry,
+    crossListedCount,
     perType: [...typeCounts.entries()]
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count),

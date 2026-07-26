@@ -166,9 +166,21 @@ export interface AICompany {
   name: string;
   aka?: string; // former / alternate name (e.g. "ex-Element AI")
 
-  // Which industry layer this belongs to. Optional for back-compat: a missing
-  // value means 'ai' (the original dataset predates this field).
+  // Which industry layer this belongs to (drives the marker's home lens and
+  // `type` must be one of that industry's CompanyTypes). Optional for
+  // back-compat: a missing value means 'ai'.
   industry?: Industry;
+
+  /** Other industry lenses this company is genuinely native to, beyond its
+   *  primary `industry` — e.g. an AI-first drug-discovery startup is
+   *  discoverable from both the AI and Life Sciences toggles. Reserved for
+   *  companies whose OWN product is substantively built for that industry
+   *  (a dedicated aiDomains + industries signal on both sides), not a vendor
+   *  relationship or a passing mention — see scripts/validate-data.ts, which
+   *  rejects a value equal to the primary industry or duplicated within the
+   *  array. The primary `type`/color/pin identity is unaffected: this only
+   *  widens which industry filters surface the company. */
+  secondaryIndustries?: Industry[];
 
   // Where it sits on the map (REAL Montreal coordinates).
   lat: number;

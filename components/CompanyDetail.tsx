@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { domainLabel, typeDef } from '@/lib/categories';
+import { domainLabel, INDUSTRY_META, typeDef } from '@/lib/categories';
 import { reportCompanyUrl } from '@/lib/feedback';
 import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
 import { roleSummary } from '@/lib/roles';
@@ -100,6 +100,23 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
             </h2>
             {company.aka && (
               <p className="text-xs font-medium text-asphalt/50">{company.aka}</p>
+            )}
+            {/* Cross-listed: this company's own product is substantively built
+                for another industry too — see lib/types.ts on
+                secondaryIndustries for the bar that earns this. */}
+            {company.secondaryIndustries && company.secondaryIndustries.length > 0 && (
+              <p className="mt-1 flex flex-wrap items-center gap-1 text-[11px] font-semibold text-asphalt/45">
+                Also in
+                {company.secondaryIndustries.map((ind) => (
+                  <span
+                    key={ind}
+                    className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5"
+                    style={{ backgroundColor: `${INDUSTRY_META[ind].color}1a`, color: INDUSTRY_META[ind].color }}
+                  >
+                    {INDUSTRY_META[ind].emoji} {INDUSTRY_META[ind].label}
+                  </span>
+                ))}
+              </p>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1.5">

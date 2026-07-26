@@ -51,6 +51,7 @@ async function main() {
     name: c.name,
     aka: c.aka ?? null,
     industry: c.industry ?? 'ai',
+    secondaryIndustries: c.secondaryIndustries ?? null,
     lat: c.lat,
     lng: c.lng,
     address: c.address ?? null,

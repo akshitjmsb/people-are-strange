@@ -29,6 +29,13 @@
       "when": 1785011718532,
       "tag": "0003_oval_scream",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785031650251,
+      "tag": "0004_glorious_klaw",
+      "breakpoints": true
     }
   ]
 }

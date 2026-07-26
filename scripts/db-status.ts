@@ -38,6 +38,7 @@ async function main() {
       [
         ['name', f.name, d.name],
         ['industry', f.industry ?? 'ai', d.industry],
+        ['secondaryIndustries', JSON.stringify(f.secondaryIndustries ?? null), JSON.stringify(d.secondaryIndustries ?? null)],
         ['type', f.type, d.type],
         ['careersUrl', f.careersUrl ?? null, d.careersUrl],
         ['website', f.website ?? null, d.website],

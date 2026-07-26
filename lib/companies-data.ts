@@ -302,6 +302,10 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'thales-cortaix',
     name: 'Thales cortAIx',
+    // Its own AI is built explicitly for aerospace, defense and transport
+    // critical systems (see `industries` below) — genuinely native to that
+    // lens too, not just an AI lab that happens to have aerospace clients.
+    secondaryIndustries: ['aerospace'],
     type: 'big-tech-lab',
     lat: 45.5304,
     lng: -73.6164,
@@ -841,6 +845,9 @@ export const COMPANIES: AICompany[] = [
     id: 'valence-labs',
     name: 'Valence Labs',
     aka: 'ex-Valence Discovery',
+    // Deep-learning drug discovery is the entire business, not a side vertical
+    // — belongs in the Life Sciences lens as much as the AI one.
+    secondaryIndustries: ['lifesci'],
     type: 'startup',
     lat: 45.5308,
     lng: -73.6132,
@@ -860,6 +867,9 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'dreamfold',
     name: 'Dreamfold',
+    // Generative protein design for drug discovery — same reasoning as
+    // Valence Labs above.
+    secondaryIndustries: ['lifesci'],
     type: 'startup',
     lat: 45.5292,
     lng: -73.6148,
@@ -881,6 +891,7 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'ventus-therapeutics',
     name: 'Ventus Therapeutics',
+    secondaryIndustries: ['lifesci'],
     type: 'applied-ai',
     lat: 45.5058,
     lng: -73.6692,
@@ -900,10 +911,17 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'congruence-therapeutics',
     name: 'Congruence Therapeutics',
+    secondaryIndustries: ['lifesci'],
     type: 'applied-ai',
-    lat: 45.5004,
-    lng: -73.5696,
-    neighborhood: 'Downtown',
+    // Corrected 2026-07: the address resolves to 6666 rue Saint-Urbain — a few
+    // doors from Mila (6650) — so Downtown/45.5004 was wrong; this is Mile-Ex,
+    // matching the coordinates a since-removed duplicate lifesci row had
+    // (see the Life Sciences layer's launch commit), even though that row
+    // mislabeled the neighborhood as Rosemont.
+    lat: 45.5307,
+    lng: -73.6136,
+    address: '6666 Rue Saint-Urbain, Suite 450, Montréal, QC H2S 3H1',
+    neighborhood: 'Mile-Ex',
     oneLiner: 'AI-driven platform designing small-molecule correctors for protein-misfolding diseases.',
     problem: 'Diseases from misfolded proteins are hard to treat because such proteins are dynamic and elusive.',
     solution: 'The Revenir platform integrates protein dynamics, biophysics and ML to design stabilizing molecules.',
@@ -911,10 +929,17 @@ export const COMPANIES: AICompany[] = [
     industries: ['drug-discovery', 'biotech', 'rare-disease'],
     founded: 2021,
     funding: { totalRaised: '~US$168.5M', lastRound: 'US$39.5M', lastRoundDate: '2026-03', investors: ['OrbiMed', 'Amplitude Ventures', 'FSTQ', 'BDC Capital'] },
+    hiring: true,
+    careersUrl: 'https://www.congruencetx.com/careers',
     notable: 'Founded by Clarissa Desjardins (Clementia, acquired by Ipsen); lead candidate CGX-926 in the clinic.',
     status: 'active',
     website: 'https://congruencetx.com/',
-    sources: ['https://betakit.com/canadian-biotech-leader-clarissa-desjardins-secures-63-million-cad-for-congruence-therapeutics/', 'https://congruencetx.com/'],
+    sources: [
+      'https://betakit.com/canadian-biotech-leader-clarissa-desjardins-secures-63-million-cad-for-congruence-therapeutics/',
+      'https://congruencetx.com/',
+      'https://congruencetx.com/contact-us/',
+    ],
+    verifiedAt: '2026-07',
   },
   {
     id: 'moov-ai',

@@ -17,6 +17,10 @@ export const companies = pgTable('companies', {
   // 'ai' via the column default.
   industry: text('industry').$type<Industry>().notNull().default('ai'),
 
+  // Other industry lenses this company is also genuinely native to — see the
+  // doc comment on AICompany.secondaryIndustries in lib/types.ts.
+  secondaryIndustries: text('secondary_industries').array().$type<Industry[]>(),
+
   // Map position (real Montreal coordinates).
   lat: doublePrecision('lat').notNull(),
   lng: doublePrecision('lng').notNull(),
