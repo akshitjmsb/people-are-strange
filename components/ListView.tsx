@@ -3,11 +3,14 @@
 import { useState } from 'react';
 
 import { INDUSTRY_META, typeDef } from '@/lib/categories';
+import { getCity } from '@/lib/cities';
 import { suggestCompanyUrl } from '@/lib/feedback';
 import { distanceKm, formatDistance, type LatLng } from '@/lib/geo';
 import { roleSummary } from '@/lib/roles';
 import { SORT_LABELS, sortCompanies, type SortKey, type SortDir } from '@/lib/sort';
 import type { AICompany, Industry } from '@/lib/types';
+
+const city = getCity();
 
 interface Props {
   companies: AICompany[];
@@ -209,7 +212,7 @@ export default function ListView({
 
         {/* the audience knows the scene — let them close the gaps */}
         <p className="px-1 pb-2 pt-5 text-center text-xs font-semibold text-asphalt/45">
-          Know a Montreal company that belongs on this map?{' '}
+          Know a {city.name} company that belongs on this map?{' '}
           <a
             href={suggestCompanyUrl()}
             target="_blank"

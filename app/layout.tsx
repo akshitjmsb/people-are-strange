@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { getCity } from '@/lib/cities';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -9,16 +10,17 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
+const city = getCity();
+
 export const metadata: Metadata = {
-  title: 'People Are Strange MTL — Montreal Industry Map',
-  description:
-    "Montreal's AI, aerospace, energy and marine scenes on one living map. Every lab, startup, plant and port — what they're building, where they are.",
+  title: city.metaTitle,
+  description: city.metaDescription,
   manifest: '/manifest.json',
-  applicationName: 'People Are Strange MTL',
+  applicationName: 'People Are Strange',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'PAS MTL',
+    title: 'People Are Strange',
   },
   icons: {
     icon: '/icon.svg',
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#E84393',
+  themeColor: city.themeColor,
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

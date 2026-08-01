@@ -6,7 +6,10 @@ import { domainLabel, INDUSTRY_META, typeDef } from '@/lib/categories';
 import { reportCompanyUrl } from '@/lib/feedback';
 import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
 import { roleSummary } from '@/lib/roles';
+import { getCity } from '@/lib/cities';
 import type { AICompany, Person } from '@/lib/types';
+
+const city = getCity();
 
 interface Props {
   company: AICompany | null;
@@ -91,7 +94,7 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
               )}
               {roles.live && roles.montreal > 0 && (
                 <span className="rounded-full bg-parc-emerald px-2 py-0.5 text-[11px] font-bold text-white">
-                  {roles.montreal} open in MTL
+                  {roles.montreal} open in {city.name}
                 </span>
               )}
             </div>
@@ -266,7 +269,7 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
               <p className="text-sm text-asphalt/80">📍 {company.address}</p>
             ) : (
               <p className="text-sm text-asphalt/80">
-                📍 {company.neighborhood ?? 'Montréal'}{' '}
+                📍 {company.neighborhood ?? city.name}{' '}
                 <span className="text-asphalt/45">
                   · approximate — neighbourhood-level only, exact address not public
                 </span>

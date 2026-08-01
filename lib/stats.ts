@@ -6,6 +6,7 @@
 
 import { canonicalNeighborhood } from './neighborhoods';
 import { parseFundingAmount } from './funding';
+import { INDUSTRY_ORDER } from './categories';
 import type { AICompany, CompanyType, Industry } from './types';
 
 export interface FoundingBucket {
@@ -58,7 +59,12 @@ const ERAS: { label: string; test: (y: number) => boolean }[] = [
  *   i.e. how many are here solely via secondaryIndustries.
  */
 export function buildEcosystemStats(companies: AICompany[], lens?: Industry): EcosystemStats {
-  const perIndustry: Record<Industry, number> = { ai: 0, aerospace: 0, energy: 0, marine: 0, gaming: 0, lifesci: 0 };
+  // Seed a zero for every industry the active city declares, so a per-industry
+  // bucket exists no matter which city this build is (a hardcoded Montreal set
+  // would leave other cities' industries undefined → NaN).
+  const perIndustry = Object.fromEntries(
+    INDUSTRY_ORDER.map((i) => [i, 0]),
+  ) as Record<Industry, number>;
   const typeCounts = new Map<CompanyType, number>();
   const neighborhoods = new Map<string, number>();
   const founding = ERAS.map((e) => ({ label: e.label, count: 0 }));

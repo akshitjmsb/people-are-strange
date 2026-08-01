@@ -1,7 +1,7 @@
 {
-  "name": "People Are Strange MTL",
-  "short_name": "PAS MTL",
-  "description": "Montreal spatial intelligence — the whole island in glowing H3 hexagons.",
+  "name": "People Are Strange",
+  "short_name": "People Are Strange",
+  "description": "A city's industries — every lab, startup, plant and studio — on one living map.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

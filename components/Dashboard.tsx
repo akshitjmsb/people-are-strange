@@ -7,8 +7,11 @@ import {
   AREA_ACCENT,
 } from '@/lib/categories';
 import { formatMoney } from '@/lib/funding';
+import { getCity } from '@/lib/cities';
 import type { EcosystemStats } from '@/lib/stats';
 import type { IndustrySelection } from './IndustryToggle';
+
+const city = getCity();
 
 interface Props {
   stats: EcosystemStats;
@@ -36,7 +39,7 @@ export default function Dashboard({
   onExport,
   exportCount,
 }: Props) {
-  const lens = industry === 'all' ? INDUSTRY_META.ai : INDUSTRY_META[industry];
+  const lens = industry === 'all' ? INDUSTRY_META[INDUSTRY_ORDER[0]] : INDUSTRY_META[industry];
   const lensLabel = industry === 'all' ? 'All industries' : lens.label;
   const hiringPct = stats.total ? Math.round((stats.hiringCount / stats.total) * 100) : 0;
 
@@ -106,7 +109,7 @@ export default function Dashboard({
                 actually poll boards — a real number beats a proxy. */}
             {stats.liveBoards > 0 ? (
               <StatTile
-                label="Open in Montréal"
+                label={`Open in ${city.name}`}
                 value={String(stats.openRolesMontreal)}
                 hint={`live · ${stats.liveBoards} board${stats.liveBoards === 1 ? '' : 's'}`}
                 accent="#E84393"

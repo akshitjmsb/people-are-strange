@@ -27,9 +27,11 @@ import {
   resolveNeighborhoodSlug,
 } from '@/lib/neighborhoods';
 import { buildEcosystemStats } from '@/lib/stats';
+import { getCity } from '@/lib/cities';
 import type { AICompany, CompanyType, Industry } from '@/lib/types';
 
-const INDUSTRIES: Industry[] = ['ai', 'aerospace', 'energy', 'marine', 'gaming', 'lifesci'];
+const city = getCity();
+const INDUSTRIES: Industry[] = city.industries;
 const isIndustry = (v: string): v is Industry => (INDUSTRIES as string[]).includes(v);
 const isCompanyType = (v: string): v is CompanyType => v in COMPANY_TYPES;
 
@@ -163,18 +165,12 @@ export default function Page() {
   // A cross-listed company (secondaryIndustries) increments every lens it
   // belongs to, so these can sum to more than all.length — intentional.
   const industryCounts = useMemo(() => {
-    const c: Record<IndustrySelection, number> = {
-      all: all.length,
-      ai: 0,
-      aerospace: 0,
-      energy: 0,
-      marine: 0,
-      gaming: 0,
-      lifesci: 0,
-    };
+    const c: Record<string, number> = { all: all.length };
+    for (const ind of INDUSTRIES) c[ind] = 0;
     for (const co of all) {
-      c[industryOf(co)] += 1;
-      for (const ind of co.secondaryIndustries ?? []) c[ind] += 1;
+      const primary = industryOf(co);
+      c[primary] = (c[primary] ?? 0) + 1;
+      for (const ind of co.secondaryIndustries ?? []) c[ind] = (c[ind] ?? 0) + 1;
     }
     return c;
   }, [all]);
@@ -287,7 +283,7 @@ export default function Page() {
   // export the currently-filtered list as CSV, with a filter-aware filename
   const exportCsv = () => {
     if (!filtered.length) return;
-    const parts = ['montreal'];
+    const parts = [city.csvPrefix];
     if (hiringOnly) parts.push('hiring');
     if (industry !== 'all') parts.push(industry);
     if (activeArea) parts.push(neighborhoodSlug(activeArea));
@@ -376,11 +372,10 @@ export default function Page() {
       {view === 'map' && !activeCluster && (
         <div className="pointer-events-none absolute bottom-3 left-3 z-10">
           <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
-            People Are Strange
-            <span className="mtl-gradient-text ml-1">MTL</span>
+            People Are <span className="mtl-gradient-text">Strange</span>
           </p>
           <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
-            Montreal&apos;s AI, aerospace, energy &amp; marine scene, mapped
+            {city.tagline}
           </p>
           <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-white/70 px-2 py-1 backdrop-blur-sm">
             <span className="flex items-center gap-1 text-[10px] font-semibold text-asphalt/70">
@@ -468,7 +463,7 @@ function LoadingOverlay() {
           <span className="h-2 w-2 animate-bounce rounded-full bg-montroyal-amber [animation-delay:120ms]" />
           <span className="h-2 w-2 animate-bounce rounded-full bg-jazz-blue [animation-delay:240ms]" />
         </span>
-        <span className="text-sm font-semibold text-asphalt/80">Mapping Montréal…</span>
+        <span className="text-sm font-semibold text-asphalt/80">{city.loadingText}</span>
       </div>
     </div>
   );
@@ -483,7 +478,7 @@ function EmptyState({ hasData }: { hasData: boolean }) {
         <p className="mt-1 text-sm text-asphalt/60">
           {hasData
             ? 'No companies match your search or filters. Try clearing them.'
-            : 'Loading the Montreal tech scene…'}
+            : `Loading the ${city.name} tech scene…`}
         </p>
         {hasData && (
           <p className="mt-2 text-xs font-semibold text-asphalt/50">

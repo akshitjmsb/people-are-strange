@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { typeColor, typeDef } from '@/lib/categories';
+import { getCity } from '@/lib/cities';
 import type { AICompany } from '@/lib/types';
+
+const city = getCity();
 
 interface SearchBarProps {
   value: string;
@@ -88,7 +91,7 @@ export default function SearchBar({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           onKeyDown={onKeyDown}
-          placeholder="Search Montreal — Mila, Bombardier, Énergir, CSL…"
+          placeholder={`Search ${city.name}…`}
           className="w-full bg-transparent text-sm text-asphalt placeholder:text-asphalt/35 focus:outline-none"
           aria-label="Search companies"
           role="combobox"

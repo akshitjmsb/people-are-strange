@@ -11,6 +11,7 @@ import { MapboxOverlay, type MapboxOverlayProps } from '@deck.gl/mapbox';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { typeColor, typeDef } from '@/lib/categories';
+import { getCity } from '@/lib/cities';
 import type { AICompany } from '@/lib/types';
 import {
   createCompanyLayers,
@@ -19,18 +20,19 @@ import {
   type NeighborhoodShape,
 } from './CompanyLayers';
 
-// Montreal — centred on the island, framed on the AI corridor (Mile-Ex →
-// downtown), tilted for that street-level, walk-the-city feel.
+// Framed on the active city's centre, tilted for that street-level,
+// walk-the-city feel. mapCenter is [lat, lng].
+const city = getCity();
 const INITIAL_VIEW = {
-  longitude: -73.585,
-  latitude: 45.512,
-  zoom: 12.4,
+  longitude: city.mapCenter[1],
+  latitude: city.mapCenter[0],
+  zoom: city.defaultZoom,
   pitch: 40,
   bearing: -10,
 };
 
 // Basemap fallback chain, most graceful first:
-//  1. CARTO Voyager — bright, colourful streets; the vibrant Montreal canvas.
+//  1. CARTO Voyager — bright, colourful streets; the vibrant city canvas.
 //  2. CARTO Positron — quieter, but same CDN family.
 //  3. Raw OSM raster tiles — independent of CARTO entirely, so the map still
 //     draws streets even if the whole CDN is down.
@@ -282,11 +284,11 @@ export default function Map({
       />
       <NavigationControl position="bottom-right" showCompass visualizePitch />
 
-      {/* recenter to the classic Montreal framing */}
+      {/* recenter to the city's default framing */}
       <button
         onClick={recenter}
-        aria-label="Recenter on Montreal"
-        title="Recenter on Montreal"
+        aria-label="Recenter on the map"
+        title="Recenter on the map"
         className="absolute bottom-[172px] right-[10px] z-10 flex h-[29px] w-[29px] items-center justify-center rounded-lg border border-black/5 bg-white/85 text-asphalt/70 shadow-md backdrop-blur-xl transition hover:bg-white hover:text-asphalt"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

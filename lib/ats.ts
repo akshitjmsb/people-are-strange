@@ -1,3 +1,5 @@
+import { getCity } from './cities';
+
 // ── Live open-role counts, via applicant-tracking system board APIs ──────────
 // Careers pages are unscrapable in the general case, but most companies sit on
 // an ATS that exposes a public, unauthenticated JSON board. This module turns
@@ -62,16 +64,21 @@ async function getJson(url: string, init?: RequestInit): Promise<unknown> {
   }
 }
 
-/** Grade a freeform location string. Deliberately conservative: a bare
- *  "Canada" counts as ambiguous, never as Montreal — over-claiming local roles
- *  is exactly the kind of lie this app is trying to stop telling. */
+/** Grade a freeform location string against the active city's locality
+ *  patterns. Deliberately conservative: a bare "Canada" counts as ambiguous,
+ *  never as local — over-claiming local roles is exactly the kind of lie
+ *  this app is trying to stop telling. */
 export function montrealness(location: string): Posting['locality'] {
+  return localityMatch(location);
+}
+
+/** City-aware locality grading. The function name `montrealness` is kept as
+ *  an alias for backward compatibility; new code should use this. */
+export function localityMatch(location: string): Posting['locality'] {
+  const { localityPattern, localityAmbiguousPattern } = getCity();
   const s = location.toLowerCase();
-  if (/montr[eé]al|qu[eé]bec|\bqc\b|laval|longueuil|brossard|saint-laurent/.test(s)) return 'here';
-  // Remote-anywhere and country-wide postings are genuinely open to someone in
-  // Montreal, but we can't claim they're *here*.
-  if (/^canada$|remote|anywhere|worldwide|monde entier|hybrid/.test(s.trim())) return 'maybe';
-  if (!s.trim()) return 'maybe';
+  if (localityPattern.test(s)) return 'here';
+  if (localityAmbiguousPattern.test(s.trim()) || !s.trim()) return 'maybe';
   return 'away';
 }
 

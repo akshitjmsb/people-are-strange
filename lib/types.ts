@@ -1,15 +1,17 @@
-// ── People Are Strange MTL — Montreal's tech scene, on one map ───────────────
-// Four industries share one map and one data shape: the AI scene (every lab
-// and startup in the city), the aerospace scene (Montreal is a top-3 global
-// aerospace hub), the energy scene (producers, storage tech, installers and
-// distributors powering Québec's energy transition), and the marine scene
-// (the port, shipowners and services that make Montreal a great inland port).
-// Each company is placed on the map with as much real knowledge about it as
-// we can gather.
+// ── People Are Strange — city industry maps ─────────────────────────────────
+// Multiple cities share one map and one data shape. Each city defines its own
+// industries (Montreal has AI/aerospace/energy/marine/gaming/lifesci; Victoria
+// has tech/defense/ocean/cleantech/government/lifesci). Each company is placed
+// on the map with as much real knowledge about it as we can gather.
 
 /** Which industry layer a company belongs to. Drives the top-level toggle and
- *  the marker palette family. Existing rows default to 'ai'. */
-export type Industry = 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming' | 'lifesci';
+ *  the marker palette family. The union covers ALL cities — each city config
+ *  declares which subset it uses. Existing rows default to 'ai'. */
+export type Industry =
+  // Montreal industries
+  | 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming' | 'lifesci'
+  // Victoria industries
+  | 'tech' | 'defense' | 'ocean' | 'cleantech' | 'government';
 
 /** What kind of player in an ecosystem this is. Drives marker colour. The union
  *  spans both industries; AI types and aerospace types never collide. */
@@ -55,7 +57,17 @@ export type CompanyType =
   | 'lifesci-biotech' // biotech company (Knight, CellCarta, Congruence)
   | 'lifesci-cro' // contract research / services (Altasciences, Charles River)
   | 'lifesci-research' // research institute (IRCM, The Neuro, adMare)
-  | 'lifesci-org'; // cluster / association (Montréal InVivo)
+  | 'lifesci-org' // cluster / association (Montréal InVivo)
+  // ── Victoria: Tech ecosystem ──
+  | 'tech-startup' | 'tech-scaleup' | 'tech-enterprise' | 'tech-agency' | 'tech-govtech' | 'tech-platform'
+  // ── Victoria: Defense ecosystem ──
+  | 'defense-naval' | 'defense-contractor' | 'defense-services' | 'defense-research'
+  // ── Victoria: Ocean Tech ecosystem ──
+  | 'ocean-tech' | 'ocean-research' | 'ocean-services' | 'ocean-startup'
+  // ── Victoria: CleanTech ecosystem ──
+  | 'cleantech-utility' | 'cleantech-startup' | 'cleantech-services' | 'cleantech-research'
+  // ── Victoria: Government ecosystem ──
+  | 'gov-provincial' | 'gov-federal' | 'gov-crown' | 'gov-municipal';
 
 /** Broad AI capability areas — used for filtering and tags. */
 export type AIDomain =
@@ -145,9 +157,41 @@ export type LifeSciDomain =
   | 'cell-gene-therapy'
   | 'diagnostics';
 
-/** Any capability area, across all industries. Stored in the `aiDomains`
- *  column/field (kept that name so the data shape is identical). */
-export type Domain = AIDomain | AerospaceDomain | EnergyDomain | MarineDomain | GamingDomain | LifeSciDomain;
+// ── Victoria domain types ────────────────────────────────────────────────
+
+/** Victoria tech capability areas. */
+export type TechDomain =
+  | 'saas' | 'fintech' | 'edtech' | 'healthtech' | 'proptech' | 'martech'
+  | 'cybersecurity' | 'data-analytics' | 'cloud-infra' | 'devtools'
+  | 'ai-ml' | 'iot' | 'gaming-tech' | 'ecommerce' | 'gis-geospatial';
+
+/** Victoria defense capability areas. */
+export type DefenseDomain =
+  | 'naval-engineering' | 'submarine-support' | 'shipbuilding'
+  | 'defense-electronics' | 'simulation-training' | 'fleet-maintenance';
+
+/** Victoria ocean tech capability areas. */
+export type OceanDomain =
+  | 'ocean-monitoring' | 'autonomous-vessels' | 'marine-biology'
+  | 'hydrography' | 'coastal-intelligence' | 'ocean-instruments'
+  | 'fisheries-tech' | 'marine-renewables';
+
+/** Victoria clean tech capability areas. */
+export type CleanTechDomain =
+  | 'clean-water' | 'renewable-energy' | 'grid-management'
+  | 'energy-efficiency' | 'electric-utility' | 'gas-utility';
+
+/** Victoria government capability areas. */
+export type GovernmentDomain =
+  | 'public-service' | 'insurance-crown' | 'pension-admin'
+  | 'digital-services' | 'resource-management';
+
+/** Any capability area, across all cities and industries. Stored in the
+ *  `aiDomains` column/field (kept that name so the data shape is identical). */
+export type Domain =
+  | AIDomain | AerospaceDomain | EnergyDomain | MarineDomain
+  | GamingDomain | LifeSciDomain
+  | TechDomain | DefenseDomain | OceanDomain | CleanTechDomain | GovernmentDomain;
 
 import type { AtsRef } from './ats';
 

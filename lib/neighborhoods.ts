@@ -9,55 +9,14 @@
 import type { CompanyType, Industry } from './types';
 import type { AICompany } from './types';
 import { parseFundingAmount } from './funding';
-
-/** Fold the messy raw neighborhood strings into a smaller set of real areas. */
-const CANONICAL: Record<string, string> = {
-  'Downtown': 'Downtown',
-  'Downtown / McGill': 'Downtown',
-  'McGill / Downtown': 'Downtown',
-  'Downtown / Concordia': 'Downtown',
-  'Mile-Ex': 'Mile-Ex',
-  'Mile-End': 'Mile-End',
-  'Plateau': 'Plateau',
-  'Old Montreal': 'Old Montreal & Old Port',
-  'Old Port': 'Old Montreal & Old Port',
-  'Griffintown': 'Griffintown',
-  'Saint-Henri': 'Saint-Henri',
-  'Centre-Sud': 'Centre-Sud',
-  'Côte-des-Neiges': 'Côte-des-Neiges',
-  'Côte-des-Neiges / UdeM': 'Côte-des-Neiges',
-  'Ville Saint-Laurent': 'Saint-Laurent',
-  'Saint-Laurent': 'Saint-Laurent',
-  'Dorval / Saint-Laurent': 'Saint-Laurent',
-  'Dorval (YUL)': 'Dorval',
-  'Saint-Léonard / Anjou': 'Saint-Léonard / Anjou',
-  'Lachine': 'Lachine',
-  'Pointe-Claire': 'West Island',
-  'Sainte-Anne-de-Bellevue': 'West Island',
-  'Montréal (West)': 'West Island',
-  'Mirabel': 'Mirabel',
-  'Mirabel (YMX)': 'Mirabel',
-  'Laval': 'Laval',
-  'Longueuil': 'Longueuil & Rive-Sud',
-  'Saint-Hubert (Longueuil)': 'Longueuil & Rive-Sud',
-  'Saint-Bruno-de-Montarville': 'Longueuil & Rive-Sud',
-  'Varennes': 'Longueuil & Rive-Sud',
-  'Saint-Jean-sur-Richelieu': 'Montérégie',
-  'Bromont': 'Montérégie',
-  'Sherbrooke': 'Estrie',
-  'Port de Montréal (east end)': 'Port de Montréal',
-  'Port de Montréal (Viau / Maisonneuve)': 'Port de Montréal',
-  'Bickerdike Terminal / Cité du Havre': 'Port de Montréal',
-  'Cité du Havre': 'Port de Montréal',
-  'Montréal': 'Greater Montréal',
-};
+import { getCity } from './cities';
 
 /** Map a raw neighborhood string to its canonical cluster (or null). */
 export function canonicalNeighborhood(raw?: string | null): string | null {
   if (!raw) return null;
   const t = raw.trim();
   if (!t) return null;
-  return CANONICAL[t] ?? t;
+  return getCity().canonicalNeighborhoods[t] ?? t;
 }
 
 /** URL-safe slug for a canonical neighborhood name ("Mile-Ex" → "mile-ex",
@@ -209,9 +168,9 @@ function convexHull(points: [number, number][]): [number, number][] {
   return lower.concat(upper);
 }
 
-// Longitude degrees are shorter than latitude degrees this far north; correct
-// so soft circles read as round-ish on the map (cos 45.5° ≈ 0.70).
-const LNG_SCALE = 1 / Math.cos((45.5 * Math.PI) / 180);
+// Longitude degrees are shorter than latitude degrees; the ratio depends on
+// the city's latitude. Read from the active city config.
+const LNG_SCALE = getCity().lngScale;
 const MIN_RADIUS_DEG = 0.0045; // ~0.5 km — keeps tiny clusters visible
 
 function dedupe(pts: [number, number][]): [number, number][] {

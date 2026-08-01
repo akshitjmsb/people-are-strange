@@ -1,5 +1,6 @@
 'use client';
 
+import { getCity } from '@/lib/cities';
 import type { Industry } from '@/lib/types';
 
 export type IndustrySelection = Industry | 'all';
@@ -11,26 +12,26 @@ interface Option {
   color: string; // active pill colour
 }
 
-// AI keeps the street-art violet; aerospace gets its industrial jet-navy;
-// energy its sun amber; marine its deep-sea blue; "All" is the neutral
-// asphalt of the city grid.
+// Built from the active city: an "All" pill in the neutral grid accent, then
+// one pill per industry carrying that industry's own emoji, label and colour.
+const city = getCity();
 const OPTIONS: Option[] = [
-  { key: 'all', label: 'All', emoji: '🗺️', color: '#2D3436' },
-  { key: 'ai', label: 'AI', emoji: '🧠', color: '#6C5CE7' },
-  { key: 'aerospace', label: 'Aerospace', emoji: '✈️', color: '#1F4E79' },
-  { key: 'energy', label: 'Energy', emoji: '⚡', color: '#F59E0B' },
-  { key: 'marine', label: 'Marine', emoji: '🚢', color: '#0D4F6E' },
-  { key: 'gaming', label: 'Gaming', emoji: '🎮', color: '#7B2FF7' },
-  { key: 'lifesci', label: 'Life Sci', emoji: '🧬', color: '#0891B2' },
+  { key: 'all', label: 'All', emoji: '🗺️', color: city.areaAccent },
+  ...city.industries.map((ind): Option => ({
+    key: ind,
+    label: city.industryMeta[ind].label,
+    emoji: city.industryMeta[ind].emoji,
+    color: city.industryMeta[ind].color,
+  })),
 ];
 
 interface Props {
   value: IndustrySelection;
-  counts: Record<IndustrySelection, number>;
+  counts: Record<string, number>;
   onChange: (next: IndustrySelection) => void;
 }
 
-/** Top-level segmented control switching between the AI and aerospace layers. */
+/** Top-level segmented control switching between the city's industry layers. */
 export default function IndustryToggle({ value, counts, onChange }: Props) {
   return (
     <div className="pointer-events-auto inline-flex max-w-full gap-1 self-start overflow-x-auto rounded-2xl border border-black/5 bg-white/90 p-1 shadow-lg backdrop-blur-xl [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

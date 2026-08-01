@@ -1,21 +1,6 @@
-// ── Vibrant Montreal palette ─────────────────────────────────────────────
-// The city itself: mural alleys, painted staircases, jazz fest neon, autumn
-// on Mont-Royal. These are the street-art colours the whole map is built from.
-
-export const MONTREAL = {
-  plateauPink: '#E84393', // iconic painted doors & staircases
-  montroyalAmber: '#F39C12', // autumn foliage on the mountain
-  jazzBlue: '#0984E3', // festival nights, winter sky
-  mileendViolet: '#6C5CE7', // arts district, creative energy
-  parcEmerald: '#00B894', // Parc La Fontaine, summer green
-  stlaurentRed: '#FF6B6B', // the Main, neon signs
-  metroOrange: '#E17055', // the rubber-tired metro
-  snowWhite: '#F8F9FA', // Montreal winters
-  asphalt: '#2D3436', // the city grid
-  bagelGold: '#FDCB6E', // Fairmount vs St-Viateur, warm accent
-} as const;
-
-export type MontrealColor = keyof typeof MONTREAL;
+// ── City palettes ────────────────────────────────────────────────────────
+// Each city's own palette lives in its config file (lib/cities/*.ts). The
+// shared industry palettes below are used by all cities.
 
 // ── Aerospace palette ────────────────────────────────────────────────────
 // A deliberately cool, industrial family — steel, titanium, turbine teal,
