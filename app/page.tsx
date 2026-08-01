@@ -35,8 +35,8 @@ const INDUSTRIES: Industry[] = city.industries;
 const isIndustry = (v: string): v is Industry => (INDUSTRIES as string[]).includes(v);
 const isCompanyType = (v: string): v is CompanyType => v in COMPANY_TYPES;
 
-/** A company's industry, defaulting legacy rows to 'ai'. */
-const industryOf = (c: AICompany) => c.industry ?? 'ai';
+/** A company's industry, defaulting legacy rows to the city's first industry. */
+const industryOf = (c: AICompany) => c.industry ?? city.industries[0];
 
 /** True when a company belongs to an industry lens — its primary industry, or
  *  any of its secondaryIndustries (e.g. an AI-native drug-discovery startup

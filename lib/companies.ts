@@ -1,5 +1,11 @@
-import { COMPANIES } from './companies-data';
+import { COMPANIES as MONTREAL_COMPANIES } from './companies-data';
+import { COMPANIES as VICTORIA_COMPANIES } from './companies-data-victoria';
+import { getCity } from './cities';
 import type { AICompany, Industry } from './types';
+
+/** The bundled dataset for the active city. */
+const COMPANIES: AICompany[] =
+  getCity().id === 'victoria' ? VICTORIA_COMPANIES : MONTREAL_COMPANIES;
 
 export interface LoadResult {
   companies: AICompany[];
@@ -9,12 +15,13 @@ export interface LoadResult {
 /**
  * Truth-in-mapping: a pin is only "exact" when we have a verified street
  * address. Otherwise it's neighbourhood-level and the UI says so. Also
- * normalizes the industry so legacy rows without one read as 'ai'.
+ * normalizes the industry so legacy rows without one default to the city's
+ * first industry (Montreal → 'ai', Victoria → 'tech').
  */
 function normalize(companies: AICompany[]): AICompany[] {
   return companies.map((c) => ({
     ...c,
-    industry: c.industry ?? 'ai',
+    industry: c.industry ?? getCity().industries[0],
     locationPrecision: (c.address ? 'exact' : 'approximate') as 'exact' | 'approximate',
   }));
 }
@@ -46,11 +53,10 @@ async function fetchCompanies(url: string): Promise<AICompany[]> {
 }
 
 /**
- * Load the Montreal companies (AI + aerospace). Queries the Neon Postgres
- * database via the `/api/companies` route with a timeout and one retry. If
- * that fails (network, missing DATABASE_URL, empty table), it falls back to
- * the bundled dataset so the map always renders. Pass an `industry` to fetch
- * just one layer.
+ * Load the active city's companies. Queries the Neon Postgres database via
+ * the `/api/companies` route with a timeout and one retry. If that fails
+ * (network, missing DATABASE_URL, empty table), it falls back to the bundled
+ * dataset so the map always renders. Pass an `industry` to fetch one layer.
  */
 export async function loadCompanies(industry?: Industry): Promise<LoadResult> {
   const url = industry ? `/api/companies?industry=${industry}` : '/api/companies';
