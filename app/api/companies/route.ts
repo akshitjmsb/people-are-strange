@@ -1,7 +1,8 @@
-import { eq, or, sql } from 'drizzle-orm';
+import { and, eq, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
+import { getCity } from '@/lib/cities';
 import { companies, type CompanyRow } from '@/lib/db/schema';
 import type { AICompany, Industry } from '@/lib/types';
 

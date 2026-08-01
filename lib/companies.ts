@@ -3,9 +3,13 @@ import { COMPANIES as VICTORIA_COMPANIES } from './companies-data-victoria';
 import { getCity } from './cities';
 import type { AICompany, Industry } from './types';
 
-/** The bundled dataset for the active city. */
-const COMPANIES: AICompany[] =
+/** The bundled dataset for the active city. Exported so scripts/seed.ts syncs
+ *  exactly what the client would fall back to — one source of truth for
+ *  "which city's companies are we talking about". */
+export const BUNDLED_COMPANIES: AICompany[] =
   getCity().id === 'victoria' ? VICTORIA_COMPANIES : MONTREAL_COMPANIES;
+
+const COMPANIES: AICompany[] = BUNDLED_COMPANIES;
 
 export interface LoadResult {
   companies: AICompany[];

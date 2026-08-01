@@ -13,9 +13,10 @@ config({ path: '.env.local' });
 
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { notInArray, sql } from 'drizzle-orm';
+import { and, eq, notInArray, sql } from 'drizzle-orm';
 
-import { COMPANIES } from '../lib/companies-data';
+import { BUNDLED_COMPANIES } from '../lib/companies';
+import { getCity } from '../lib/cities';
 import { companies, type NewCompanyRow } from '../lib/db/schema';
 
 // Postgres caps bind parameters per statement; 26 columns × 50 rows stays well
@@ -46,11 +47,17 @@ async function main() {
 
   const db = drizzle(neon(url));
 
+  // Which city's dataset this run owns. Everything below is scoped to it: a
+  // Victoria deploy must never insert, update or delete a Montréal row.
+  const city = getCity();
+  const COMPANIES = BUNDLED_COMPANIES;
+
   const rows: NewCompanyRow[] = COMPANIES.map((c) => ({
     id: c.id,
     name: c.name,
     aka: c.aka ?? null,
-    industry: c.industry ?? 'ai',
+    city: city.id,
+    industry: c.industry ?? city.industries[0],
     secondaryIndustries: c.secondaryIndustries ?? null,
     lat: c.lat,
     lng: c.lng,
@@ -83,6 +90,10 @@ async function main() {
   const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
   if (dupes.length) throw new Error(`duplicate company ids in dataset: ${[...new Set(dupes)].join(', ')}`);
 
+  // An empty dataset is always a bug (bad import, wrong city id), and the prune
+  // below would read it as "delete every row for this city". Refuse instead.
+  if (!rows.length) throw new Error(`refusing to sync an empty dataset for city "${city.id}".`);
+
   // On conflict, take the incoming row's value for every column but the key.
   // Must reference `excluded.<db_column>` — pointing at the table's own column
   // would set each field to itself and silently no-op every update.
@@ -109,10 +120,19 @@ async function main() {
       .onConflictDoUpdate({ target: companies.id, set: overwrite });
   }
 
-  // Drop anything no longer in the dataset (renamed ids, removed companies).
-  const pruned = await db.delete(companies).where(notInArray(companies.id, ids)).returning({ id: companies.id });
+  // Drop anything no longer in this city's dataset (renamed ids, removed
+  // companies). The city predicate is load-bearing, not decorative: without it
+  // a Victoria deploy would match all 160 Montréal rows as "not in the dataset"
+  // and delete every one of them.
+  const pruned = await db
+    .delete(companies)
+    .where(and(eq(companies.city, city.id), notInArray(companies.id, ids)))
+    .returning({ id: companies.id });
 
-  console.log(`✓ Synced ${rows.length} companies${pruned.length ? ` · pruned ${pruned.length}: ${pruned.map((p) => p.id).join(', ')}` : ''}.`);
+  console.log(
+    `✓ Synced ${rows.length} ${city.name} companies` +
+      `${pruned.length ? ` · pruned ${pruned.length}: ${pruned.map((p) => p.id).join(', ')}` : ''}.`,
+  );
 }
 
 main()
