@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && tsx scripts/seed.ts --on-deploy",
+    "build": "tsx scripts/migrate.ts --on-deploy && next build && tsx scripts/seed.ts --on-deploy",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
