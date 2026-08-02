@@ -1,6 +1,6 @@
 'use client';
 
-import { INDUSTRY_META, AREA_ACCENT } from '@/lib/categories';
+import { useCategories } from '@/lib/use-categories';
 import { formatMoney } from '@/lib/funding';
 import type { NeighborhoodCluster } from '@/lib/neighborhoods';
 
@@ -17,6 +17,7 @@ interface Props {
  * clusters the map (and list) to that district.
  */
 export default function NeighborhoodPanel({ clusters, activeName, onPick, onClose }: Props) {
+  const { INDUSTRY_META, AREA_ACCENT } = useCategories();
   return (
     <>
       <div

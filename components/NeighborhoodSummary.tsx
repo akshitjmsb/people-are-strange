@@ -1,6 +1,6 @@
 'use client';
 
-import { INDUSTRY_META, typeDef, AREA_ACCENT } from '@/lib/categories';
+import { useCategories } from '@/lib/use-categories';
 import { formatMoney } from '@/lib/funding';
 import type { NeighborhoodCluster } from '@/lib/neighborhoods';
 
@@ -15,6 +15,7 @@ interface Props {
  * The map and list are already filtered to this district; this is its readout.
  */
 export default function NeighborhoodSummary({ cluster, onClear }: Props) {
+  const { INDUSTRY_META, typeDef, AREA_ACCENT } = useCategories();
   const topType = cluster.topTypes[0];
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[max(4.6rem,calc(env(safe-area-inset-bottom)+4.2rem))] z-20 flex justify-center px-3">

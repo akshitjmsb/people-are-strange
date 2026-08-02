@@ -5,8 +5,9 @@
 // it works identically against the live DB or the bundled offline dataset.
 
 import { canonicalNeighborhood } from './neighborhoods';
+import type { CityConfig } from './city-config';
 import { parseFundingAmount } from './funding';
-import { INDUSTRY_ORDER } from './categories';
+
 import type { AICompany, CompanyType, Industry } from './types';
 
 export interface FoundingBucket {
@@ -58,12 +59,16 @@ const ERAS: { label: string; test: (y: number) => boolean }[] = [
  *   industry (primary or secondary) — used only to compute `crossListedCount`,
  *   i.e. how many are here solely via secondaryIndustries.
  */
-export function buildEcosystemStats(companies: AICompany[], lens?: Industry): EcosystemStats {
+export function buildEcosystemStats(
+  city: CityConfig,
+  companies: AICompany[],
+  lens?: Industry,
+): EcosystemStats {
   // Seed a zero for every industry the active city declares, so a per-industry
   // bucket exists no matter which city this build is (a hardcoded Montreal set
   // would leave other cities' industries undefined → NaN).
   const perIndustry = Object.fromEntries(
-    INDUSTRY_ORDER.map((i) => [i, 0]),
+    city.industries.map((i) => [i, 0]),
   ) as Record<Industry, number>;
   const typeCounts = new Map<CompanyType, number>();
   const neighborhoods = new Map<string, number>();
@@ -103,7 +108,7 @@ export function buildEcosystemStats(companies: AICompany[], lens?: Industry): Ec
       if (era >= 0) founding[era].count += 1;
     }
 
-    const area = canonicalNeighborhood(c.neighborhood);
+    const area = canonicalNeighborhood(city, c.neighborhood);
     if (area) neighborhoods.set(area, (neighborhoods.get(area) ?? 0) + 1);
   }
 

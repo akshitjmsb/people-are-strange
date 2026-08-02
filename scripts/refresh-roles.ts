@@ -19,6 +19,9 @@ import { eq } from 'drizzle-orm';
 import { COMPANIES } from '../lib/companies-data';
 import { companies } from '../lib/db/schema';
 import { fetchRoleCounts } from '../lib/ats';
+import { getCity, DEFAULT_CITY_ID } from '../lib/cities';
+
+const city = getCity(DEFAULT_CITY_ID);
 
 const dry = process.argv.includes('--dry');
 const CONCURRENCY = 4;
@@ -47,7 +50,7 @@ async function main() {
       while (cursor < targets.length) {
         const c = targets[cursor++];
         try {
-          const { montreal, ambiguous, total } = await fetchRoleCounts(c.ats!);
+          const { montreal, ambiguous, total } = await fetchRoleCounts(city, c.ats!);
           results.push({ id: c.id, name: c.name, ok: true, montreal, ambiguous, total });
         } catch (e) {
           results.push({ id: c.id, name: c.name, ok: false, error: e instanceof Error ? e.message : String(e) });

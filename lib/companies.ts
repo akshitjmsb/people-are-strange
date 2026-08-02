@@ -1,15 +1,21 @@
 import { COMPANIES as MONTREAL_COMPANIES } from './companies-data';
 import { COMPANIES as VICTORIA_COMPANIES } from './companies-data-victoria';
-import { getCity } from './cities';
+import { getCity, DEFAULT_CITY_ID } from './cities';
 import type { AICompany, Industry } from './types';
+import type { CityId } from './city-config';
 
-/** The bundled dataset for the active city. Exported so scripts/seed.ts syncs
- *  exactly what the client would fall back to — one source of truth for
- *  "which city's companies are we talking about". */
-export const BUNDLED_COMPANIES: AICompany[] =
-  getCity().id === 'victoria' ? VICTORIA_COMPANIES : MONTREAL_COMPANIES;
+/** Bundled dataset per city. A registry, not a branch: adding a city means
+ *  adding a line here and a data file — no feature code changes. scripts/seed.ts
+ *  reads the same map, so what we seed and what the client falls back to can
+ *  never drift apart. */
+const DATASETS: Record<CityId, AICompany[]> = {
+  montreal: MONTREAL_COMPANIES,
+  victoria: VICTORIA_COMPANIES,
+};
 
-const COMPANIES: AICompany[] = BUNDLED_COMPANIES;
+export function bundledCompanies(city: CityId): AICompany[] {
+  return DATASETS[city] ?? DATASETS[DEFAULT_CITY_ID];
+}
 
 export interface LoadResult {
   companies: AICompany[];
@@ -22,10 +28,11 @@ export interface LoadResult {
  * normalizes the industry so legacy rows without one default to the city's
  * first industry (Montreal → 'ai', Victoria → 'tech').
  */
-function normalize(companies: AICompany[]): AICompany[] {
+function normalize(cityId: CityId, companies: AICompany[]): AICompany[] {
+  const fallbackIndustry = getCity(cityId).industries[0];
   return companies.map((c) => ({
     ...c,
-    industry: c.industry ?? getCity().industries[0],
+    industry: c.industry ?? fallbackIndustry,
     locationPrecision: (c.address ? 'exact' : 'approximate') as 'exact' | 'approximate',
   }));
 }
@@ -57,21 +64,22 @@ async function fetchCompanies(url: string): Promise<AICompany[]> {
 }
 
 /**
- * Load the active city's companies. Queries the Neon Postgres database via
- * the `/api/companies` route with a timeout and one retry. If that fails
+ * Load a city's companies. Queries the Neon Postgres database via the
+ * `/api/companies` route with a timeout and one retry. If that fails
  * (network, missing DATABASE_URL, empty table), it falls back to the bundled
  * dataset so the map always renders. Pass an `industry` to fetch one layer.
  */
-export async function loadCompanies(industry?: Industry): Promise<LoadResult> {
-  const url = industry ? `/api/companies?industry=${industry}` : '/api/companies';
+export async function loadCompanies(cityId: CityId, industry?: Industry): Promise<LoadResult> {
+  const params = new URLSearchParams({ city: cityId });
+  if (industry) params.set('industry', industry);
+  const url = `/api/companies?${params.toString()}`;
   try {
     const companies = await fetchCompanies(url);
-    return { companies: normalize(companies), source: 'db' };
+    return { companies: normalize(cityId, companies), source: 'db' };
   } catch (err) {
     console.warn('[companies] DB load failed, using bundled dataset:', err);
-    const local = industry
-      ? COMPANIES.filter((c) => (c.industry ?? 'ai') === industry)
-      : COMPANIES;
-    return { companies: normalize(local), source: 'local' };
+    const all = bundledCompanies(cityId);
+    const local = industry ? all.filter((c) => c.industry === industry) : all;
+    return { companies: normalize(cityId, local), source: 'local' };
   }
 }

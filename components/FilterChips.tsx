@@ -1,6 +1,6 @@
 'use client';
 
-import { COMPANY_TYPES, TYPE_ORDER } from '@/lib/categories';
+import { useCategories } from '@/lib/use-categories';
 import type { CompanyType } from '@/lib/types';
 
 interface FilterChipsProps {
@@ -22,8 +22,10 @@ export default function FilterChips({
   counts,
   onToggle,
   onClear,
-  typeOrder = TYPE_ORDER,
+  typeOrder,
 }: FilterChipsProps) {
+  const { COMPANY_TYPES, TYPE_ORDER } = useCategories();
+  const order = typeOrder ?? TYPE_ORDER;
   const hasFilters = active.size > 0;
 
   return (
@@ -40,7 +42,7 @@ export default function FilterChips({
         All
       </button>
 
-      {typeOrder.map((t) => {
+      {order.map((t) => {
         const def = COMPANY_TYPES[t];
         const isActive = active.has(t);
         const count = counts[t] ?? 0;

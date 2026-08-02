@@ -15,8 +15,9 @@ import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { and, eq, notInArray, sql } from 'drizzle-orm';
 
-import { BUNDLED_COMPANIES } from '../lib/companies';
-import { getCity } from '../lib/cities';
+import { bundledCompanies } from '../lib/companies';
+import { getCity, CITY_IDS } from '../lib/cities';
+import type { CityId } from '../lib/city-config';
 import { companies, type NewCompanyRow } from '../lib/db/schema';
 
 // Postgres caps bind parameters per statement; 26 columns × 50 rows stays well
@@ -47,12 +48,21 @@ async function main() {
 
   const db = drizzle(neon(url));
 
-  // Which city's dataset this run owns. Everything below is scoped to it: a
-  // Victoria deploy must never insert, update or delete a Montréal row.
-  const city = getCity();
-  const COMPANIES = BUNDLED_COMPANIES;
+  // One deployment serves every city, so every city's dataset is synced on
+  // every deploy. Each pass is scoped to its own city: the prune below must
+  // never see another city's rows as "missing from the dataset".
+  for (const cityId of CITY_IDS) {
+    await syncCity(db, cityId);
+  }
+}
 
-  const rows: NewCompanyRow[] = COMPANIES.map((c) => ({
+type Db = ReturnType<typeof drizzle>;
+
+async function syncCity(db: Db, cityId: CityId) {
+  const city = getCity(cityId);
+  const COMPANIES = bundledCompanies(cityId);
+
+  const rows: NewCompanyRow[] = COMPANIES.map((c): NewCompanyRow => ({
     id: c.id,
     name: c.name,
     aka: c.aka ?? null,

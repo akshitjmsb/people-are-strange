@@ -3,19 +3,26 @@
 // client-side (Blob + object URL). Works the same against the live DB or the
 // bundled offline dataset — it just serializes whatever list it's handed.
 
-import { INDUSTRY_META, typeDef } from './categories';
+import { getIndustryMeta, typeDef } from './categories';
+import type { CityConfig } from './city-config';
 import type { AICompany, Industry } from './types';
 
 const industryOf = (c: AICompany): Industry => c.industry ?? 'ai';
 
-const COLUMNS: { header: string; value: (c: AICompany) => string | number | undefined }[] = [
+type Column = { header: string; value: (c: AICompany) => string | number | undefined };
+
+/** Columns depend on the city (industry labels), so they are built per call
+ *  rather than frozen at import. */
+function columnsFor(city: CityConfig): Column[] {
+  const INDUSTRY_META = getIndustryMeta(city);
+  return [
   { header: 'Name', value: (c) => c.name },
   { header: 'Industry', value: (c) => INDUSTRY_META[industryOf(c)].label },
   {
     header: 'Also In',
     value: (c) => c.secondaryIndustries?.map((i) => INDUSTRY_META[i].label).join('; '),
   },
-  { header: 'Type', value: (c) => typeDef(c.type).label },
+  { header: 'Type', value: (c) => typeDef(city, c.type).label },
   { header: 'Neighborhood', value: (c) => c.neighborhood },
   { header: 'Founded', value: (c) => c.founded },
   { header: 'Headcount', value: (c) => c.headcount },
@@ -25,7 +32,8 @@ const COLUMNS: { header: string; value: (c: AICompany) => string | number | unde
   { header: 'Website', value: (c) => c.website },
   { header: 'One-liner', value: (c) => c.oneLiner },
   { header: 'Verified', value: (c) => c.verifiedAt },
-];
+  ];
+}
 
 /** Escape a single CSV cell: wrap in quotes when it contains a comma, quote or
  *  newline, doubling any embedded quotes. */
@@ -36,7 +44,8 @@ function cell(value: string | number | undefined): string {
 }
 
 /** Build a CSV document (with header row) from a list of companies. */
-export function companiesToCsv(companies: AICompany[]): string {
+export function companiesToCsv(city: CityConfig, companies: AICompany[]): string {
+  const COLUMNS = columnsFor(city);
   const header = COLUMNS.map((c) => c.header).join(',');
   const rows = companies.map((co) => COLUMNS.map((col) => cell(col.value(co))).join(','));
   return [header, ...rows].join('\r\n');

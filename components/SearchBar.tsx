@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { typeColor, typeDef } from '@/lib/categories';
-import { getCity } from '@/lib/cities';
+import { useCategories } from '@/lib/use-categories';
+import { useCity } from '@/lib/city-context';
 import type { AICompany } from '@/lib/types';
 
-const city = getCity();
 
 interface SearchBarProps {
   value: string;
@@ -29,6 +28,8 @@ export default function SearchBar({
   suggestions,
   onPick,
 }: SearchBarProps) {
+  const city = useCity();
+  const { typeColor, typeDef } = useCategories();
   const [focused, setFocused] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);

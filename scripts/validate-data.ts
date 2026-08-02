@@ -8,7 +8,8 @@
 // Exits 1 on any ERROR. Warnings are reported but never fail the build.
 import { COMPANIES } from '../lib/companies-data';
 import { PEOPLE } from '../lib/people-data';
-import { COMPANY_TYPES, INDUSTRY_ORDER } from '../lib/categories';
+import { companyTypes, industryOrder } from '../lib/categories';
+import { getCity, DEFAULT_CITY_ID } from '../lib/cities';
 import type { AtsProvider } from '../lib/ats';
 import type { Industry } from '../lib/types';
 
@@ -28,6 +29,13 @@ const QUEBEC = { latMin: 45.0, latMax: 46.5, lngMin: -74.6, lngMax: -71.0 };
 // Greater Montreal proper. Outside this is legitimate (the Québec aerospace
 // corridor reaches Bromont and Sherbrooke) but worth surfacing on an MTL map.
 const METRO = { latMin: 45.35, latMax: 45.75, lngMin: -74.15, lngMax: -73.3 };
+
+// This validator is still Montréal-specific (it imports companies-data directly
+// and checks Québec bounds). It is pinned to the default city rather than
+// pretending to cover every city — generalizing it is separate work.
+const city = getCity(DEFAULT_CITY_ID);
+const COMPANY_TYPES = companyTypes(city);
+const INDUSTRY_ORDER = industryOrder(city);
 
 const errors: string[] = [];
 /** Warnings are grouped by kind so the report reads as counts, not a wall. */

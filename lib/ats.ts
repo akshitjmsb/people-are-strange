@@ -1,4 +1,4 @@
-import { getCity } from './cities';
+import type { CityConfig } from './city-config';
 
 // ── Live open-role counts, via applicant-tracking system board APIs ──────────
 // Careers pages are unscrapable in the general case, but most companies sit on
@@ -8,7 +8,7 @@ import { getCity } from './cities';
 // The point isn't the total — "Cohere has 137 open roles" is noise. It's the
 // Montreal slice: "31 of Rodeo FX's 48 roles are here" is the thing no other
 // resource tells you. Where a provider only gives a freeform location string
-// we grade confidence rather than guessing (see `montrealness`).
+// we grade confidence rather than guessing (see `localityMatch`).
 
 /** Which board API a company's postings live behind. */
 export type AtsProvider =
@@ -68,51 +68,45 @@ async function getJson(url: string, init?: RequestInit): Promise<unknown> {
  *  patterns. Deliberately conservative: a bare "Canada" counts as ambiguous,
  *  never as local — over-claiming local roles is exactly the kind of lie
  *  this app is trying to stop telling. */
-export function montrealness(location: string): Posting['locality'] {
-  return localityMatch(location);
-}
-
-/** City-aware locality grading. The function name `montrealness` is kept as
- *  an alias for backward compatibility; new code should use this. */
-export function localityMatch(location: string): Posting['locality'] {
-  const { localityPattern, localityAmbiguousPattern } = getCity();
+export function localityMatch(city: CityConfig, location: string): Posting['locality'] {
+  const { localityPattern, localityAmbiguousPattern } = city;
   const s = location.toLowerCase();
   if (localityPattern.test(s)) return 'here';
   if (localityAmbiguousPattern.test(s.trim()) || !s.trim()) return 'maybe';
   return 'away';
 }
 
-function grade(title: string, location: string, url?: string): Posting {
-  return { title, location, locality: montrealness(location), url };
+function grade(city: CityConfig, title: string, location: string, url?: string): Posting {
+  return { title, location, locality: localityMatch(city, location), url };
 }
 
 // ── Provider adapters ────────────────────────────────────────────────────────
 
-const FETCHERS: Record<AtsProvider, (token: string) => Promise<Posting[]>> = {
-  async ashby(token) {
+const FETCHERS: Record<AtsProvider, (city: CityConfig, token: string) => Promise<Posting[]>> = {
+  async ashby(city, token) {
     const j = (await getJson(`https://api.ashbyhq.com/posting-api/job-board/${token}`)) as {
       jobs?: { title: string; location: string; jobUrl?: string }[];
     };
-    return (j.jobs ?? []).map((p) => grade(p.title, p.location ?? '', p.jobUrl));
+    return (j.jobs ?? []).map((p) => grade(city, p.title, p.location ?? '', p.jobUrl));
   },
 
-  async greenhouse(token) {
+  async greenhouse(city, token) {
     const j = (await getJson(`https://boards-api.greenhouse.io/v1/boards/${token}/jobs`)) as {
       jobs?: { title: string; location?: { name?: string }; absolute_url?: string }[];
     };
-    return (j.jobs ?? []).map((p) => grade(p.title, p.location?.name ?? '', p.absolute_url));
+    return (j.jobs ?? []).map((p) => grade(city, p.title, p.location?.name ?? '', p.absolute_url));
   },
 
-  async lever(token) {
+  async lever(city, token) {
     const j = (await getJson(`https://api.lever.co/v0/postings/${token}?mode=json`)) as {
       text: string;
       categories?: { location?: string };
       hostedUrl?: string;
     }[];
-    return (j ?? []).map((p) => grade(p.text, p.categories?.location ?? '', p.hostedUrl));
+    return (j ?? []).map((p) => grade(city, p.text, p.categories?.location ?? '', p.hostedUrl));
   },
 
-  async smartrecruiters(token) {
+  async smartrecruiters(city, token) {
     // Paginated; 100 is the max page size.
     const out: Posting[] = [];
     for (let offset = 0; ; offset += 100) {
@@ -125,28 +119,28 @@ const FETCHERS: Record<AtsProvider, (token: string) => Promise<Posting[]>> = {
       const page = j.content ?? [];
       for (const p of page) {
         const loc = p.location?.fullLocation ?? [p.location?.city, p.location?.region, p.location?.country].filter(Boolean).join(', ');
-        out.push(grade(p.name, loc, p.ref));
+        out.push(grade(city, p.name, loc, p.ref));
       }
       if (page.length < 100 || out.length >= (j.totalFound ?? 0)) break;
     }
     return out;
   },
 
-  async workable(token) {
+  async workable(city, token) {
     const j = (await getJson(`https://apply.workable.com/api/v1/widget/accounts/${token}?details=true`)) as {
       jobs?: { title: string; city?: string; state?: string; country?: string; url?: string }[];
     };
     return (j.jobs ?? []).map((p) =>
-      grade(p.title, [p.city, p.state, p.country].filter(Boolean).join(', '), p.url),
+      grade(city, p.title, [p.city, p.state, p.country].filter(Boolean).join(', '), p.url),
     );
   },
 
-  async bamboohr(token) {
+  async bamboohr(city, token) {
     const j = (await getJson(`https://${token}.bamboohr.com/careers/list`)) as {
       result?: { jobOpeningName: string; location?: { city?: string; state?: string; country?: string }; id: string | number }[];
     };
     return (j.result ?? []).map((p) =>
-      grade(
+      grade(city, 
         p.jobOpeningName,
         [p.location?.city, p.location?.state, p.location?.country].filter(Boolean).join(', '),
         `https://${token}.bamboohr.com/careers/${p.id}`,
@@ -179,8 +173,11 @@ const FETCHERS: Record<AtsProvider, (token: string) => Promise<Posting[]>> = {
 
 /** Fetch and tally a company's board. Throws if the provider errors — callers
  *  decide whether a stale count or no count is the better fallback. */
-export async function fetchRoleCounts(ref: AtsRef): Promise<RoleCounts & { postings: Posting[] }> {
-  const postings = await FETCHERS[ref.provider](ref.token);
+export async function fetchRoleCounts(
+  city: CityConfig,
+  ref: AtsRef,
+): Promise<RoleCounts & { postings: Posting[] }> {
+  const postings = await FETCHERS[ref.provider](city, ref.token);
   return {
     montreal: postings.filter((p) => p.locality === 'here').length,
     ambiguous: postings.filter((p) => p.locality === 'maybe').length,

@@ -1,6 +1,6 @@
 'use client';
 
-import { AREA_ACCENT } from '@/lib/categories';
+import { useCategories } from '@/lib/use-categories';
 
 export type ViewMode = 'map' | 'list';
 
@@ -25,6 +25,7 @@ export default function ViewSwitcher({
   onOpenDashboard,
   activeArea,
 }: Props) {
+  const { AREA_ACCENT } = useCategories();
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-[max(0.9rem,env(safe-area-inset-bottom))] z-20 flex justify-center px-3">
       <div className="pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-black/5 bg-white/90 p-1.5 shadow-xl backdrop-blur-xl">

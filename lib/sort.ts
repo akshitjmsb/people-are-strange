@@ -4,6 +4,7 @@
 // always sink to the bottom regardless of direction.
 
 import { typeDef } from './categories';
+import type { CityConfig } from './city-config';
 import { parseFundingAmount } from './funding';
 import { distanceKm, type LatLng } from './geo';
 import type { AICompany } from './types';
@@ -37,6 +38,7 @@ const industryOf = (c: AICompany) => c.industry ?? 'ai';
  * user's location) — without one it falls back to name order.
  */
 export function sortCompanies(
+  city: CityConfig,
   companies: AICompany[],
   key: SortKey,
   dir: SortDir,
@@ -57,8 +59,8 @@ export function sortCompanies(
         const bi = industryOf(b);
         if (ai !== bi) return sign * ai.localeCompare(bi);
         // within an industry, group by type label, then name
-        const at = typeDef(a.type).label;
-        const bt = typeDef(b.type).label;
+        const at = typeDef(city, a.type).label;
+        const bt = typeDef(city, b.type).label;
         return sign * (at.localeCompare(bt) || byName(a, b)) || byName(a, b);
       }
       case 'founded': {

@@ -1,55 +1,62 @@
 // ── Categories — city-driven ─────────────────────────────────────────────
-// All industry metadata, company type definitions, type orders, and domain
-// labels are read from the active city config. This file re-exports them
-// as the same shape the rest of the app expects.
+// Every value here is a function of a CityConfig, never a module-level
+// constant. Constants were evaluated once at import time, which froze the
+// whole bundle to one city — the reason a single deployment could not serve
+// Montréal and Victoria at the same time.
+//
+// Client components get their city from useCity(); server code passes one in.
 
-import { getCity } from './cities';
 import type { CityConfig, TypeDef } from './city-config';
 import type { Domain, CompanyType, Industry } from './types';
 
 export type { TypeDef };
 
-// ── Re-exports from the active city ────────────────────────────────────
-
 /** Per-industry identity — label, emoji and accent colour. */
-export function getIndustryMeta(): CityConfig['industryMeta'] {
-  return getCity().industryMeta;
+export function getIndustryMeta(city: CityConfig): CityConfig['industryMeta'] {
+  return city.industryMeta;
 }
 
-/** The INDUSTRY_META constant for backward compat — delegates to city config.
- *  Components that import this at module level will get the build-time city. */
-export const INDUSTRY_META = getCity().industryMeta;
-
-/** Fixed display order for the active city's industries. */
-export const INDUSTRY_ORDER: Industry[] = getCity().industries;
+/** Fixed display order for this city's industries. */
+export function industryOrder(city: CityConfig): Industry[] {
+  return city.industries;
+}
 
 /** The neutral "city grid" accent for neighborhood chrome. */
-export const AREA_ACCENT = getCity().areaAccent;
+export function areaAccent(city: CityConfig): string {
+  return city.areaAccent;
+}
 
-/** All company type definitions for the active city. */
-export const COMPANY_TYPES: Record<string, TypeDef> = getCity().companyTypes;
+/** All company type definitions for this city. */
+export function companyTypes(city: CityConfig): Record<string, TypeDef> {
+  return city.companyTypes;
+}
 
 /** Combined chip order across every industry (the 'all' lens). */
-export const TYPE_ORDER: CompanyType[] = (getCity().typeOrder['all'] ?? []) as CompanyType[];
+export function typeOrder(city: CityConfig): CompanyType[] {
+  return (city.typeOrder['all'] ?? []) as CompanyType[];
+}
 
 /** The chip order to show for a given industry selection. */
-export function typeOrderFor(industry: Industry | 'all'): CompanyType[] {
-  const orders = getCity().typeOrder;
+export function typeOrderFor(city: CityConfig, industry: Industry | 'all'): CompanyType[] {
+  const orders = city.typeOrder;
   return (orders[industry] ?? orders['all'] ?? []) as CompanyType[];
 }
 
-export function typeDef(t: CompanyType): TypeDef {
-  return COMPANY_TYPES[t] ?? (Object.values(COMPANY_TYPES)[0] as TypeDef);
+export function typeDef(city: CityConfig, t: CompanyType): TypeDef {
+  const types = city.companyTypes;
+  return types[t] ?? (Object.values(types)[0] as TypeDef);
 }
 
-export function typeColor(t: CompanyType): string {
-  return typeDef(t).color;
+export function typeColor(city: CityConfig, t: CompanyType): string {
+  return typeDef(city, t).color;
 }
 
 // ── Domain labels ──────────────────────────────────────────────────────
 
-export const DOMAIN_LABELS: Record<string, string> = getCity().domainLabels;
+export function domainLabels(city: CityConfig): Record<string, string> {
+  return city.domainLabels;
+}
 
-export function domainLabel(d: Domain): string {
-  return DOMAIN_LABELS[d] ?? d;
+export function domainLabel(city: CityConfig, d: Domain): string {
+  return city.domainLabels[d] ?? d;
 }

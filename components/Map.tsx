@@ -10,8 +10,9 @@ import MapGL, {
 import { MapboxOverlay, type MapboxOverlayProps } from '@deck.gl/mapbox';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-import { typeColor, typeDef } from '@/lib/categories';
-import { getCity } from '@/lib/cities';
+import { useCategories } from '@/lib/use-categories';
+import { useCity } from '@/lib/city-context';
+
 import type { AICompany } from '@/lib/types';
 import {
   createCompanyLayers,
@@ -22,14 +23,15 @@ import {
 
 // Framed on the active city's centre, tilted for that street-level,
 // walk-the-city feel. mapCenter is [lat, lng].
-const city = getCity();
-const INITIAL_VIEW = {
-  longitude: city.mapCenter[1],
-  latitude: city.mapCenter[0],
-  zoom: city.defaultZoom,
-  pitch: 40,
-  bearing: -10,
-};
+function initialViewFor(city: { mapCenter: [number, number]; defaultZoom: number }) {
+  return {
+    longitude: city.mapCenter[1],
+    latitude: city.mapCenter[0],
+    zoom: city.defaultZoom,
+    pitch: 40,
+    bearing: -10,
+  };
+}
 
 // Basemap fallback chain, most graceful first:
 //  1. CARTO Voyager — bright, colourful streets; the vibrant city canvas.
@@ -123,6 +125,8 @@ export default function Map({
   neighborhood = null,
   neighborhoodBounds = null,
 }: MapProps) {
+  const city = useCity();
+  const INITIAL_VIEW = useMemo(() => initialViewFor(city), [city]);
   const mapRef = useRef<MapRef>(null);
   const styleLoadedRef = useRef(false);
   const [zoom, setZoom] = useState(INITIAL_VIEW.zoom);
@@ -149,6 +153,7 @@ export default function Map({
   const layers = useMemo(
     () =>
       createCompanyLayers({
+        city,
         companies,
         selectedId,
         showLabels,
@@ -158,7 +163,7 @@ export default function Map({
         onClick: onSelect,
         onHover: setHoverCursor,
       }),
-    [companies, selectedId, showLabels, showIcons, labelIds, neighborhood, onSelect, setHoverCursor],
+    [city, companies, selectedId, showLabels, showIcons, labelIds, neighborhood, onSelect, setHoverCursor],
   );
 
   // Glide the camera to the selected company, lifted above the detail sheet.
@@ -308,6 +313,7 @@ function CompanyListFallback({
   companies: AICompany[];
   onSelect: (c: AICompany) => void;
 }) {
+  const { typeColor, typeDef } = useCategories();
   return (
     <div className="h-full w-full overflow-y-auto bg-snow-white px-4 pb-8 pt-36">
       <div className="mx-auto max-w-xl">

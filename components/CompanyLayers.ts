@@ -1,6 +1,7 @@
 import type { Layer } from '@deck.gl/core';
 import { IconLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { COMPANY_TYPES, typeColor } from '@/lib/categories';
+import { companyTypes, typeColor } from '@/lib/categories';
+import type { CityConfig } from '@/lib/city-config';
 import { hexToRgb } from '@/lib/colors';
 import type { AICompany } from '@/lib/types';
 
@@ -35,12 +36,13 @@ interface EmojiAtlas {
   mapping: Record<string, { x: number; y: number; width: number; height: number }>;
 }
 
-let emojiAtlas: EmojiAtlas | null = null;
+const emojiAtlases = new Map<string, EmojiAtlas>();
 
-function getEmojiAtlas(): EmojiAtlas | null {
-  if (emojiAtlas || typeof document === 'undefined') return emojiAtlas;
+function getEmojiAtlas(city: CityConfig): EmojiAtlas | null {
+  const cached = emojiAtlases.get(city.id);
+  if (cached || typeof document === 'undefined') return cached ?? null;
   const CELL = 64;
-  const defs = Object.values(COMPANY_TYPES);
+  const defs = Object.values(companyTypes(city));
   const canvas = document.createElement('canvas');
   canvas.width = CELL * defs.length;
   canvas.height = CELL;
@@ -54,11 +56,13 @@ function getEmojiAtlas(): EmojiAtlas | null {
     ctx.fillText(d.emoji, i * CELL + CELL / 2, CELL / 2 + CELL * 0.04);
     mapping[d.key] = { x: i * CELL, y: 0, width: CELL, height: CELL };
   });
-  emojiAtlas = { atlas: canvas.toDataURL(), mapping };
-  return emojiAtlas;
+  const built = { atlas: canvas.toDataURL(), mapping };
+  emojiAtlases.set(city.id, built);
+  return built;
 }
 
 interface LayerOpts {
+  city: CityConfig;
   companies: AICompany[];
   selectedId: string | null;
   showLabels: boolean;
@@ -80,6 +84,7 @@ interface LayerOpts {
  *  5. a white ring pulsing attention onto the selected company
  */
 export function createCompanyLayers({
+  city,
   companies,
   selectedId,
   showLabels,
@@ -119,7 +124,7 @@ export function createCompanyLayers({
     radiusUnits: 'meters',
     radiusMinPixels: 14,
     radiusMaxPixels: 64,
-    getFillColor: (c) => [...hexToRgb(typeColor(c.type)), c.id === selectedId ? 90 : 55],
+    getFillColor: (c) => [...hexToRgb(typeColor(city, c.type)), c.id === selectedId ? 90 : 55],
     stroked: false,
     pickable: false,
     updateTriggers: { getFillColor: selectedId },
@@ -137,11 +142,11 @@ export function createCompanyLayers({
     radiusUnits: 'meters',
     radiusMinPixels: 7,
     radiusMaxPixels: 26,
-    getFillColor: (c) => [...hexToRgb(typeColor(c.type)), isExact(c) ? 255 : 38],
+    getFillColor: (c) => [...hexToRgb(typeColor(city, c.type)), isExact(c) ? 255 : 38],
     stroked: true,
     getLineColor: (c) => {
       if (c.id === selectedId) return [255, 255, 255, 255];
-      return isExact(c) ? [255, 255, 255, 180] : [...hexToRgb(typeColor(c.type)), 255];
+      return isExact(c) ? [255, 255, 255, 180] : [...hexToRgb(typeColor(city, c.type)), 255];
     },
     getLineWidth: (c) => (c.id === selectedId ? 3 : isExact(c) ? 1.5 : 2.5),
     lineWidthUnits: 'pixels',
@@ -183,7 +188,7 @@ export function createCompanyLayers({
   // Street-level zoom: each dot becomes a little POI badge — a white inner
   // disc with the type's emoji inside (🧠 research, ✈️ OEM, 🚀 startup…) —
   // so the map reads at a glance without losing the colour coding.
-  const atlas = showIcons ? getEmojiAtlas() : null;
+  const atlas = showIcons ? getEmojiAtlas(city) : null;
   if (atlas) {
     layers.push(
       new ScatterplotLayer<AICompany>({

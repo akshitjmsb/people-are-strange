@@ -14,7 +14,11 @@ import { drizzle } from 'drizzle-orm/neon-http';
 
 import { COMPANIES } from '../lib/companies-data';
 import { companies } from '../lib/db/schema';
-import { INDUSTRY_ORDER } from '../lib/categories';
+import { industryOrder } from '../lib/categories';
+import { getCity, DEFAULT_CITY_ID } from '../lib/cities';
+
+// Reports on the default city's dataset; see validate-data.ts.
+const INDUSTRY_ORDER = industryOrder(getCity(DEFAULT_CITY_ID));
 import type { Industry } from '../lib/types';
 
 async function main() {

@@ -2,7 +2,7 @@ import { and, eq, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
-import { getCity } from '@/lib/cities';
+import { getCity, isCityId, DEFAULT_CITY_ID } from '@/lib/cities';
 import { companies, type CompanyRow } from '@/lib/db/schema';
 import type { AICompany, Industry } from '@/lib/types';
 
@@ -48,12 +48,22 @@ function toCompany(r: CompanyRow): AICompany {
 }
 
 export async function GET(req: Request) {
-  // Optional `?industry=ai|aerospace|energy|marine|gaming|lifesci` filter;
-  // anything else returns all rows.
-  const param = new URL(req.url).searchParams.get('industry');
+  const params = new URL(req.url).searchParams;
+
+  // Which city's map is asking. One deployment serves every city, so this
+  // filter is load-bearing: without it every map would receive every city's
+  // companies. Unknown ids fall back to the default rather than 400ing, so a
+  // hand-typed URL still renders a real map.
+  const cityParam = params.get('city');
+  const cityId = isCityId(cityParam) ? cityParam : DEFAULT_CITY_ID;
+  const city = getCity(cityId);
+
+  // Optional `?industry=` filter, validated against *this city's* industries —
+  // the list is per-city, so a hardcoded one silently ignored Victoria's.
+  const industryParam = params.get('industry');
   const industry: Industry | null =
-    param === 'ai' || param === 'aerospace' || param === 'energy' || param === 'marine' || param === 'gaming' || param === 'lifesci'
-      ? param
+    industryParam && (city.industries as string[]).includes(industryParam)
+      ? (industryParam as Industry)
       : null;
 
   // Fail soft: a DB outage returns a clean 503 JSON body, and the client
@@ -67,12 +77,15 @@ export async function GET(req: Request) {
           .select()
           .from(companies)
           .where(
-            or(
-              eq(companies.industry, industry),
-              sql`${industry} = ANY(${companies.secondaryIndustries})`,
+            and(
+              eq(companies.city, cityId),
+              or(
+                eq(companies.industry, industry),
+                sql`${industry} = ANY(${companies.secondaryIndustries})`,
+              ),
             ),
           )
-      : await db.select().from(companies);
+      : await db.select().from(companies).where(eq(companies.city, cityId));
 
     return NextResponse.json({ companies: rows.map(toCompany) });
   } catch (err) {

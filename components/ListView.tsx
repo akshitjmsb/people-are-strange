@@ -2,15 +2,14 @@
 
 import { useState } from 'react';
 
-import { INDUSTRY_META, typeDef } from '@/lib/categories';
-import { getCity } from '@/lib/cities';
+import { useCategories } from '@/lib/use-categories';
+import { useCity } from '@/lib/city-context';
 import { suggestCompanyUrl } from '@/lib/feedback';
 import { distanceKm, formatDistance, type LatLng } from '@/lib/geo';
 import { roleSummary } from '@/lib/roles';
 import { SORT_LABELS, sortCompanies, type SortKey, type SortDir } from '@/lib/sort';
 import type { AICompany, Industry } from '@/lib/types';
 
-const city = getCity();
 
 interface Props {
   companies: AICompany[];
@@ -54,6 +53,7 @@ export default function ListView({
   savedIds,
   onToggleSave,
 }: Props) {
+  const city = useCity();
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -101,7 +101,7 @@ export default function ListView({
     );
   };
 
-  const rows = sortCompanies(companies, sortKey, sortDir, origin);
+  const rows = sortCompanies(city, companies, sortKey, sortDir, origin);
   const arrow = sortDir === 'asc' ? '↑' : '↓';
   const nearActive = sortKey === 'distance' && !!origin;
 
@@ -273,6 +273,7 @@ function Row({
   onShowOnMap: (c: AICompany) => void;
   onToggleSave: (id: string) => void;
 }) {
+  const { INDUSTRY_META, typeDef } = useCategories();
   const t = typeDef(c.type);
   const ind = INDUSTRY_META[industryOf(c)];
   const away = origin ? formatDistance(distanceKm(origin, c)) : null;

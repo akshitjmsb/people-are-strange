@@ -2,14 +2,13 @@
 
 import { useState } from 'react';
 
-import { domainLabel, INDUSTRY_META, typeDef } from '@/lib/categories';
+import { useCategories } from '@/lib/use-categories';
+import { useCity } from '@/lib/city-context';
 import { reportCompanyUrl } from '@/lib/feedback';
 import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
 import { roleSummary } from '@/lib/roles';
-import { getCity } from '@/lib/cities';
 import type { AICompany, Person } from '@/lib/types';
 
-const city = getCity();
 
 interface Props {
   company: AICompany | null;
@@ -22,6 +21,8 @@ interface Props {
 
 /** Slide-up panel with everything we know about one AI company. */
 export default function CompanyDetail({ company, onClose, saved = false, onToggleSave }: Props) {
+  const city = useCity();
+  const { domainLabel, INDUSTRY_META, typeDef } = useCategories();
   const [copied, setCopied] = useState(false);
 
   if (!company) return null;

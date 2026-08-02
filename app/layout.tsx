@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
-import { getCity } from '@/lib/cities';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
@@ -10,12 +9,11 @@ const spaceGrotesk = Space_Grotesk({
   display: 'swap',
 });
 
-const city = getCity();
-
+// Title, description, manifest and theme colour are per city and are set by
+// app/[city]/page.tsx. Only the city-agnostic shell lives here.
 export const metadata: Metadata = {
-  title: city.metaTitle,
-  description: city.metaDescription,
-  manifest: '/manifest.json',
+  title: 'People Are Strange',
+  description: 'City industry maps — every company, lab and studio, mapped.',
   applicationName: 'People Are Strange',
   appleWebApp: {
     capable: true,
@@ -32,7 +30,6 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: city.themeColor,
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

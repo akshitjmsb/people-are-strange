@@ -1,17 +1,11 @@
 'use client';
 
-import {
-  INDUSTRY_META,
-  INDUSTRY_ORDER,
-  typeDef,
-  AREA_ACCENT,
-} from '@/lib/categories';
+import { useCategories } from '@/lib/use-categories';
+import { useCity } from '@/lib/city-context';
 import { formatMoney } from '@/lib/funding';
-import { getCity } from '@/lib/cities';
 import type { EcosystemStats } from '@/lib/stats';
 import type { IndustrySelection } from './IndustryToggle';
 
-const city = getCity();
 
 interface Props {
   stats: EcosystemStats;
@@ -39,6 +33,8 @@ export default function Dashboard({
   onExport,
   exportCount,
 }: Props) {
+  const city = useCity();
+  const { INDUSTRY_META, INDUSTRY_ORDER, typeDef, AREA_ACCENT } = useCategories();
   const lens = industry === 'all' ? INDUSTRY_META[INDUSTRY_ORDER[0]] : INDUSTRY_META[industry];
   const lensLabel = industry === 'all' ? 'All industries' : lens.label;
   const hiringPct = stats.total ? Math.round((stats.hiringCount / stats.total) * 100) : 0;

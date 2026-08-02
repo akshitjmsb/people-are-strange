@@ -9,14 +9,14 @@
 import type { CompanyType, Industry } from './types';
 import type { AICompany } from './types';
 import { parseFundingAmount } from './funding';
-import { getCity } from './cities';
+import type { CityConfig } from './city-config';
 
 /** Map a raw neighborhood string to its canonical cluster (or null). */
-export function canonicalNeighborhood(raw?: string | null): string | null {
+export function canonicalNeighborhood(city: CityConfig, raw?: string | null): string | null {
   if (!raw) return null;
   const t = raw.trim();
   if (!t) return null;
-  return getCity().canonicalNeighborhoods[t] ?? t;
+  return city.canonicalNeighborhoods[t] ?? t;
 }
 
 /** URL-safe slug for a canonical neighborhood name ("Mile-Ex" → "mile-ex",
@@ -34,11 +34,15 @@ export function neighborhoodSlug(name: string): string {
 
 /** Resolve a URL slug back to the canonical neighborhood name present in the
  *  data, or null if no cluster matches. */
-export function resolveNeighborhoodSlug(slug: string, companies: AICompany[]): string | null {
+export function resolveNeighborhoodSlug(
+  city: CityConfig,
+  slug: string,
+  companies: AICompany[],
+): string | null {
   const target = slug.toLowerCase();
   const seen = new Set<string>();
   for (const c of companies) {
-    const name = canonicalNeighborhood(c.neighborhood);
+    const name = canonicalNeighborhood(city, c.neighborhood);
     if (!name || seen.has(name)) continue;
     seen.add(name);
     if (neighborhoodSlug(name) === target) return name;
@@ -66,10 +70,13 @@ const industryOf = (c: AICompany): Industry => c.industry ?? 'ai';
 
 /** Build the canonical neighborhood clusters for a set of companies, richest
  *  first. Each cluster carries aggregate stats and a map boundary. */
-export function buildNeighborhoodClusters(companies: AICompany[]): NeighborhoodCluster[] {
+export function buildNeighborhoodClusters(
+  city: CityConfig,
+  companies: AICompany[],
+): NeighborhoodCluster[] {
   const groups = new Map<string, AICompany[]>();
   for (const c of companies) {
-    const name = canonicalNeighborhood(c.neighborhood);
+    const name = canonicalNeighborhood(city, c.neighborhood);
     if (!name) continue;
     const g = groups.get(name);
     if (g) g.push(c);
@@ -106,7 +113,7 @@ export function buildNeighborhoodClusters(companies: AICompany[]): NeighborhoodC
         .map(([industry, count]) => ({ industry, count }))
         .sort((a, b) => b.count - a.count),
       centroid,
-      polygon: clusterPolygon(pts, centroid),
+      polygon: clusterPolygon(city, pts, centroid),
       bounds: boundsOf(pts),
     });
   }
@@ -169,8 +176,7 @@ function convexHull(points: [number, number][]): [number, number][] {
 }
 
 // Longitude degrees are shorter than latitude degrees; the ratio depends on
-// the city's latitude. Read from the active city config.
-const LNG_SCALE = getCity().lngScale;
+// the city's latitude, so it is passed in rather than frozen at import.
 const MIN_RADIUS_DEG = 0.0045; // ~0.5 km — keeps tiny clusters visible
 
 function dedupe(pts: [number, number][]): [number, number][] {
@@ -185,11 +191,11 @@ function dedupe(pts: [number, number][]): [number, number][] {
   return out;
 }
 
-function ellipse(center: [number, number], r: number, n = 28): [number, number][] {
+function ellipse(lngScale: number, center: [number, number], r: number, n = 28): [number, number][] {
   const ring: [number, number][] = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
-    ring.push([center[0] + Math.cos(a) * r * LNG_SCALE, center[1] + Math.sin(a) * r]);
+    ring.push([center[0] + Math.cos(a) * r * lngScale, center[1] + Math.sin(a) * r]);
   }
   return ring;
 }
@@ -214,6 +220,7 @@ function inflate(
 /** A soft boundary polygon for a cluster's points: a padded convex hull when
  *  there are enough distinct points, otherwise a circle around the centroid. */
 export function clusterPolygon(
+  city: CityConfig,
   points: [number, number][],
   centroid: [number, number],
 ): [number, number][] {
@@ -227,5 +234,5 @@ export function clusterPolygon(
   for (const p of uniq) {
     maxD = Math.max(maxD, Math.hypot(p[0] - centroid[0], p[1] - centroid[1]) + MIN_RADIUS_DEG);
   }
-  return ellipse(centroid, maxD);
+  return ellipse(city.lngScale, centroid, maxD);
 }
