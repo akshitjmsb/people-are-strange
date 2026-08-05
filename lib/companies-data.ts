@@ -108,7 +108,11 @@ export const COMPANIES: AICompany[] = [
     id: 'microsoft-research-montreal',
     name: 'Microsoft Research Montreal',
     aka: 'ex-Maluuba',
-    type: 'big-tech-lab',
+    type: 'ent-bigtech',
+    industry: 'enterprise',
+    // Big-tech/enterprise company first, with a Montreal AI research lab —
+    // surfaced under both the Enterprise and AI filters. See types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.53052,
     lng: -73.61348,
     address: '6795 Rue Marconi, Montréal, QC H2S 3J9',
@@ -132,7 +136,11 @@ export const COMPANIES: AICompany[] = [
     id: 'meta-fair-montreal',
     name: 'Meta FAIR Montreal',
     aka: 'Facebook AI Research',
-    type: 'big-tech-lab',
+    type: 'ent-bigtech',
+    industry: 'enterprise',
+    // Big-tech/enterprise company first, with a Montreal AI research lab —
+    // surfaced under both the Enterprise and AI filters. See types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.52972,
     lng: -73.61432,
     neighborhood: 'Mile-Ex',
@@ -183,7 +191,11 @@ export const COMPANIES: AICompany[] = [
     id: 'samsung-ai-montreal',
     name: 'Samsung AI Center Montreal',
     aka: 'SAIT AI Lab Montreal',
-    type: 'big-tech-lab',
+    type: 'ent-bigtech',
+    industry: 'enterprise',
+    // Big-tech/enterprise company first, with a Montreal AI research lab —
+    // surfaced under both the Enterprise and AI filters. See types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.5048,
     lng: -73.576,
     neighborhood: 'Downtown',
@@ -202,7 +214,11 @@ export const COMPANIES: AICompany[] = [
     id: 'borealis-ai',
     name: 'RBC Borealis',
     aka: 'Borealis AI',
-    type: 'big-tech-lab',
+    type: 'fin-bank',
+    industry: 'financial',
+    // RBC is a bank first; Borealis is its Montreal AI research lab for finance —
+    // surfaced under both the Financial and AI filters. See types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.5308,
     lng: -73.6132,
     neighborhood: 'Mile-Ex',
@@ -248,7 +264,11 @@ export const COMPANIES: AICompany[] = [
     id: 'huawei-noahs-ark',
     name: "Huawei Noah's Ark Lab Montreal",
     aka: "Noah's Ark Lab Canada",
-    type: 'big-tech-lab',
+    type: 'ent-bigtech',
+    industry: 'enterprise',
+    // Big-tech/enterprise company first, with a Montreal AI research lab —
+    // surfaced under both the Enterprise and AI filters. See types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.5008,
     lng: -73.5692,
     neighborhood: 'Downtown',
@@ -292,7 +312,11 @@ export const COMPANIES: AICompany[] = [
     id: 'ericsson-gaia',
     name: 'Ericsson GAIA Montreal',
     aka: 'Global AI Accelerator',
-    type: 'big-tech-lab',
+    type: 'ent-bigtech',
+    industry: 'enterprise',
+    // Big-tech/enterprise company first, with a Montreal AI research lab —
+    // surfaced under both the Enterprise and AI filters. See types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.5058,
     lng: -73.6692,
     address: '8275 Route Transcanadienne, Saint-Laurent, QC H4S 0B6',
@@ -311,11 +335,12 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'thales-cortaix',
     name: 'Thales cortAIx',
-    // Its own AI is built explicitly for aerospace, defense and transport
-    // critical systems (see `industries` below) — genuinely native to that
-    // lens too, not just an AI lab that happens to have aerospace clients.
-    secondaryIndustries: ['aerospace'],
-    type: 'big-tech-lab',
+    // Thales is a defense/aerospace prime first; cortAIx is its Montreal AI
+    // Centre of Excellence for critical systems — surfaced under both the
+    // Aerospace and AI filters. See types.ts.
+    industry: 'aerospace',
+    type: 'defense',
+    secondaryIndustries: ['ai'],
     lat: 45.5304,
     lng: -73.6164,
     address: '6650 Rue Saint-Urbain, Montréal',
