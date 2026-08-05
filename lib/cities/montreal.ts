@@ -2,7 +2,7 @@
 // Everything that makes the app "Montréal" lives here. When the app runs
 // with NEXT_PUBLIC_CITY=montreal (the default), this is the config.
 
-import { AERO, ENERGY, GAMING, LIFESCI, MARINE } from '../colors';
+import { AERO, ENERGY, ENTERPRISE, FINANCE, GAMING, LIFESCI, MARINE } from '../colors';
 import type { CityConfig } from '../city-config';
 
 // ── Montreal's own palette ──────────────────────────────────────────────
@@ -29,7 +29,7 @@ export const montreal: CityConfig = {
   defaultZoom: 12,
   themeColor: '#E84393',
 
-  industries: ['ai', 'aerospace', 'energy', 'marine', 'gaming', 'lifesci'],
+  industries: ['ai', 'aerospace', 'energy', 'marine', 'gaming', 'lifesci', 'financial', 'enterprise'],
 
   industryMeta: {
     ai: { label: 'AI', emoji: '🧠', color: PALETTE.mileendViolet },
@@ -38,6 +38,8 @@ export const montreal: CityConfig = {
     marine: { label: 'Marine', emoji: '🚢', color: MARINE.deepSea },
     gaming: { label: 'Gaming', emoji: '🎮', color: GAMING.neonPurple },
     lifesci: { label: 'Life Sciences', emoji: '🧬', color: LIFESCI.pharmaTeal },
+    financial: { label: 'Financial', emoji: '🏦', color: FINANCE.vaultGreen },
+    enterprise: { label: 'Enterprise Tech', emoji: '💼', color: ENTERPRISE.cloudIndigo },
   },
 
   companyTypes: {
@@ -83,6 +85,18 @@ export const montreal: CityConfig = {
     'lifesci-cro': { key: 'lifesci-cro', label: 'CRO / Services', emoji: '🔬', color: LIFESCI.labCoral, industry: 'lifesci' },
     'lifesci-research': { key: 'lifesci-research', label: 'Research Institute', emoji: '🏥', color: LIFESCI.researchIndigo, industry: 'lifesci' },
     'lifesci-org': { key: 'lifesci-org', label: 'Cluster / Association', emoji: '🤝', color: LIFESCI.clusterSlate, industry: 'lifesci' },
+    // ── Financial Services ──
+    'fin-bank': { key: 'fin-bank', label: 'Bank', emoji: '🏦', color: FINANCE.vaultGreen, industry: 'financial' },
+    'fin-insurance': { key: 'fin-insurance', label: 'Insurance', emoji: '☂️', color: FINANCE.shieldTeal, industry: 'financial' },
+    'fin-fintech': { key: 'fin-fintech', label: 'Fintech / Payments', emoji: '💳', color: FINANCE.fintechLime, industry: 'financial' },
+    'fin-asset': { key: 'fin-asset', label: 'Asset & Wealth Mgmt', emoji: '💹', color: FINANCE.goldLeaf, industry: 'financial' },
+    'fin-pension': { key: 'fin-pension', label: 'Pension Fund', emoji: '🏛️', color: FINANCE.pensionNavy, industry: 'financial' },
+    // ── Enterprise Tech ──
+    'ent-bigtech': { key: 'ent-bigtech', label: 'Big-Tech Office', emoji: '💻', color: ENTERPRISE.cloudIndigo, industry: 'enterprise' },
+    'ent-consulting': { key: 'ent-consulting', label: 'Consulting', emoji: '📊', color: ENTERPRISE.consultBlue, industry: 'enterprise' },
+    'ent-saas': { key: 'ent-saas', label: 'SaaS / Enterprise', emoji: '☁️', color: ENTERPRISE.saasSky, industry: 'enterprise' },
+    'ent-telecom': { key: 'ent-telecom', label: 'Telecom', emoji: '📡', color: ENTERPRISE.telecomPlum, industry: 'enterprise' },
+    'ent-itservices': { key: 'ent-itservices', label: 'IT Services', emoji: '🖥️', color: ENTERPRISE.itGraphite, industry: 'enterprise' },
   },
 
   typeOrder: {
@@ -92,6 +106,8 @@ export const montreal: CityConfig = {
     marine: ['marine-shipping', 'marine-port', 'marine-services', 'marine-org'],
     gaming: ['gaming-aaa', 'gaming-mid', 'gaming-indie', 'gaming-vfx', 'gaming-services', 'gaming-org'],
     lifesci: ['lifesci-pharma', 'lifesci-biotech', 'lifesci-cro', 'lifesci-research', 'lifesci-org'],
+    financial: ['fin-bank', 'fin-insurance', 'fin-asset', 'fin-pension', 'fin-fintech'],
+    enterprise: ['ent-bigtech', 'ent-saas', 'ent-itservices', 'ent-consulting', 'ent-telecom'],
     all: [
       'research-lab', 'big-tech-lab', 'scaleup', 'startup', 'applied-ai', 'incubator',
       'oem', 'tier1', 'tier2', 'mro', 'defense', 'space', 'aero-research', 'aero-startup', 'aero-incubator',
@@ -99,6 +115,8 @@ export const montreal: CityConfig = {
       'marine-shipping', 'marine-port', 'marine-services', 'marine-org',
       'gaming-aaa', 'gaming-mid', 'gaming-indie', 'gaming-vfx', 'gaming-services', 'gaming-org',
       'lifesci-pharma', 'lifesci-biotech', 'lifesci-cro', 'lifesci-research', 'lifesci-org',
+      'fin-bank', 'fin-insurance', 'fin-asset', 'fin-pension', 'fin-fintech',
+      'ent-bigtech', 'ent-saas', 'ent-itservices', 'ent-consulting', 'ent-telecom',
     ],
   },
 
@@ -139,6 +157,15 @@ export const montreal: CityConfig = {
     'rare-diseases': 'Rare Diseases', 'medical-devices': 'Medical Devices',
     'contract-research': 'Contract Research', 'drug-discovery': 'Drug Discovery',
     'cell-gene-therapy': 'Cell & Gene Therapy', diagnostics: 'Diagnostics',
+    // Financial Services
+    'retail-banking': 'Retail Banking', 'commercial-banking': 'Commercial Banking',
+    insurance: 'Insurance', fintech: 'Fintech', 'asset-management': 'Asset Management',
+    'pension-fund': 'Pension Fund', payments: 'Payments',
+    'wealth-management': 'Wealth Management', 'capital-markets': 'Capital Markets',
+    // Enterprise Tech
+    'enterprise-software': 'Enterprise Software', 'it-consulting': 'IT Consulting',
+    'cloud-computing': 'Cloud Computing', saas: 'SaaS', telecom: 'Telecom',
+    erp: 'ERP', cybersecurity: 'Cybersecurity', 'digital-transformation': 'Digital Transformation',
   },
 
   canonicalNeighborhoods: {

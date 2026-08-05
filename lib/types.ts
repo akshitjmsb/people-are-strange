@@ -10,6 +10,7 @@
 export type Industry =
   // Montreal industries
   | 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming' | 'lifesci'
+  | 'financial' | 'enterprise'
   // Victoria industries
   | 'tech' | 'defense' | 'ocean' | 'cleantech' | 'government';
 
@@ -58,6 +59,18 @@ export type CompanyType =
   | 'lifesci-cro' // contract research / services (Altasciences, Charles River)
   | 'lifesci-research' // research institute (IRCM, The Neuro, adMare)
   | 'lifesci-org' // cluster / association (Montréal InVivo)
+  // ── Financial Services ecosystem ──
+  | 'fin-bank' // chartered bank / credit union (National Bank, Desjardins, RBC)
+  | 'fin-insurance' // insurer (Intact, iA, Sun Life, Beneva)
+  | 'fin-fintech' // payments / fintech (Nuvei)
+  | 'fin-asset' // asset & wealth management (Fiera, Addenda)
+  | 'fin-pension' // pension fund / institutional investor (CDPQ, PSP)
+  // ── Enterprise Tech ecosystem ──
+  | 'ent-bigtech' // global tech company's Montreal office (SAP, Oracle, IBM)
+  | 'ent-consulting' // IT / management consulting (Accenture, Deloitte, KPMG)
+  | 'ent-saas' // SaaS / enterprise software (Datadog, Workday, Unity)
+  | 'ent-telecom' // telecom operator (Bell, Telus, Videotron)
+  | 'ent-itservices' // IT services / systems integration (CGI)
   // ── Victoria: Tech ecosystem ──
   | 'tech-startup' | 'tech-scaleup' | 'tech-enterprise' | 'tech-agency' | 'tech-govtech' | 'tech-platform'
   // ── Victoria: Defense ecosystem ──
@@ -157,6 +170,29 @@ export type LifeSciDomain =
   | 'cell-gene-therapy'
   | 'diagnostics';
 
+/** Broad financial services capability areas. */
+export type FinancialDomain =
+  | 'retail-banking'
+  | 'commercial-banking'
+  | 'insurance'
+  | 'fintech'
+  | 'asset-management'
+  | 'pension-fund'
+  | 'payments'
+  | 'wealth-management'
+  | 'capital-markets';
+
+/** Broad enterprise tech capability areas. */
+export type EnterpriseDomain =
+  | 'enterprise-software'
+  | 'it-consulting'
+  | 'cloud-computing'
+  | 'saas'
+  | 'telecom'
+  | 'erp'
+  | 'cybersecurity'
+  | 'digital-transformation';
+
 // ── Victoria domain types ────────────────────────────────────────────────
 
 /** Victoria tech capability areas. */
@@ -190,7 +226,7 @@ export type GovernmentDomain =
  *  `aiDomains` column/field (kept that name so the data shape is identical). */
 export type Domain =
   | AIDomain | AerospaceDomain | EnergyDomain | MarineDomain
-  | GamingDomain | LifeSciDomain
+  | GamingDomain | LifeSciDomain | FinancialDomain | EnterpriseDomain
   | TechDomain | DefenseDomain | OceanDomain | CleanTechDomain | GovernmentDomain;
 
 import type { AtsRef } from './ats';

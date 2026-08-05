@@ -78,6 +78,34 @@ export const LIFESCI = {
 
 export type LifeSciColor = keyof typeof LIFESCI;
 
+// ── Financial Services palette ───────────────────────────────────────────
+// The money-and-trust family — vault green, protective teal, fintech lime,
+// gold leaf, pension navy — so the financial layer reads as its own ledger
+// against the other industries' palettes.
+export const FINANCE = {
+  vaultGreen: '#15803D', // deep money green — banks
+  shieldTeal: '#0E7490', // protective teal — insurers
+  fintechLime: '#22C55E', // bright growth green — fintech / payments
+  goldLeaf: '#CA8A04', // gold — asset & wealth management
+  pensionNavy: '#1E3A5F', // institutional navy — pension funds
+} as const;
+
+export type FinanceColor = keyof typeof FINANCE;
+
+// ── Enterprise Tech palette ──────────────────────────────────────────────
+// The corporate-cloud family — deep indigo, royal blue, sky cyan, telecom
+// plum, graphite slate — so the enterprise-tech layer reads as the office
+// tower against the other industries' palettes.
+export const ENTERPRISE = {
+  cloudIndigo: '#4338CA', // deep indigo — big-tech offices
+  consultBlue: '#2563EB', // royal blue — consulting
+  saasSky: '#0EA5E9', // sky cyan — SaaS / enterprise software
+  telecomPlum: '#9333EA', // plum — telecom operators
+  itGraphite: '#475569', // graphite slate — IT services
+} as const;
+
+export type EnterpriseColor = keyof typeof ENTERPRISE;
+
 /** Convert a #rrggbb hex string to a deck.gl [r,g,b] tuple. */
 export function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
