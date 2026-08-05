@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import CitySwitcher from '@/components/CitySwitcher';
 import CompanyDetail from '@/components/CompanyDetail';
 import Dashboard from '@/components/Dashboard';
 import FilterChips from '@/components/FilterChips';
@@ -372,14 +373,15 @@ export default function CityApp() {
         </div>
       </div>
 
-      {/* brand mark + honesty legend (map view only; hidden while a cluster
-          summary card occupies the bottom so the corner doesn't clutter) */}
+      {/* brand mark + city switcher + honesty legend, bottom-left. The wordmark
+          doubles as the city selector — the in-app path between cities. Map view
+          only, and hidden while a cluster summary card occupies the bottom so
+          the corner stays uncluttered (over the list it would collide with the
+          bottom toolbar). */}
       {view === 'map' && !activeCluster && (
         <div className="pointer-events-none absolute bottom-3 left-3 z-10">
-          <p className="font-display text-xs font-extrabold tracking-tight text-asphalt/80 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
-            People Are <span className="mtl-gradient-text">Strange</span>
-          </p>
-          <p className="font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
+          <CitySwitcher />
+          <p className="mt-1 font-display text-[10px] font-bold text-asphalt/55 drop-shadow-[0_1px_2px_rgba(255,255,255,0.7)]">
             {city.tagline}
           </p>
           <div className="mt-1.5 flex items-center gap-3 rounded-lg bg-white/70 px-2 py-1 backdrop-blur-sm">
