@@ -155,7 +155,11 @@ export const COMPANIES: AICompany[] = [
     id: 'google-deepmind-montreal',
     name: 'Google DeepMind Montreal',
     aka: 'ex-Google Brain Montreal',
-    type: 'big-tech-lab',
+    type: 'ent-bigtech',
+    industry: 'enterprise',
+    // Enterprise-tech company first, with a Montreal AI research lab — surfaced
+    // under both the Enterprise and AI filters. See secondaryIndustries in types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.50112,
     lng: -73.55672,
     address: '425 Avenue Viger Ouest, Montréal, QC',
@@ -217,7 +221,11 @@ export const COMPANIES: AICompany[] = [
     id: 'servicenow-research',
     name: 'ServiceNow Research',
     aka: 'ex-Element AI',
-    type: 'big-tech-lab',
+    type: 'ent-saas',
+    industry: 'enterprise',
+    // Enterprise-SaaS company first, with a Montreal AI research lab — surfaced
+    // under both the Enterprise and AI filters. See secondaryIndustries in types.ts.
+    secondaryIndustries: ['ai'],
     lat: 45.5292,
     lng: -73.6148,
     address: '6650 Rue Saint-Urbain, Suite 500, Montréal, QC H2S 3G9',
