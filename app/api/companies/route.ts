@@ -7,7 +7,13 @@ import { companies, type CompanyRow } from '@/lib/db/schema';
 import type { AICompany, Industry } from '@/lib/types';
 
 // Always read live from the database; the dataset can change without a redeploy.
+// force-dynamic alone proved insufficient: the parameterless GET (the map's hot
+// path) was still served from a cached copy after a deploy — showing stale
+// counts while the DB was already updated. revalidate=0 + fetchCache opt-out,
+// plus an explicit no-store on the response, guarantee every request runs fresh.
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 /** Map a DB row to the public AICompany shape (null → undefined for optionals). */
 function toCompany(r: CompanyRow): AICompany {
@@ -87,7 +93,10 @@ export async function GET(req: Request) {
           )
       : await db.select().from(companies).where(eq(companies.city, cityId));
 
-    return NextResponse.json({ companies: rows.map(toCompany) });
+    return NextResponse.json(
+      { companies: rows.map(toCompany) },
+      { headers: { 'Cache-Control': 'no-store, max-age=0, must-revalidate' } },
+    );
   } catch (err) {
     console.error('[api/companies] database query failed:', err);
     return NextResponse.json(
