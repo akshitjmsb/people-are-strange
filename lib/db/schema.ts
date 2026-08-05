@@ -77,3 +77,57 @@ export const companies = pgTable('companies', {
 
 export type CompanyRow = typeof companies.$inferSelect;
 export type NewCompanyRow = typeof companies.$inferInsert;
+
+// ── Refresh run log ──────────────────────────────────────────────────────────
+// One row per data-refresh run (see lib/refresh.ts). Two jobs at once:
+//
+//   1. Freshness — the newest finished row of a given `kind` is "when this data
+//      was last updated", which the app can surface to job hunters. This is a
+//      single, authoritative timestamp; the per-company `rolesFetchedAt` on the
+//      companies table stays as the finer-grained, per-board signal.
+//   2. Changelog — `summary` records what actually changed on that run (which
+//      companies' counts moved, and by how much), so a stale or misbehaving
+//      board is visible after the fact instead of silently freezing numbers.
+//
+// `kind` is deliberately open-ended: the roles refresh writes 'roles' today,
+// and the same table will hold 'links' (link-rot sweeps) and 'intake' (staging
+// queue promotions) as those land — see the extension notes in lib/refresh.ts.
+export type RefreshKind = 'roles' | 'links' | 'intake';
+export type RefreshStatus = 'ok' | 'partial' | 'error';
+export type RefreshTrigger = 'cron' | 'manual' | 'cli';
+
+export const refreshRuns = pgTable('refresh_runs', {
+  // Opaque uuid; the run's identity is its timestamp, but a stable key lets the
+  // app link to a specific run without depending on clock resolution.
+  id: text('id').primaryKey(),
+  kind: text('kind').$type<RefreshKind>().notNull().default('roles'),
+  status: text('status').$type<RefreshStatus>().notNull(),
+  trigger: text('trigger').$type<RefreshTrigger>().notNull(),
+
+  startedAt: text('started_at').notNull(),
+  // Null while a run is in flight; set on completion (success or handled error).
+  finishedAt: text('finished_at'),
+
+  // How the run went, in numbers. `boardsFailed` > 0 with status 'partial' is
+  // the normal "one host had a bad afternoon" case — those companies keep their
+  // previous counts rather than being blanked.
+  companiesRefreshed: integer('companies_refreshed').notNull().default(0),
+  boardsOk: integer('boards_ok').notNull().default(0),
+  boardsFailed: integer('boards_failed').notNull().default(0),
+  // Net change in locally-countable open roles across the whole run.
+  rolesDelta: integer('roles_delta'),
+
+  // The changelog: per-company count movements and the list of failed boards.
+  // Shape is RefreshSummary in lib/refresh.ts; stored as jsonb so it can grow
+  // (e.g. dead links, promoted companies) without a migration each time.
+  summary: jsonb('summary'),
+  // Populated only when the whole run failed (status 'error').
+  error: text('error'),
+}, (t) => ({
+  // "Newest run of this kind" is the one hot query (freshness banner + admin),
+  // so index the two columns it filters and orders by.
+  kindStartedIdx: index('refresh_runs_kind_started_idx').on(t.kind, t.startedAt),
+}));
+
+export type RefreshRunRow = typeof refreshRuns.$inferSelect;
+export type NewRefreshRunRow = typeof refreshRuns.$inferInsert;
