@@ -10,7 +10,7 @@
 // the city-scoped prune in scripts/seed.ts.
 
 import { pgTable, text, doublePrecision, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
-import type { Domain, CompanyType, Funding, Industry } from '../types';
+import type { Domain, CompanyType, Funding, KeyPerson, Industry } from '../types';
 import type { CityId } from '../city-config';
 
 export const companies = pgTable('companies', {
@@ -52,6 +52,13 @@ export const companies = pgTable('companies', {
   founded: integer('founded'),
   headcount: text('headcount'),
   funding: jsonb('funding').$type<Funding>(),
+  // Rich-card profile fields. `people` is a jsonb array of {name,title,role,
+  // linkedIn?} — founders, execs, and hiring contacts; the rest are plain
+  // scalars. All nullable — a company with no verified people simply has none.
+  fundingStage: text('funding_stage'),
+  people: jsonb('people').$type<KeyPerson[]>(),
+  story: text('story'),
+  notableClients: text('notable_clients').array(),
   hiring: boolean('hiring'),
   careersUrl: text('careers_url'),
   notable: text('notable'),

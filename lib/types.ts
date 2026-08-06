@@ -240,6 +240,21 @@ export interface Funding {
   investors?: string[];
 }
 
+/** How a key person is useful to someone networking / job-hunting. Drives the
+ *  grouping on the card: who founded it, who runs it, who to reach about a job. */
+export type PersonRole = 'founder' | 'executive' | 'hiring';
+
+/** One key person at a company — a real, verified individual who CURRENTLY holds
+ *  the stated role. Only sourced people belong here; a name that can't be
+ *  verified is left off rather than guessed (see lib/company-profiles.ts). A
+ *  wrong name is worse than no name. */
+export interface KeyPerson {
+  name: string;
+  title: string; // role as it reads today, e.g. "Co-founder & CEO", "VP Talent"
+  role: PersonRole;
+  linkedIn?: string; // full linkedin.com profile URL when a real one is known
+}
+
 /** One AI company / lab in Montreal — the atom of this whole app. */
 export interface AICompany {
   id: string;
@@ -288,6 +303,19 @@ export interface AICompany {
   founded?: number;
   headcount?: string; // e.g. "51-200"
   funding?: Funding;
+  /** Plain-language funding / ownership status for the card — e.g. "Series B",
+   *  "Public", "Government", "Private", "Bootstrapped", "Subsidiary". A softer,
+   *  always-present signal than the detailed `funding` object above. */
+  fundingStage?: string;
+
+  // ── Rich profile (key people + origin story) ────────────────────────────
+  /** Real, verified key people to know — founders, C-suite, and talent/hiring
+   *  contacts — for networking and job-hunting. Never inferred. */
+  people?: KeyPerson[];
+  /** A 2–3 sentence, factual origin story / company history for the card. */
+  story?: string;
+  /** A few marquee customers / partners, where they're publicly known. */
+  notableClients?: string[];
   /** We hold a verified link to this company's jobs page — NOT a claim that
    *  they have open roles. It tracks `careersUrl` 1:1, so a false here means
    *  "no link curated yet", never "not hiring". The UI is worded accordingly

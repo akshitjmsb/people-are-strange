@@ -7,6 +7,7 @@
 //
 // Exits 1 on any ERROR. Warnings are reported but never fail the build.
 import { COMPANIES } from '../lib/companies-data';
+import { COMPANY_PROFILES } from '../lib/company-profiles';
 import { PEOPLE } from '../lib/people-data';
 import { companyTypes, industryOrder } from '../lib/categories';
 import { getCity, DEFAULT_CITY_ID } from '../lib/cities';
@@ -155,13 +156,41 @@ for (const p of PEOPLE) {
   if (p.linkedinUrl && !isUrl(p.linkedinUrl)) err(`${at}: malformed linkedinUrl "${p.linkedinUrl}"`);
 }
 
+// ── Company profiles (founders + stories) ─────────────────────────────────────
+// Enrichment lives in its own file (lib/company-profiles.ts), merged at load
+// time by bundledCompanies(). Validate it here so a typo'd id or a malformed
+// founder fails CI instead of silently vanishing from the merge.
+const PERSON_ROLES = new Set(['founder', 'executive', 'hiring']);
+let profilesWithPeople = 0;
+let peopleTotal = 0;
+for (const [id, profile] of Object.entries(COMPANY_PROFILES)) {
+  const at = `profile "${id}"`;
+  if (!companyIds.has(id)) err(`${at}: no company has this id — the profile will never merge`);
+  if (profile.people?.length) profilesWithPeople++;
+  for (const p of profile.people ?? []) {
+    peopleTotal++;
+    if (!p.name?.trim()) err(`${at}: a person has an empty name`);
+    if (!p.title?.trim()) err(`${at}: person "${p.name}" has an empty title`);
+    if (!PERSON_ROLES.has(p.role)) err(`${at}: person "${p.name}" has invalid role "${p.role}"`);
+    if (p.linkedIn && !isUrl(p.linkedIn)) err(`${at}: person "${p.name}" linkedIn is not a URL — "${p.linkedIn}"`);
+    if (p.linkedIn && !/linkedin\.com\//i.test(p.linkedIn)) {
+      err(`${at}: person "${p.name}" linkedIn is not a linkedin.com URL — "${p.linkedIn}"`);
+    }
+  }
+  if (profile.story !== undefined && !profile.story.trim()) err(`${at}: story is present but empty`);
+  if (profile.notableClients?.some((s) => !s?.trim())) err(`${at}: a notableClients entry is empty`);
+}
+
 // ── Report ───────────────────────────────────────────────────────────────────
 const byIndustry = INDUSTRY_ORDER.map((i) => {
   const n = COMPANIES.filter((c) => industryOf(c) === i).length;
   return `${i} ${n}`;
 }).join('  ·  ');
 
-console.log(`\n${COMPANIES.length} companies  ·  ${PEOPLE.length} people`);
+console.log(
+  `\n${COMPANIES.length} companies  ·  ${PEOPLE.length} people  ·  ` +
+    `${Object.keys(COMPANY_PROFILES).length} profiles (${profilesWithPeople} with people, ${peopleTotal} contacts)`,
+);
 console.log(`${byIndustry}\n`);
 
 const warnTotal = [...warnings.values()].reduce((n, l) => n + l.length, 0);

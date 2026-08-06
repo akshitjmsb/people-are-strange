@@ -1,5 +1,6 @@
 import { COMPANIES as MONTREAL_COMPANIES } from './companies-data';
 import { COMPANIES as VICTORIA_COMPANIES } from './companies-data-victoria';
+import { COMPANY_PROFILES } from './company-profiles';
 import { getCity, DEFAULT_CITY_ID } from './cities';
 import type { AICompany, Industry } from './types';
 import type { CityId } from './city-config';
@@ -14,7 +15,13 @@ const DATASETS: Record<CityId, AICompany[]> = {
 };
 
 export function bundledCompanies(city: CityId): AICompany[] {
-  return DATASETS[city] ?? DATASETS[DEFAULT_CITY_ID];
+  const dataset = DATASETS[city] ?? DATASETS[DEFAULT_CITY_ID];
+  // Merge in the founder/story enrichment (lib/company-profiles.ts). A profile
+  // only ever adds the rich-card fields; a company without one is unchanged.
+  return dataset.map((c) => {
+    const profile = COMPANY_PROFILES[c.id];
+    return profile ? { ...c, ...profile } : c;
+  });
 }
 
 export interface LoadResult {

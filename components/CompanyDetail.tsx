@@ -7,7 +7,7 @@ import { useCity } from '@/lib/city-context';
 import { reportCompanyUrl } from '@/lib/feedback';
 import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
 import { roleSummary } from '@/lib/roles';
-import type { AICompany, Person } from '@/lib/types';
+import type { AICompany, KeyPerson, Person, PersonRole } from '@/lib/types';
 
 
 interface Props {
@@ -173,6 +173,36 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
             {company.oneLiner}
           </p>
 
+          {/* Origin story — the "how this came to be" paragraph that gives the
+              card its Crunchbase-profile feel, set off with the type accent. */}
+          {company.story && (
+            <div className="border-l-2 pl-3.5" style={{ borderColor: `${t.color}59` }}>
+              <p className="text-[13.5px] leading-relaxed text-asphalt/75">{company.story}</p>
+            </div>
+          )}
+
+          {/* Key people — real, verified individuals to reach out to, grouped by
+              why they matter for networking / job-hunting. Only sourced people
+              appear (see lib/company-profiles.ts). */}
+          {company.people && company.people.length > 0 && (
+            <div className="space-y-3">
+              {PERSON_GROUPS.map(({ role, label }) => {
+                const group = company.people!.filter((p) => p.role === role);
+                if (group.length === 0) return null;
+                return (
+                  <div key={role}>
+                    <SectionTitle>{label}</SectionTitle>
+                    <ul className="space-y-1.5">
+                      {group.map((p) => (
+                        <KeyPersonRow key={`${p.role}-${p.name}-${p.title}`} person={p} accent={t.color} />
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {(company.problem || company.solution) && (
             <div className="grid gap-3 sm:grid-cols-2">
               {company.problem && (
@@ -192,10 +222,13 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {company.founded && <Fact label="Founded" value={String(company.founded)} />}
             {company.headcount && <Fact label="Team" value={company.headcount} />}
+            {company.fundingStage && <Fact label="Funding" value={company.fundingStage} />}
             {company.funding?.totalRaised && (
               <Fact label="Raised" value={company.funding.totalRaised} />
             )}
-            {company.funding?.lastRound && (
+            {/* Detailed last round, only when it adds something the funding
+                stage above doesn't already say. */}
+            {company.funding?.lastRound && company.funding.lastRound !== company.fundingStage && (
               <Fact label="Last round" value={company.funding.lastRound} />
             )}
             {company.neighborhood && <Fact label="Area" value={company.neighborhood} />}
@@ -223,13 +256,20 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
             <Chips title="Industries" items={company.industries} muted />
           )}
 
+          {company.notableClients && company.notableClients.length > 0 && (
+            <Chips title="Notable clients" items={company.notableClients} accent={t.color} />
+          )}
+
           {company.notable && (
             <Block label="Notable" accent={t.color}>
               {company.notable}
             </Block>
           )}
 
-          {people.length > 0 && (
+          {/* Legacy hand-curated "People to know" — shown only for companies the
+              richer, role-grouped `people` layer above doesn't already cover, so
+              nobody appears in two sections. */}
+          {people.length > 0 && (!company.people || company.people.length === 0) && (
             <div>
               <div className="mb-1.5 flex items-baseline justify-between gap-2">
                 <SectionTitle>People to know</SectionTitle>
@@ -448,6 +488,65 @@ function PersonRow({
         </span>
       </a>
     </li>
+  );
+}
+
+/** Render order + labels for the key-people groups. Founders first (identity),
+ *  then leadership, then the talent/hiring contacts a job-hunter wants most. */
+const PERSON_GROUPS: { role: PersonRole; label: string }[] = [
+  { role: 'founder', label: 'Founders' },
+  { role: 'executive', label: 'Leadership' },
+  { role: 'hiring', label: 'Talent & hiring' },
+];
+
+/**
+ * One key person. The whole row opens their LinkedIn when we hold a real profile
+ * URL; otherwise it's a plain, non-interactive identity row — we never fake a
+ * link. Mirrors the "People to know" rows so the whole card reads as one family.
+ */
+function KeyPersonRow({ person, accent }: { person: KeyPerson; accent: string }) {
+  const inner = (
+    <>
+      <span
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
+        style={{ backgroundColor: `${accent}1a`, color: accent }}
+        aria-hidden
+      >
+        {initialsOf(person.name)}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold text-asphalt">{person.name}</span>
+        <span className="block text-xs font-medium leading-snug text-asphalt/60">{person.title}</span>
+      </span>
+      {person.linkedIn && (
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0A66C2] text-white"
+          aria-hidden
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.4c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.07 1.4-2.07 2.85V21H9z" />
+          </svg>
+        </span>
+      )}
+    </>
+  );
+
+  const base = 'flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5';
+
+  return person.linkedIn ? (
+    <li>
+      <a
+        href={person.linkedIn}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Open ${person.name} on LinkedIn — ${person.title}`}
+        className={`${base} transition hover:bg-black/[0.07] active:bg-black/[0.09]`}
+      >
+        {inner}
+      </a>
+    </li>
+  ) : (
+    <li className={base}>{inner}</li>
   );
 }
 
