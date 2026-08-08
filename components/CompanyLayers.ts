@@ -3,6 +3,7 @@ import { IconLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/l
 import { companyTypes, typeColor } from '@/lib/categories';
 import type { CityConfig } from '@/lib/city-config';
 import { hexToRgb } from '@/lib/colors';
+import { MATCH_COLORS, type CompanyOpportunity, type OpportunityLens } from '@/lib/opportunity-map';
 import type { AICompany } from '@/lib/types';
 
 /** A neighborhood boundary + label drawn beneath the company markers. */
@@ -11,6 +12,25 @@ export interface NeighborhoodShape {
   polygon: [number, number][];
   centroid: [number, number];
   color: string; // hex
+}
+
+export interface CompanyCluster {
+  id: string;
+  longitude: number;
+  latitude: number;
+  companies: AICompany[];
+}
+
+function markerColor(
+  city: CityConfig,
+  company: AICompany,
+  lens: OpportunityLens,
+  opportunities?: Map<string, CompanyOpportunity>,
+): string {
+  const opportunity = opportunities?.get(company.id);
+  if (lens === 'matches' && opportunity) return MATCH_COLORS[opportunity.best.band];
+  if (lens === 'hiring') return '#00B894';
+  return typeColor(city, company.type);
 }
 
 // Rough size signal: bigger dot = bigger / more notable player.
@@ -71,6 +91,8 @@ interface LayerOpts {
   labelIds?: Set<string> | null;
   /** Active neighborhood boundary to outline beneath the markers, if any. */
   neighborhood?: NeighborhoodShape | null;
+  lens?: OpportunityLens;
+  opportunities?: Map<string, CompanyOpportunity>;
   onClick: (c: AICompany) => void;
   onHover?: (hovering: boolean) => void;
 }
@@ -91,6 +113,8 @@ export function createCompanyLayers({
   showIcons,
   labelIds,
   neighborhood,
+  lens = 'all',
+  opportunities,
   onClick,
   onHover,
 }: LayerOpts) {
@@ -124,7 +148,7 @@ export function createCompanyLayers({
     radiusUnits: 'meters',
     radiusMinPixels: 14,
     radiusMaxPixels: 64,
-    getFillColor: (c) => [...hexToRgb(typeColor(city, c.type)), c.id === selectedId ? 90 : 55],
+    getFillColor: (c) => [...hexToRgb(markerColor(city, c, lens, opportunities)), c.id === selectedId ? 90 : 55],
     stroked: false,
     pickable: false,
     updateTriggers: { getFillColor: selectedId },
@@ -142,11 +166,11 @@ export function createCompanyLayers({
     radiusUnits: 'meters',
     radiusMinPixels: 7,
     radiusMaxPixels: 26,
-    getFillColor: (c) => [...hexToRgb(typeColor(city, c.type)), isExact(c) ? 255 : 38],
+    getFillColor: (c) => [...hexToRgb(markerColor(city, c, lens, opportunities)), isExact(c) ? 255 : 38],
     stroked: true,
     getLineColor: (c) => {
       if (c.id === selectedId) return [255, 255, 255, 255];
-      return isExact(c) ? [255, 255, 255, 180] : [...hexToRgb(typeColor(city, c.type)), 255];
+      return isExact(c) ? [255, 255, 255, 180] : [...hexToRgb(markerColor(city, c, lens, opportunities)), 255];
     },
     getLineWidth: (c) => (c.id === selectedId ? 3 : isExact(c) ? 1.5 : 2.5),
     lineWidthUnits: 'pixels',
@@ -272,4 +296,80 @@ export function createCompanyLayers({
   }
 
   return layers;
+}
+
+interface ClusterLayerOpts {
+  city: CityConfig;
+  clusters: CompanyCluster[];
+  lens: OpportunityLens;
+  opportunities: Map<string, CompanyOpportunity>;
+  onClick: (cluster: CompanyCluster) => void;
+  onHover?: (hovering: boolean) => void;
+}
+
+/** City-level clusters keep dense maps legible. Their colour follows the best
+ * resume match in the group, or the active opportunity lens. */
+export function createClusterLayers({
+  city,
+  clusters,
+  lens,
+  opportunities,
+  onClick,
+  onHover,
+}: ClusterLayerOpts): Layer[] {
+  if (!clusters.length) return [];
+  const color = (cluster: CompanyCluster) => {
+    const ranked = cluster.companies
+      .map((company) => opportunities.get(company.id))
+      .filter((value): value is CompanyOpportunity => Boolean(value))
+      .sort((a, b) => b.best.score - a.best.score);
+    if (lens === 'matches' && ranked[0]) return MATCH_COLORS[ranked[0].best.band];
+    if (lens === 'hiring') return '#00B894';
+    return markerColor(city, cluster.companies[0], lens, opportunities);
+  };
+
+  return [
+    new ScatterplotLayer<CompanyCluster>({
+      id: 'company-cluster-glow',
+      data: clusters,
+      getPosition: (cluster) => [cluster.longitude, cluster.latitude],
+      getRadius: (cluster) => 150 + Math.sqrt(cluster.companies.length) * 55,
+      radiusUnits: 'meters',
+      radiusMinPixels: 24,
+      radiusMaxPixels: 58,
+      getFillColor: (cluster) => [...hexToRgb(color(cluster)), 65],
+      pickable: false,
+    }),
+    new ScatterplotLayer<CompanyCluster>({
+      id: 'company-cluster-core',
+      data: clusters,
+      getPosition: (cluster) => [cluster.longitude, cluster.latitude],
+      getRadius: (cluster) => 80 + Math.sqrt(cluster.companies.length) * 30,
+      radiusUnits: 'meters',
+      radiusMinPixels: 16,
+      radiusMaxPixels: 38,
+      getFillColor: (cluster) => [...hexToRgb(color(cluster)), 245],
+      getLineColor: [255, 255, 255, 235],
+      getLineWidth: 2,
+      lineWidthUnits: 'pixels',
+      stroked: true,
+      pickable: true,
+      onClick: (info) => info.object && onClick(info.object as CompanyCluster),
+      onHover: (info) => onHover?.(Boolean(info.object)),
+    }),
+    new TextLayer<CompanyCluster>({
+      id: 'company-cluster-count',
+      data: clusters,
+      getPosition: (cluster) => [cluster.longitude, cluster.latitude],
+      getText: (cluster) => String(cluster.companies.length),
+      getSize: 13,
+      sizeUnits: 'pixels',
+      getColor: [255, 255, 255, 255],
+      fontFamily: "'Space Grotesk', system-ui, sans-serif",
+      fontWeight: 800,
+      getTextAnchor: 'middle',
+      getAlignmentBaseline: 'center',
+      pickable: false,
+    }),
+  ];
 }

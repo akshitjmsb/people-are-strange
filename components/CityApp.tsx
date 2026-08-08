@@ -7,12 +7,13 @@ import CitySwitcher from '@/components/CitySwitcher';
 import CompanyDetail from '@/components/CompanyDetail';
 import Dashboard from '@/components/Dashboard';
 import FilterChips from '@/components/FilterChips';
-import HiringToggle from '@/components/HiringToggle';
 import IndustryToggle, { type IndustrySelection } from '@/components/IndustryToggle';
 import ListView from '@/components/ListView';
 import MatchesView from '@/components/MatchesView';
 import NeighborhoodPanel from '@/components/NeighborhoodPanel';
 import NeighborhoodSummary from '@/components/NeighborhoodSummary';
+import OpportunityControls from '@/components/OpportunityControls';
+import OpportunityPreview from '@/components/OpportunityPreview';
 import SavedToggle from '@/components/SavedToggle';
 import SearchBar from '@/components/SearchBar';
 import ViewSwitcher, { type ViewMode } from '@/components/ViewSwitcher';
@@ -30,6 +31,12 @@ import {
 } from '@/lib/neighborhoods';
 import { buildEcosystemStats } from '@/lib/stats';
 import { useCity, useCityId } from '@/lib/city-context';
+import {
+  groupOpportunities,
+  visibleMatch,
+  type JobsResponse,
+  type OpportunityLens,
+} from '@/lib/opportunity-map';
 import type { AICompany, CompanyType, Industry } from '@/lib/types';
 
 /** A company's industry, defaulting legacy rows to the city's first industry. */
@@ -62,9 +69,14 @@ export default function CityApp() {
   const [query, setQuery] = useState('');
   const [industry, setIndustry] = useState<IndustrySelection>('all');
   const [activeTypes, setActiveTypes] = useState<Set<CompanyType>>(new Set());
-  const [hiringOnly, setHiringOnly] = useState(false);
+  const [lens, setLens] = useState<OpportunityLens>('matches');
   const [savedOnly, setSavedOnly] = useState(false);
   const [selected, setSelected] = useState<AICompany | null>(null);
+  const [detailCompany, setDetailCompany] = useState<AICompany | null>(null);
+  const [matchCompanyId, setMatchCompanyId] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<JobsResponse | null>(null);
+  const [jobsLoading, setJobsLoading] = useState(true);
+  const [jobsError, setJobsError] = useState<string | null>(null);
 
   // star-shortlist (localStorage) — one instance, shared by every star button
   const { saved, toggleSaved } = useSavedCompanies();
@@ -100,7 +112,12 @@ export default function CityApp() {
 
     if (p.get('view') === 'list') setView('list');
     if (p.get('view') === 'matches') setView('matches');
-    if (p.get('hiring') === '1') setHiringOnly(true);
+    const requestedLens = p.get('lens');
+    if (requestedLens === 'matches' || requestedLens === 'hiring' || requestedLens === 'all') {
+      setLens(requestedLens);
+    } else if (p.get('hiring') === '1') {
+      setLens('hiring');
+    }
     if (p.get('saved') === '1') setSavedOnly(true);
 
     pending.current = {
@@ -125,6 +142,31 @@ export default function CityApp() {
     return () => {
       alive = false;
     };
+  }, [cityId]);
+
+  // One automatic scan powers the map lenses and every pin preview. The API
+  // refreshes the connected Drive resume before ranking, so these scores track
+  // the latest master without asking the user to upload anything here.
+  useEffect(() => {
+    let alive = true;
+    setJobsLoading(true);
+    setJobsError(null);
+    fetch(`/api/jobs?city=${encodeURIComponent(cityId)}&limit=200&minScore=0`, { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = await response.json() as JobsResponse;
+        if (!response.ok) throw new Error(payload.error ?? 'Could not load opportunity matches');
+        return payload;
+      })
+      .then((payload) => {
+        if (alive) setJobs(payload);
+      })
+      .catch((reason) => {
+        if (alive) setJobsError(reason instanceof Error ? reason.message : String(reason));
+      })
+      .finally(() => {
+        if (alive) setJobsLoading(false);
+      });
+    return () => { alive = false; };
   }, [cityId]);
 
   // Apply the data-dependent deep-link params once companies have loaded.
@@ -161,13 +203,15 @@ export default function CityApp() {
     if (activeTypes.size) p.set('type', [...activeTypes].join(','));
     if (activeArea) p.set('neighborhood', neighborhoodSlug(activeArea));
     if (query.trim()) p.set('q', query.trim());
-    if (hiringOnly) p.set('hiring', '1');
+    if (lens !== 'matches') p.set('lens', lens);
     if (savedOnly) p.set('saved', '1');
     if (view !== 'map') p.set('view', view);
     if (selected) p.set('company', selected.id);
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [urlReady, industry, activeTypes, activeArea, query, hiringOnly, savedOnly, view, selected]);
+  }, [urlReady, industry, activeTypes, activeArea, query, lens, savedOnly, view, selected]);
+
+  const opportunities = useMemo(() => groupOpportunities(jobs?.matches ?? []), [jobs]);
 
   // count per industry across the whole dataset (for the top-level toggle).
   // A cross-listed company (secondaryIndustries) increments every lens it
@@ -203,25 +247,18 @@ export default function CityApp() {
     return c;
   }, [inIndustry]);
 
-  // number of companies hiring within the current industry lens (for the chip)
-  const hiringCount = useMemo(
-    () => inIndustry.reduce((n, co) => n + (co.hiring ? 1 : 0), 0),
-    [inIndustry],
-  );
-
   // number of saved companies within the current industry lens (for the chip)
   const savedCount = useMemo(
     () => inIndustry.reduce((n, co) => n + (saved.has(co.id) ? 1 : 0), 0),
     [inIndustry, saved],
   );
 
-  // apply saved + hiring + neighborhood + search + type filters within the
-  // industry; matching is accent-insensitive ("energir" finds Énergir)
-  const filtered = useMemo(() => {
+  // Apply shortlist + neighborhood + search + type filters within the
+  // industry; matching is accent-insensitive ("energir" finds Énergir).
+  const filteredBase = useMemo(() => {
     const q = fold(query.trim());
     return inIndustry.filter((co) => {
       if (savedOnly && !saved.has(co.id)) return false;
-      if (hiringOnly && !co.hiring) return false;
       if (activeArea && canonicalNeighborhood(city, co.neighborhood) !== activeArea) return false;
       if (activeTypes.size > 0 && !activeTypes.has(co.type)) return false;
       if (!q) return true;
@@ -235,7 +272,26 @@ export default function CityApp() {
         co.tags?.some((t) => fold(t).includes(q))
       );
     });
-  }, [city, inIndustry, query, activeTypes, activeArea, hiringOnly, savedOnly, saved]);
+  }, [city, inIndustry, query, activeTypes, activeArea, savedOnly, saved]);
+
+  const filtered = useMemo(() => {
+    // If ranking is temporarily unavailable, keep the map useful instead of
+    // presenting a false empty state.
+    if (jobsLoading || jobsError) return filteredBase;
+    if (lens === 'matches') {
+      return filteredBase.filter((company) => visibleMatch(opportunities.get(company.id)));
+    }
+    if (lens === 'hiring') {
+      return filteredBase.filter((company) => company.hiring || opportunities.has(company.id));
+    }
+    return filteredBase;
+  }, [filteredBase, jobsLoading, jobsError, lens, opportunities]);
+
+  const lensCounts = useMemo<Record<OpportunityLens, number>>(() => ({
+    matches: inIndustry.filter((company) => visibleMatch(opportunities.get(company.id))).length,
+    hiring: inIndustry.filter((company) => company.hiring || opportunities.has(company.id)).length,
+    all: inIndustry.length,
+  }), [inIndustry, opportunities]);
 
   // dropdown suggestions: name matches float above everything else
   const suggestions = useMemo(() => {
@@ -285,14 +341,31 @@ export default function CityApp() {
   // open a company's detail from either view
   const showOnMap = (c: AICompany) => {
     setView('map');
+    setLens('all');
     setSelected(c);
+    setDetailCompany(null);
+  };
+
+  const showCompanyIdOnMap = (companyId: string) => {
+    const company = all.find((item) => item.id === companyId);
+    if (!company) return;
+    setMatchCompanyId(null);
+    setView('map');
+    setLens('all');
+    setSelected(company);
+    setDetailCompany(null);
+  };
+
+  const openDetails = (company: AICompany) => {
+    setSelected(company);
+    setDetailCompany(company);
   };
 
   // export the currently-filtered list as CSV, with a filter-aware filename
   const exportCsv = () => {
     if (!filtered.length) return;
     const parts = [city.csvPrefix];
-    if (hiringOnly) parts.push('hiring');
+    if (lens !== 'all') parts.push(lens);
     if (industry !== 'all') parts.push(industry);
     if (activeArea) parts.push(neighborhoodSlug(activeArea));
     parts.push('companies');
@@ -316,7 +389,12 @@ export default function CityApp() {
         <Map
           companies={filtered}
           selectedId={selected?.id ?? null}
-          onSelect={setSelected}
+          onSelect={(company) => {
+            setSelected(company);
+            setDetailCompany(null);
+          }}
+          lens={lens}
+          opportunities={opportunities}
           neighborhood={neighborhoodShape}
           neighborhoodBounds={activeCluster?.bounds ?? null}
         />
@@ -326,7 +404,7 @@ export default function CityApp() {
         <ListView
           companies={filtered}
           selectedId={selected?.id ?? null}
-          onSelect={setSelected}
+          onSelect={openDetails}
           onShowOnMap={showOnMap}
           onExport={exportCsv}
           topInset={topInset}
@@ -335,7 +413,13 @@ export default function CityApp() {
         />
       )}
 
-      {view === 'matches' && <MatchesView />}
+      {view === 'matches' && (
+        <MatchesView
+          focusCompanyId={matchCompanyId}
+          onClearCompanyFocus={() => setMatchCompanyId(null)}
+          onShowOnMap={showCompanyIdOnMap}
+        />
+      )}
 
       {/* Montreal-palette hairline across the very top */}
       <div aria-hidden className="mtl-hairline pointer-events-none absolute inset-x-0 top-0 z-30 h-[3px]" />
@@ -345,38 +429,48 @@ export default function CityApp() {
         ref={chromeRef}
         className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]"
       >
-        <div className="flex flex-wrap items-start gap-2">
+        <OpportunityControls
+          lens={lens}
+          counts={lensCounts}
+          onLens={(next) => {
+            setLens(next);
+            setSelected(null);
+          }}
+          activeFilterCount={Number(industry !== 'all') + activeTypes.size + Number(savedOnly) + Number(Boolean(activeArea))}
+        >
           <IndustryToggle value={industry} counts={industryCounts} onChange={changeIndustry} />
-          {dataSource === 'local' && <OfflineBadge />}
-        </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <SavedToggle
+              active={savedOnly}
+              count={savedCount}
+              onToggle={() => setSavedOnly((value) => !value)}
+            />
+            <FilterChips
+              active={activeTypes}
+              counts={counts}
+              onToggle={toggleType}
+              onClear={() => setActiveTypes(new Set())}
+              typeOrder={typeOrderFor(industry)}
+            />
+          </div>
+        </OpportunityControls>
         <SearchBar
           value={query}
           onChange={setQuery}
           resultCount={filtered.length}
           suggestions={suggestions}
-          onPick={setSelected}
+          onPick={(company) => {
+            setSelected(company);
+            setDetailCompany(null);
+          }}
         />
-        {/* Hiring/saved toggles and the type chips share one wrapping run, so
-            the chips get the full width instead of the ~200px sliver that was
-            left over beside the toggles on a phone. */}
-        <div className="flex flex-wrap items-center gap-2">
-          <HiringToggle
-            active={hiringOnly}
-            count={hiringCount}
-            onToggle={() => setHiringOnly((v) => !v)}
-          />
-          <SavedToggle
-            active={savedOnly}
-            count={savedCount}
-            onToggle={() => setSavedOnly((v) => !v)}
-          />
-          <FilterChips
-            active={activeTypes}
-            counts={counts}
-            onToggle={toggleType}
-            onClear={() => setActiveTypes(new Set())}
-            typeOrder={typeOrderFor(industry)}
-          />
+        <div className="flex items-center gap-2">
+          {dataSource === 'local' && <OfflineBadge />}
+          {jobsError && (
+            <span className="pointer-events-auto rounded-full bg-montroyal-amber/15 px-3 py-1 text-[10px] font-bold text-montroyal-amber">
+              Match scores temporarily unavailable
+            </span>
+          )}
         </div>
       </div>}
 
@@ -412,7 +506,10 @@ export default function CityApp() {
       {/* bottom view switcher */}
       <ViewSwitcher
         view={view}
-        onView={setView}
+        onView={(next) => {
+          if (next === 'matches' && view !== 'matches') setMatchCompanyId(null);
+          setView(next);
+        }}
         onOpenAreas={() => setAreasOpen(true)}
         onOpenDashboard={() => setDashboardOpen(true)}
         activeArea={activeArea}
@@ -441,10 +538,25 @@ export default function CityApp() {
         />
       )}
 
+      {view === 'map' && selected && !detailCompany && (
+        <OpportunityPreview
+          company={selected}
+          opportunity={opportunities.get(selected.id)}
+          saved={saved.has(selected.id)}
+          onToggleSave={toggleSaved}
+          onDetails={() => setDetailCompany(selected)}
+          onMatches={() => {
+            setMatchCompanyId(selected.id);
+            setView('matches');
+          }}
+          onClose={() => setSelected(null)}
+        />
+      )}
+
       <CompanyDetail
-        company={selected}
-        onClose={() => setSelected(null)}
-        saved={selected ? saved.has(selected.id) : false}
+        company={detailCompany}
+        onClose={() => setDetailCompany(null)}
+        saved={detailCompany ? saved.has(detailCompany.id) : false}
         onToggleSave={toggleSaved}
       />
     </main>

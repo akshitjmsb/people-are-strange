@@ -4,29 +4,7 @@ import { useEffect, useState } from 'react';
 
 import { useCity, useCityId } from '@/lib/city-context';
 import type { JobMatch, MatchBand } from '@/lib/job-matching';
-
-interface JobsResponse {
-  matches: JobMatch[];
-  totalOpenings: number;
-  candidateMatches: number;
-  strongMatches: number;
-  refreshedAt: string | null;
-  resumeSync: {
-    state: 'current' | 'updated' | 'stale' | 'not_connected';
-    connected: boolean;
-    checkedAt: string | null;
-    error?: string;
-  };
-  profile: {
-    name: string;
-    headline: string;
-    sourceTitle: string;
-    sourceUrl: string;
-    sourceRevision: string;
-    syncedAt: string;
-  };
-  error?: string;
-}
+import type { JobsResponse } from '@/lib/opportunity-map';
 
 const BAND_STYLES: Record<MatchBand, { label: string; chip: string; score: string }> = {
   strong: { label: 'Strong match', chip: 'bg-parc-emerald/15 text-parc-emerald', score: 'text-parc-emerald' },
@@ -43,7 +21,13 @@ function ago(iso: string | null): string {
   return `updated ${Math.round(hours / 24)}d ago`;
 }
 
-export default function MatchesView() {
+interface Props {
+  focusCompanyId?: string | null;
+  onClearCompanyFocus?: () => void;
+  onShowOnMap?: (companyId: string) => void;
+}
+
+export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onShowOnMap }: Props) {
   const city = useCity();
   const cityId = useCityId();
   const [data, setData] = useState<JobsResponse | null>(null);
@@ -71,6 +55,11 @@ export default function MatchesView() {
       });
     return () => { alive = false; };
   }, [cityId]);
+
+  const visibleMatches = focusCompanyId
+    ? data?.matches.filter((match) => match.companyId === focusCompanyId) ?? []
+    : data?.matches ?? [];
+  const focusedCompany = visibleMatches[0]?.companyName;
 
   return (
     <section className="fixed inset-0 z-10 overflow-y-auto bg-snow-white pb-28">
@@ -131,9 +120,20 @@ export default function MatchesView() {
         {error && <ErrorState message={error} />}
         {!loading && !error && data?.matches.length === 0 && <EmptyState />}
 
-        {data?.matches && data.matches.length > 0 && (
+        {focusCompanyId && data && (
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-jazz-blue/15 bg-jazz-blue/5 px-4 py-3 text-xs font-semibold text-asphalt/65">
+            <span>{focusedCompany ? `Showing matching roles at ${focusedCompany}` : 'No ranked role at this company'}</span>
+            <button onClick={onClearCompanyFocus} className="shrink-0 font-black text-jazz-blue hover:underline">
+              Show all matches
+            </button>
+          </div>
+        )}
+
+        {visibleMatches.length > 0 && (
           <ol className="mt-4 space-y-3">
-            {data.matches.map((match) => <MatchCard key={match.id} match={match} />)}
+            {visibleMatches.map((match) => (
+              <MatchCard key={match.id} match={match} onShowOnMap={onShowOnMap} />
+            ))}
           </ol>
         )}
       </div>
@@ -150,7 +150,7 @@ function Metric({ value, label }: { value: number; label: string }) {
   );
 }
 
-function MatchCard({ match }: { match: JobMatch }) {
+function MatchCard({ match, onShowOnMap }: { match: JobMatch; onShowOnMap?: (companyId: string) => void }) {
   const style = BAND_STYLES[match.band];
   return (
     <li className="rounded-3xl border border-black/5 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5">
@@ -195,15 +195,25 @@ function MatchCard({ match }: { match: JobMatch }) {
             <span className="text-[10px] font-semibold text-asphalt/40">No major technology gap detected</span>
           )}
         </div>
-        <a
-          href={match.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 rounded-full bg-asphalt px-4 py-2 text-xs font-bold text-white transition hover:bg-asphalt/85"
-        >
-          View position
-          <span aria-hidden>↗</span>
-        </a>
+        <div className="flex items-center gap-2">
+          {onShowOnMap && (
+            <button
+              onClick={() => onShowOnMap(match.companyId)}
+              className="rounded-full bg-jazz-blue/10 px-4 py-2 text-xs font-bold text-jazz-blue transition hover:bg-jazz-blue/15"
+            >
+              Show on map
+            </button>
+          )}
+          <a
+            href={match.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full bg-asphalt px-4 py-2 text-xs font-bold text-white transition hover:bg-asphalt/85"
+          >
+            View position
+            <span aria-hidden>↗</span>
+          </a>
+        </div>
       </div>
     </li>
   );

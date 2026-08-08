@@ -98,6 +98,7 @@ export default function SearchBar({
           role="combobox"
           aria-expanded={open}
           aria-autocomplete="list"
+          aria-controls="company-search-results"
         />
         {value && (
           <button
@@ -119,6 +120,7 @@ export default function SearchBar({
       {/* jump-to dropdown */}
       {open && (
         <ul
+          id="company-search-results"
           role="listbox"
           className="mt-1.5 overflow-hidden rounded-2xl border border-black/5 bg-white/95 shadow-xl backdrop-blur-xl"
         >
