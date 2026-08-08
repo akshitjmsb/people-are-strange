@@ -12,12 +12,15 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useCategories } from '@/lib/use-categories';
 import { useCity } from '@/lib/city-context';
+import type { CompanyOpportunity, OpportunityLens } from '@/lib/opportunity-map';
 
 import type { AICompany } from '@/lib/types';
 import {
   createCompanyLayers,
+  createClusterLayers,
   labelText,
   radiusFor,
+  type CompanyCluster,
   type NeighborhoodShape,
 } from './CompanyLayers';
 
@@ -112,6 +115,8 @@ interface MapProps {
   companies: AICompany[];
   selectedId: string | null;
   onSelect: (c: AICompany) => void;
+  lens?: OpportunityLens;
+  opportunities?: Map<string, CompanyOpportunity>;
   /** Active neighborhood district to outline + frame, if any. */
   neighborhood?: NeighborhoodShape | null;
   /** Bounds to fit when a neighborhood becomes active. */
@@ -122,6 +127,8 @@ export default function Map({
   companies,
   selectedId,
   onSelect,
+  lens = 'all',
+  opportunities = new globalThis.Map<string, CompanyOpportunity>(),
   neighborhood = null,
   neighborhoodBounds = null,
 }: MapProps) {
@@ -138,6 +145,35 @@ export default function Map({
   const showLabels = zoom >= 13;
   const showIcons = zoom >= 13.5;
 
+  const clustered = useMemo(() => {
+    if (zoom >= 13 || companies.length < 2) {
+      return { clusters: [] as CompanyCluster[], singles: companies };
+    }
+    const cellSize = zoom < 11 ? 0.035 : zoom < 12 ? 0.018 : 0.009;
+    const cells = new globalThis.Map<string, AICompany[]>();
+    for (const company of companies) {
+      const key = `${Math.floor(company.lng / cellSize)}:${Math.floor(company.lat / cellSize)}`;
+      const cell = cells.get(key);
+      if (cell) cell.push(company);
+      else cells.set(key, [company]);
+    }
+    const clusters: CompanyCluster[] = [];
+    const singles: AICompany[] = [];
+    for (const [id, members] of cells) {
+      if (members.length === 1) {
+        singles.push(members[0]);
+        continue;
+      }
+      clusters.push({
+        id,
+        companies: members,
+        longitude: members.reduce((sum, company) => sum + company.lng, 0) / members.length,
+        latitude: members.reduce((sum, company) => sum + company.lat, 0) / members.length,
+      });
+    }
+    return { clusters, singles };
+  }, [companies, zoom]);
+
   const setHoverCursor = useCallback((hovering: boolean) => {
     const canvas = mapRef.current?.getCanvas();
     if (canvas) canvas.style.cursor = hovering ? 'pointer' : '';
@@ -145,25 +181,47 @@ export default function Map({
 
   const labelIds = useMemo(() => {
     if (!showLabels || !mapRef.current) return null;
-    return declutterLabels(mapRef.current, companies, selectedId);
+    return declutterLabels(mapRef.current, clustered.singles, selectedId);
     // viewTick keys the recompute to camera moves
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [companies, selectedId, showLabels, viewTick]);
+  }, [clustered.singles, selectedId, showLabels, viewTick]);
+
+  const openCluster = useCallback((cluster: CompanyCluster) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const lngs = cluster.companies.map((company) => company.lng);
+    const lats = cluster.companies.map((company) => company.lat);
+    map.fitBounds(
+      [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+      { padding: 90, maxZoom: Math.min(15, map.getZoom() + 2.5), duration: 700, essential: true },
+    );
+  }, []);
 
   const layers = useMemo(
-    () =>
-      createCompanyLayers({
+    () => [
+      ...createClusterLayers({
         city,
-        companies,
+        clusters: clustered.clusters,
+        lens,
+        opportunities,
+        onClick: openCluster,
+        onHover: setHoverCursor,
+      }),
+      ...createCompanyLayers({
+        city,
+        companies: clustered.singles,
         selectedId,
         showLabels,
         showIcons,
         labelIds,
         neighborhood,
+        lens,
+        opportunities,
         onClick: onSelect,
         onHover: setHoverCursor,
       }),
-    [city, companies, selectedId, showLabels, showIcons, labelIds, neighborhood, onSelect, setHoverCursor],
+    ],
+    [city, clustered, selectedId, showLabels, showIcons, labelIds, neighborhood, lens, opportunities, onSelect, openCluster, setHoverCursor],
   );
 
   // Glide the camera to the selected company, lifted above the detail sheet.
@@ -241,7 +299,7 @@ export default function Map({
       duration: 1200,
       essential: true,
     });
-  }, []);
+  }, [INITIAL_VIEW]);
 
   // Style failed before first load → step down the fallback chain.
   const handleError = useCallback((e: { error?: Error }) => {

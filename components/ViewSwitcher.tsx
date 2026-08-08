@@ -75,7 +75,7 @@ function SegButton({
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+      className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition sm:px-3 ${
         active ? 'bg-asphalt text-snow-white shadow-sm' : 'text-asphalt/60 hover:text-asphalt'
       }`}
     >
@@ -101,10 +101,10 @@ function ToolButton({
   return (
     <button
       onClick={onClick}
-      className="relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-asphalt/70 transition hover:bg-black/[0.04] hover:text-asphalt"
+      className="relative flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold text-asphalt/70 transition hover:bg-black/[0.04] hover:text-asphalt sm:px-3"
     >
       {children}
-      <span>{label}</span>
+      <span className="hidden sm:inline">{label}</span>
       {badge && (
         <span
           className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full px-1 text-[9px] font-black text-white"
