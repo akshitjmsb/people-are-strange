@@ -1,7 +1,10 @@
 'use client';
 
+import { useMemo, useRef, useState } from 'react';
+
+import Chevron from '@/components/Chevron';
 import { useCity } from '@/lib/city-context';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDismiss } from '@/lib/use-dismiss';
 import type { Industry } from '@/lib/types';
 
 export type IndustrySelection = Industry | 'all';
@@ -51,24 +54,7 @@ export default function IndustryToggle({ value, counts, onChange }: Props) {
 
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-
-  // Close on outside tap or Escape. Pointerdown (not click) so the panel is
-  // already gone by the time a tap lands on the map behind it.
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+  useDismiss(open, wrapRef, setOpen);
 
   const pick = (next: IndustrySelection) => {
     onChange(next);
@@ -148,22 +134,5 @@ export default function IndustryToggle({ value, counts, onChange }: Props) {
         })}
       </div>
     </>
-  );
-}
-
-function Chevron({ open }: { open: boolean }) {
-  return (
-    <svg
-      aria-hidden
-      viewBox="0 0 20 20"
-      className={`h-3.5 w-3.5 shrink-0 opacity-80 transition-transform ${open ? 'rotate-180' : ''}`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M5 7.5 10 12.5 15 7.5" />
-    </svg>
   );
 }
