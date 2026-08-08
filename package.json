@@ -25,6 +25,7 @@
     "@deck.gl/mapbox": "^9.0.33",
     "@neondatabase/serverless": "^1.1.0",
     "drizzle-orm": "^0.45.2",
+    "google-auth-library": "^10.9.1",
     "h3-js": "^4.1.0",
     "maplibre-gl": "^4.7.1",
     "next": "14.2.15",

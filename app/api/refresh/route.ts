@@ -4,11 +4,12 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { refreshRoles, latestRun } from '@/lib/refresh';
 import type { RefreshRunRow } from '@/lib/db/schema';
+import { syncResumeProfile } from '@/lib/resume-sync';
 
 // ── Refresh endpoint ─────────────────────────────────────────────────────────
 // The Vercel-native door to the refresh engine (lib/refresh.ts). Two callers:
 //
-//   • Vercel Cron  — the weekly job in vercel.json hits GET /api/refresh with
+//   • Vercel Cron  — the daily job in vercel.json hits GET /api/refresh with
 //     `Authorization: Bearer $CRON_SECRET` (Vercel injects it automatically
 //     when CRON_SECRET is set on the project).
 //   • Admin        — a human runs the same refresh on demand with the same
@@ -30,9 +31,9 @@ export const dynamic = 'force-dynamic';
 // well beyond the default. Also pinned in vercel.json for the deployed function.
 export const maxDuration = 300;
 
-// Roughly a week and a half. The cron runs weekly, so anything older than this
-// means a refresh was missed — worth flagging rather than quietly serving it.
-const STALE_AFTER_MS = 9 * 24 * 60 * 60 * 1000;
+// The cron runs daily. After 36 hours, at least one refresh was missed — worth
+// flagging rather than quietly presenting aging job postings as current.
+const STALE_AFTER_MS = 36 * 60 * 60 * 1000;
 
 /** Constant-time bearer check against CRON_SECRET (Vercel's cron convention),
  *  falling back to REFRESH_SECRET for a human-held admin token. With neither
@@ -73,11 +74,14 @@ function freshnessBody(run: RefreshRunRow | null) {
 async function runRefresh(req: Request, trigger: 'cron' | 'manual') {
   const dryRun = new URL(req.url).searchParams.get('dry') === '1';
   try {
-    const result = await refreshRoles(db, { trigger, dryRun });
+    const [result, resume] = await Promise.all([
+      refreshRoles(db, { trigger, dryRun }),
+      syncResumeProfile(db),
+    ]);
     // A run where every board failed is a real failure, even though it was
     // handled — surface it as 500 so a cron alert can catch a total outage.
     const httpStatus = result.status === 'error' ? 500 : 200;
-    return NextResponse.json(result, {
+    return NextResponse.json({ ...result, resumeSync: resume }, {
       status: httpStatus,
       headers: { 'Cache-Control': 'no-store' },
     });

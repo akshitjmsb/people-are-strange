@@ -12,6 +12,7 @@
 import { pgTable, text, doublePrecision, integer, boolean, jsonb, index } from 'drizzle-orm/pg-core';
 import type { Domain, CompanyType, Funding, KeyPerson, Industry } from '../types';
 import type { CityId } from '../city-config';
+import type { CandidateProfile } from '../candidate-profile';
 
 export const companies = pgTable('companies', {
   id: text('id').primaryKey(),
@@ -138,3 +139,78 @@ export const refreshRuns = pgTable('refresh_runs', {
 
 export type RefreshRunRow = typeof refreshRuns.$inferSelect;
 export type NewRefreshRunRow = typeof refreshRuns.$inferInsert;
+
+// ── Individual job postings ─────────────────────────────────────────────────
+// ATS refreshes used to collapse a board into two counts and discard the jobs.
+// Keeping the normalized postings makes the useful workflows possible: exact
+// role links, closure detection, resume matching, and per-role change history.
+// `id` is deterministic (company + provider posting id), so each refresh is an
+// upsert and can never duplicate an opening.
+export type JobLocality = 'here' | 'maybe' | 'away';
+
+export const jobPostings = pgTable('job_postings', {
+  id: text('id').primaryKey(),
+  externalId: text('external_id').notNull(),
+  companyId: text('company_id')
+    .notNull()
+    .references(() => companies.id, { onDelete: 'cascade' }),
+  city: text('city').$type<CityId>().notNull(),
+  provider: text('provider').notNull(),
+
+  title: text('title').notNull(),
+  location: text('location').notNull(),
+  locality: text('locality').$type<JobLocality>().notNull(),
+  url: text('url').notNull(),
+  description: text('description'),
+  department: text('department'),
+  employmentType: text('employment_type'),
+  workplaceType: text('workplace_type'),
+  publishedAt: text('published_at'),
+
+  firstSeenAt: text('first_seen_at').notNull(),
+  lastSeenAt: text('last_seen_at').notNull(),
+  closedAt: text('closed_at'),
+  active: boolean('active').notNull().default(true),
+}, (t) => ({
+  cityActiveIdx: index('job_postings_city_active_idx').on(t.city, t.active),
+  companyActiveIdx: index('job_postings_company_active_idx').on(t.companyId, t.active),
+  lastSeenIdx: index('job_postings_last_seen_idx').on(t.lastSeenAt),
+}));
+
+export type JobPostingRow = typeof jobPostings.$inferSelect;
+export type NewJobPostingRow = typeof jobPostings.$inferInsert;
+
+// ── Resume source connection and derived matching profile ────────────────────
+// PAS has one owner and one canonical resume. The refresh token is encrypted
+// before it reaches Postgres; short-lived Google access tokens are never stored.
+// The profile table contains only matching signals derived from the resume, not
+// its prose or contact details.
+export type ResumeSyncStatus = 'current' | 'stale' | 'error';
+
+export const googleDriveConnections = pgTable('google_drive_connections', {
+  id: text('id').primaryKey().default('primary'),
+  ownerEmail: text('owner_email').notNull(),
+  encryptedRefreshToken: text('encrypted_refresh_token').notNull(),
+  tokenIv: text('token_iv').notNull(),
+  tokenAuthTag: text('token_auth_tag').notNull(),
+  scopes: text('scopes').array().notNull(),
+  connectedAt: text('connected_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  lastError: text('last_error'),
+});
+
+export const resumeProfiles = pgTable('resume_profiles', {
+  id: text('id').primaryKey().default('primary'),
+  driveFileId: text('drive_file_id').notNull(),
+  driveRevisionId: text('drive_revision_id').notNull(),
+  profile: jsonb('profile').$type<CandidateProfile>().notNull(),
+  status: text('status').$type<ResumeSyncStatus>().notNull().default('current'),
+  syncedAt: text('synced_at').notNull(),
+  checkedAt: text('checked_at').notNull(),
+  lastError: text('last_error'),
+});
+
+export type GoogleDriveConnectionRow = typeof googleDriveConnections.$inferSelect;
+export type NewGoogleDriveConnectionRow = typeof googleDriveConnections.$inferInsert;
+export type ResumeProfileRow = typeof resumeProfiles.$inferSelect;
+export type NewResumeProfileRow = typeof resumeProfiles.$inferInsert;

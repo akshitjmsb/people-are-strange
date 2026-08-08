@@ -205,7 +205,7 @@ export const victoria: CityConfig = {
   },
 
   localityPattern: /victoria|esquimalt|saanich|sidney|langford|colwood|sooke|oak bay|metchosin|view royal|vancouver island|\bvi\b|\bbc\b|british columbia/,
-  localityAmbiguousPattern: /^canada$|remote|anywhere|worldwide|hybrid/,
+  localityAmbiguousPattern: /^(?:canada\s*[-–—]?\s*)?(?:remote|hybrid)$|^canada$|^anywhere$|^worldwide$/,
 
   lngScale: 1 / Math.cos((48.4 * Math.PI) / 180),
 

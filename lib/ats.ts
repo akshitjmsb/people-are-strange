@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import type { CityConfig } from './city-config';
 
 // ── Live open-role counts, via applicant-tracking system board APIs ──────────
@@ -26,13 +28,20 @@ export interface AtsRef {
 }
 
 export interface Posting {
+  /** Provider-stable identifier. Combined with company id in the DB. */
+  externalId: string;
   title: string;
   location: string;
   /** 'here'  — location names Montreal or Québec: countable as a local role.
    *  'maybe' — country-level only ("Canada"): real, but not provably local.
    *  'away'  — names somewhere else. */
   locality: 'here' | 'maybe' | 'away';
-  url?: string;
+  url: string;
+  description?: string;
+  department?: string;
+  employmentType?: string;
+  workplaceType?: string;
+  publishedAt?: string;
 }
 
 export interface RoleCounts {
@@ -76,8 +85,48 @@ export function localityMatch(city: CityConfig, location: string): Posting['loca
   return 'away';
 }
 
-function grade(city: CityConfig, title: string, location: string, url?: string): Posting {
-  return { title, location, locality: localityMatch(city, location), url };
+function decodeHtml(value: string): string {
+  const named: Record<string, string> = {
+    amp: '&', apos: "'", gt: '>', lt: '<', nbsp: ' ', quot: '"',
+  };
+  return value
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|li|div|h[1-6])\s*>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#([0-9]+);/g, (_, decimal: string) => String.fromCodePoint(Number.parseInt(decimal, 10)))
+    .replace(/&([a-z]+);/gi, (entity, name: string) => named[name.toLowerCase()] ?? entity)
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n\s*\n+/g, '\n')
+    .trim();
+}
+
+function fallbackId(...parts: string[]): string {
+  return createHash('sha256').update(parts.join('\u0000')).digest('hex').slice(0, 24);
+}
+
+function grade(
+  city: CityConfig,
+  externalId: string | number | undefined,
+  title: string,
+  location: string,
+  url: string,
+  extra: Partial<Omit<Posting, 'externalId' | 'title' | 'location' | 'locality' | 'url'>> = {},
+): Posting {
+  const locality = localityMatch(city, location);
+  const titleNamesAnotherCountry = /\b(usa|u\.s\.|united states|uk|united kingdom|ireland|spain|brazil|mexico)\b/i.test(title)
+    && !city.localityPattern.test(title.toLowerCase());
+  return {
+    externalId: String(externalId ?? fallbackId(url, title, location)),
+    title,
+    location,
+    // Some remote boards put the country in the title rather than the location
+    // field (for example "Remote - USA"). Do not present those as potentially
+    // local merely because the ATS location column says only "Remote".
+    locality: locality === 'maybe' && titleNamesAnotherCountry ? 'away' : locality,
+    url,
+    ...extra,
+  };
 }
 
 // ── Provider adapters ────────────────────────────────────────────────────────
@@ -85,25 +134,90 @@ function grade(city: CityConfig, title: string, location: string, url?: string):
 const FETCHERS: Record<AtsProvider, (city: CityConfig, token: string) => Promise<Posting[]>> = {
   async ashby(city, token) {
     const j = (await getJson(`https://api.ashbyhq.com/posting-api/job-board/${token}`)) as {
-      jobs?: { title: string; location: string; jobUrl?: string }[];
+      jobs?: {
+        id?: string;
+        title: string;
+        location: string;
+        jobUrl?: string;
+        descriptionPlain?: string;
+        department?: string;
+        team?: string;
+        employmentType?: string;
+        workplaceType?: string;
+        publishedAt?: string;
+        isListed?: boolean;
+      }[];
     };
-    return (j.jobs ?? []).map((p) => grade(city, p.title, p.location ?? '', p.jobUrl));
+    return (j.jobs ?? [])
+      .filter((p) => p.isListed !== false)
+      .map((p) => grade(
+        city,
+        p.id,
+        p.title,
+        p.location ?? '',
+        p.jobUrl ?? `https://jobs.ashbyhq.com/${token}`,
+        {
+          description: p.descriptionPlain?.trim() || undefined,
+          department: p.team ?? p.department,
+          employmentType: p.employmentType,
+          workplaceType: p.workplaceType,
+          publishedAt: p.publishedAt,
+        },
+      ));
   },
 
   async greenhouse(city, token) {
-    const j = (await getJson(`https://boards-api.greenhouse.io/v1/boards/${token}/jobs`)) as {
-      jobs?: { title: string; location?: { name?: string }; absolute_url?: string }[];
+    const j = (await getJson(`https://boards-api.greenhouse.io/v1/boards/${token}/jobs?content=true`)) as {
+      jobs?: {
+        id: number;
+        title: string;
+        location?: { name?: string };
+        absolute_url?: string;
+        content?: string;
+        departments?: { name?: string }[];
+        first_published?: string;
+        updated_at?: string;
+      }[];
     };
-    return (j.jobs ?? []).map((p) => grade(city, p.title, p.location?.name ?? '', p.absolute_url));
+    return (j.jobs ?? []).map((p) => grade(
+      city,
+      p.id,
+      p.title,
+      p.location?.name ?? '',
+      p.absolute_url ?? `https://boards.greenhouse.io/${token}`,
+      {
+        description: p.content ? decodeHtml(p.content) : undefined,
+        department: p.departments?.map((d) => d.name).filter(Boolean).join(', ') || undefined,
+        publishedAt: p.first_published ?? p.updated_at,
+      },
+    ));
   },
 
   async lever(city, token) {
     const j = (await getJson(`https://api.lever.co/v0/postings/${token}?mode=json`)) as {
+      id?: string;
       text: string;
-      categories?: { location?: string };
+      categories?: { location?: string; commitment?: string; team?: string; department?: string };
       hostedUrl?: string;
+      descriptionPlain?: string;
+      additionalPlain?: string;
+      workplaceType?: string;
+      createdAt?: number;
     }[];
-    return (j ?? []).map((p) => grade(city, p.text, p.categories?.location ?? '', p.hostedUrl));
+    return (j ?? []).map((p) => grade(
+      city,
+      p.id,
+      p.text,
+      p.categories?.location ?? '',
+      p.hostedUrl ?? `https://jobs.lever.co/${token}`,
+      {
+        description: [p.descriptionPlain, p.additionalPlain].filter(Boolean).join('\n').trim() || undefined,
+        department: p.categories?.team ?? p.categories?.department,
+        employmentType: p.categories?.commitment,
+        workplaceType: p.workplaceType,
+        publishedAt: p.createdAt ? new Date(p.createdAt).toISOString() : undefined,
+      },
+    ));
   },
 
   async smartrecruiters(city, token) {
@@ -114,12 +228,37 @@ const FETCHERS: Record<AtsProvider, (city: CityConfig, token: string) => Promise
         `https://api.smartrecruiters.com/v1/companies/${token}/postings?limit=100&offset=${offset}`,
       )) as {
         totalFound?: number;
-        content?: { name: string; location?: { city?: string; region?: string; country?: string; fullLocation?: string }; ref?: string }[];
+        content?: {
+          id: string;
+          name: string;
+          location?: { city?: string; region?: string; country?: string; fullLocation?: string; remote?: boolean; hybrid?: boolean };
+          ref?: string;
+          department?: { label?: string };
+          typeOfEmployment?: { label?: string };
+          releasedDate?: string;
+        }[];
       };
       const page = j.content ?? [];
       for (const p of page) {
         const loc = p.location?.fullLocation ?? [p.location?.city, p.location?.region, p.location?.country].filter(Boolean).join(', ');
-        out.push(grade(city, p.name, loc, p.ref));
+        const detail = localityMatch(city, loc) === 'away'
+          ? null
+          : await getJson(`https://api.smartrecruiters.com/v1/companies/${token}/postings/${p.id}`).catch(() => null) as {
+              postingUrl?: string;
+              applyUrl?: string;
+              jobAd?: { sections?: Record<string, { text?: string }> };
+            } | null;
+        const sections = detail?.jobAd?.sections;
+        const description = sections
+          ? Object.values(sections).map((section) => section.text ? decodeHtml(section.text) : '').filter(Boolean).join('\n')
+          : undefined;
+        out.push(grade(city, p.id, p.name, loc, detail?.postingUrl ?? detail?.applyUrl ?? p.ref ?? `https://jobs.smartrecruiters.com/${token}`, {
+          description,
+          department: p.department?.label,
+          employmentType: p.typeOfEmployment?.label,
+          workplaceType: p.location?.remote ? 'Remote' : p.location?.hybrid ? 'Hybrid' : undefined,
+          publishedAt: p.releasedDate,
+        }));
       }
       if (page.length < 100 || out.length >= (j.totalFound ?? 0)) break;
     }
@@ -128,24 +267,67 @@ const FETCHERS: Record<AtsProvider, (city: CityConfig, token: string) => Promise
 
   async workable(city, token) {
     const j = (await getJson(`https://apply.workable.com/api/v1/widget/accounts/${token}?details=true`)) as {
-      jobs?: { title: string; city?: string; state?: string; country?: string; url?: string }[];
+      jobs?: {
+        shortcode?: string;
+        title: string;
+        city?: string;
+        state?: string;
+        country?: string;
+        url?: string;
+        shortlink?: string;
+        description?: string;
+        department?: string;
+        employment_type?: string;
+        telecommuting?: boolean;
+        published_on?: string;
+      }[];
     };
     return (j.jobs ?? []).map((p) =>
-      grade(city, p.title, [p.city, p.state, p.country].filter(Boolean).join(', '), p.url),
+      grade(
+        city,
+        p.shortcode,
+        p.title,
+        [p.city, p.state, p.country].filter(Boolean).join(', '),
+        p.shortlink ?? p.url ?? `https://apply.workable.com/${token}`,
+        {
+          description: p.description ? decodeHtml(p.description) : undefined,
+          department: p.department,
+          employmentType: p.employment_type,
+          workplaceType: p.telecommuting ? 'Remote' : undefined,
+          publishedAt: p.published_on,
+        },
+      ),
     );
   },
 
   async bamboohr(city, token) {
     const j = (await getJson(`https://${token}.bamboohr.com/careers/list`)) as {
-      result?: { jobOpeningName: string; location?: { city?: string; state?: string; country?: string }; id: string | number }[];
+      result?: {
+        jobOpeningName: string;
+        location?: { city?: string; state?: string; country?: string };
+        id: string | number;
+        departmentLabel?: string;
+        employmentStatusLabel?: string;
+        isRemote?: boolean;
+      }[];
     };
-    return (j.result ?? []).map((p) =>
-      grade(city, 
-        p.jobOpeningName,
-        [p.location?.city, p.location?.state, p.location?.country].filter(Boolean).join(', '),
-        `https://${token}.bamboohr.com/careers/${p.id}`,
-      ),
-    );
+    const out: Posting[] = [];
+    for (const p of j.result ?? []) {
+      const loc = [p.location?.city, p.location?.state, p.location?.country].filter(Boolean).join(', ');
+      const detail = localityMatch(city, loc) === 'away'
+        ? null
+        : await getJson(`https://${token}.bamboohr.com/careers/${p.id}/detail`).catch(() => null) as {
+            result?: { jobOpening?: { description?: string; jobOpeningShareUrl?: string } };
+          } | null;
+      const opening = detail?.result?.jobOpening;
+      out.push(grade(city, p.id, p.jobOpeningName, loc, opening?.jobOpeningShareUrl ?? `https://${token}.bamboohr.com/careers/${p.id}`, {
+        description: opening?.description ? decodeHtml(opening.description) : undefined,
+        department: p.departmentLabel,
+        employmentType: p.employmentStatusLabel,
+        workplaceType: p.isRemote ? 'Remote' : undefined,
+      }));
+    }
+    return out;
   },
 
   // Ubisoft Montréal runs a bespoke WordPress endpoint gated by a rotating
@@ -161,12 +343,15 @@ const FETCHERS: Record<AtsProvider, (city: CityConfig, token: string) => Promise
     if (!nonce) throw new Error('could not mint a Ubisoft jobs nonce');
     const j = (await getJson(
       `https://montreal.ubisoft.com/wp-admin/admin-ajax.php?action=ubisoft_search_jobs&query=&offset=0&limit=200&nonce=${nonce}`,
-    )) as { jobs?: { title: string; link?: string }[] };
+    )) as { jobs?: { title: string; link?: string; category?: string; type?: string }[] };
     return (j.jobs ?? []).map((p) => ({
+      externalId: fallbackId(p.link ?? '', p.title),
       title: p.title,
       location: 'Montréal, QC',
       locality: 'here' as const,
-      url: p.link,
+      url: p.link ?? 'https://montreal.ubisoft.com/en/your-career/jobs/',
+      department: p.category,
+      employmentType: p.type,
     }));
   },
 };

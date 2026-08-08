@@ -30,18 +30,19 @@
 //     visible in the history instead of silently freezing its counts.
 
 import { randomUUID } from 'node:crypto';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, notInArray } from 'drizzle-orm';
 
 import type { DB } from './db';
 import {
   companies,
+  jobPostings,
   refreshRuns,
   type RefreshKind,
   type RefreshTrigger,
 } from './db/schema';
 import { bundledCompanies } from './companies';
 import { getCity, CITY_IDS } from './cities';
-import { fetchRoleCounts } from './ats';
+import { fetchRoleCounts, type Posting } from './ats';
 import type { CityId } from './city-config';
 
 /** Concurrent board fetches. Boards are third-party hosts; a handful at a time
@@ -77,6 +78,8 @@ export interface RoleChange {
 export interface RefreshSummary {
   changes: RoleChange[];
   failures: { id: string; error: string }[];
+  postingsSeen: number;
+  postingsClosed: number;
 }
 
 export interface RefreshResult extends RefreshSummary {
@@ -91,6 +94,8 @@ export interface RefreshResult extends RefreshSummary {
   boardsOk: number;
   boardsFailed: number;
   companiesRefreshed: number;
+  postingsSeen: number;
+  postingsClosed: number;
   /** Net movement in locally-countable open roles, across boards we have prior
    *  counts for (first fetches are excluded so a cold start doesn't read as a
    *  hiring spike). */
@@ -151,6 +156,7 @@ interface Fetched {
   target: Target;
   ok: boolean;
   counts?: Counts;
+  postings?: Posting[];
   error?: string;
 }
 
@@ -164,8 +170,8 @@ async function fetchAll(targets: Target[], concurrency: number): Promise<Fetched
       while (cursor < targets.length) {
         const target = targets[cursor++];
         try {
-          const { montreal, total } = await fetchRoleCounts(getCity(target.city), target.ats);
-          results.push({ target, ok: true, counts: { montreal, total } });
+          const { montreal, total, postings } = await fetchRoleCounts(getCity(target.city), target.ats);
+          results.push({ target, ok: true, counts: { montreal, total }, postings });
         } catch (e) {
           results.push({ target, ok: false, error: e instanceof Error ? e.message : String(e) });
         }
@@ -230,6 +236,11 @@ export async function refreshRoles(db: DB, opts: RefreshOptions): Promise<Refres
     boardsFailed === 0 ? 'ok' : boardsOk === 0 ? 'error' : 'partial';
 
   let companiesRefreshed = 0;
+  const postingsSeen = fetched.reduce(
+    (total, item) => total + (item.ok ? item.postings?.length ?? 0 : 0),
+    0,
+  );
+  let postingsClosed = 0;
   if (!dryRun) {
     const fetchedAt = new Date().toISOString();
     // Sequential, isolated writes: a single failed UPDATE can't roll back the
@@ -245,6 +256,66 @@ export async function refreshRoles(db: DB, opts: RefreshOptions): Promise<Refres
             rolesFetchedAt: fetchedAt,
           })
           .where(eq(companies.id, f.target.id));
+
+        const seenIds: string[] = [];
+        for (const posting of f.postings ?? []) {
+          const id = `${f.target.id}:${f.target.ats.provider}:${posting.externalId}`;
+          seenIds.push(id);
+          await db
+            .insert(jobPostings)
+            .values({
+              id,
+              externalId: posting.externalId,
+              companyId: f.target.id,
+              city: f.target.city,
+              provider: f.target.ats.provider,
+              title: posting.title,
+              location: posting.location,
+              locality: posting.locality,
+              url: posting.url,
+              description: posting.description ?? null,
+              department: posting.department ?? null,
+              employmentType: posting.employmentType ?? null,
+              workplaceType: posting.workplaceType ?? null,
+              publishedAt: posting.publishedAt ?? null,
+              firstSeenAt: fetchedAt,
+              lastSeenAt: fetchedAt,
+              closedAt: null,
+              active: true,
+            })
+            .onConflictDoUpdate({
+              target: jobPostings.id,
+              set: {
+                title: posting.title,
+                location: posting.location,
+                locality: posting.locality,
+                url: posting.url,
+                description: posting.description ?? null,
+                department: posting.department ?? null,
+                employmentType: posting.employmentType ?? null,
+                workplaceType: posting.workplaceType ?? null,
+                publishedAt: posting.publishedAt ?? null,
+                lastSeenAt: fetchedAt,
+                closedAt: null,
+                active: true,
+              },
+            });
+        }
+
+        // Only close roles after this provider answered successfully. A board
+        // outage never makes every job disappear. The company/provider scope
+        // also prevents one board from closing another board's records.
+        const closeScope = [
+          eq(jobPostings.companyId, f.target.id),
+          eq(jobPostings.provider, f.target.ats.provider),
+          eq(jobPostings.active, true),
+        ];
+        const closed = await db
+          .update(jobPostings)
+          .set({ active: false, closedAt: fetchedAt })
+          .where(and(...closeScope, ...(seenIds.length ? [notInArray(jobPostings.id, seenIds)] : [])))
+          .returning({ id: jobPostings.id });
+        postingsClosed += closed.length;
         companiesRefreshed++;
       } catch (e) {
         failures.push({
@@ -269,13 +340,15 @@ export async function refreshRoles(db: DB, opts: RefreshOptions): Promise<Refres
     boardsOk,
     boardsFailed,
     companiesRefreshed,
+    postingsSeen,
+    postingsClosed,
     rolesDelta,
     changes,
     failures,
   };
 
   if (!dryRun) {
-    const summary: RefreshSummary = { changes, failures };
+    const summary: RefreshSummary = { changes, failures, postingsSeen, postingsClosed };
     await db.insert(refreshRuns).values({
       id: runId,
       kind: 'roles',

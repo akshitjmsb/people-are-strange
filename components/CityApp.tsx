@@ -10,6 +10,7 @@ import FilterChips from '@/components/FilterChips';
 import HiringToggle from '@/components/HiringToggle';
 import IndustryToggle, { type IndustrySelection } from '@/components/IndustryToggle';
 import ListView from '@/components/ListView';
+import MatchesView from '@/components/MatchesView';
 import NeighborhoodPanel from '@/components/NeighborhoodPanel';
 import NeighborhoodSummary from '@/components/NeighborhoodSummary';
 import SavedToggle from '@/components/SavedToggle';
@@ -98,6 +99,7 @@ export default function CityApp() {
     if (q) setQuery(q);
 
     if (p.get('view') === 'list') setView('list');
+    if (p.get('view') === 'matches') setView('matches');
     if (p.get('hiring') === '1') setHiringOnly(true);
     if (p.get('saved') === '1') setSavedOnly(true);
 
@@ -161,7 +163,7 @@ export default function CityApp() {
     if (query.trim()) p.set('q', query.trim());
     if (hiringOnly) p.set('hiring', '1');
     if (savedOnly) p.set('saved', '1');
-    if (view === 'list') p.set('view', 'list');
+    if (view !== 'map') p.set('view', view);
     if (selected) p.set('company', selected.id);
     const qs = p.toString();
     window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
@@ -179,12 +181,12 @@ export default function CityApp() {
       for (const ind of co.secondaryIndustries ?? []) c[ind] = (c[ind] ?? 0) + 1;
     }
     return c;
-  }, [all]);
+  }, [all, INDUSTRIES, fallbackIndustry]);
 
   // the dataset narrowed to the selected industry (drives chips + counts)
   const inIndustry = useMemo(
     () => (industry === 'all' ? all : all.filter((co) => matchesIndustry(co, industry, fallbackIndustry))),
-    [all, industry],
+    [all, industry, fallbackIndustry],
   );
 
   // neighborhood clusters within the current industry lens
@@ -310,13 +312,15 @@ export default function CityApp() {
 
   return (
     <main className="relative h-full w-full">
-      <Map
-        companies={filtered}
-        selectedId={selected?.id ?? null}
-        onSelect={setSelected}
-        neighborhood={neighborhoodShape}
-        neighborhoodBounds={activeCluster?.bounds ?? null}
-      />
+      {view !== 'matches' && (
+        <Map
+          companies={filtered}
+          selectedId={selected?.id ?? null}
+          onSelect={setSelected}
+          neighborhood={neighborhoodShape}
+          neighborhoodBounds={activeCluster?.bounds ?? null}
+        />
+      )}
 
       {view === 'list' && (
         <ListView
@@ -331,11 +335,13 @@ export default function CityApp() {
         />
       )}
 
+      {view === 'matches' && <MatchesView />}
+
       {/* Montreal-palette hairline across the very top */}
       <div aria-hidden className="mtl-hairline pointer-events-none absolute inset-x-0 top-0 z-30 h-[3px]" />
 
       {/* top chrome */}
-      <div
+      {view !== 'matches' && <div
         ref={chromeRef}
         className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]"
       >
@@ -372,7 +378,7 @@ export default function CityApp() {
             typeOrder={typeOrderFor(industry)}
           />
         </div>
-      </div>
+      </div>}
 
       {/* brand mark + city switcher + honesty legend, bottom-left. The wordmark
           doubles as the city selector — the in-app path between cities. Map view
@@ -412,7 +418,7 @@ export default function CityApp() {
         activeArea={activeArea}
       />
 
-      {loading && <LoadingOverlay />}
+      {loading && view !== 'matches' && <LoadingOverlay />}
       {showEmpty && <EmptyState hasData={all.length > 0} />}
 
       {areasOpen && (
