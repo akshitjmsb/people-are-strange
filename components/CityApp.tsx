@@ -339,7 +339,7 @@ export default function CityApp() {
         ref={chromeRef}
         className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <IndustryToggle value={industry} counts={industryCounts} onChange={changeIndustry} />
           {dataSource === 'local' && <OfflineBadge />}
         </div>
@@ -350,7 +350,10 @@ export default function CityApp() {
           suggestions={suggestions}
           onPick={setSelected}
         />
-        <div className="flex items-center gap-2">
+        {/* Hiring/saved toggles and the type chips share one wrapping run, so
+            the chips get the full width instead of the ~200px sliver that was
+            left over beside the toggles on a phone. */}
+        <div className="flex flex-wrap items-center gap-2">
           <HiringToggle
             active={hiringOnly}
             count={hiringCount}
@@ -361,15 +364,13 @@ export default function CityApp() {
             count={savedCount}
             onToggle={() => setSavedOnly((v) => !v)}
           />
-          <div className="min-w-0 flex-1">
-            <FilterChips
-              active={activeTypes}
-              counts={counts}
-              onToggle={toggleType}
-              onClear={() => setActiveTypes(new Set())}
-              typeOrder={typeOrderFor(industry)}
-            />
-          </div>
+          <FilterChips
+            active={activeTypes}
+            counts={counts}
+            onToggle={toggleType}
+            onClear={() => setActiveTypes(new Set())}
+            typeOrder={typeOrderFor(industry)}
+          />
         </div>
       </div>
 

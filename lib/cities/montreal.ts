@@ -39,7 +39,7 @@ export const montreal: CityConfig = {
     gaming: { label: 'Gaming', emoji: '🎮', color: GAMING.neonPurple },
     lifesci: { label: 'Life Sciences', emoji: '🧬', color: LIFESCI.pharmaTeal },
     financial: { label: 'Financial', emoji: '🏦', color: FINANCE.vaultGreen },
-    enterprise: { label: 'Enterprise Tech', emoji: '💼', color: ENTERPRISE.cloudIndigo },
+    enterprise: { label: 'Enterprise', emoji: '💼', color: ENTERPRISE.cloudIndigo },
   },
 
   companyTypes: {
