@@ -57,6 +57,20 @@
       "when": 1785982112019,
       "tag": "0007_solid_fixer",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786162750030,
+      "tag": "0008_third_carnage",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786201507966,
+      "tag": "0009_broken_naoko",
+      "breakpoints": true
     }
   ]
 }

@@ -210,7 +210,7 @@ export const montreal: CityConfig = {
   },
 
   localityPattern: /montr[eé]al|qu[eé]bec|\bqc\b|laval|longueuil|brossard|saint-laurent/,
-  localityAmbiguousPattern: /^canada$|remote|anywhere|worldwide|monde entier|hybrid/,
+  localityAmbiguousPattern: /^(?:canada\s*[-–—]?\s*)?(?:remote|hybrid)$|^canada$|^anywhere$|^worldwide$|^monde entier$/,
 
   lngScale: 1 / Math.cos((45.5 * Math.PI) / 180),
 

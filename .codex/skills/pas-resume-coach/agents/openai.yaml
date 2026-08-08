@@ -1,0 +1,4 @@
+interface:
+  display_name: "PAS Resume Coach"
+  short_description: "Refine and sync Akshit’s master resume"
+  default_prompt: "Use $pas-resume-coach to start a voice-friendly resume refinement session."

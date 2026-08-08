@@ -46,7 +46,7 @@ async function main() {
   }
 
   console.log(
-    `\n  status: ${r.status} · ${r.companiesRefreshed} written · net ${r.rolesDelta >= 0 ? '+' : ''}${r.rolesDelta} Montreal roles\n`,
+    `\n  status: ${r.status} · ${r.postingsSeen} postings seen · ${r.postingsClosed} closed · ${r.companiesRefreshed} companies written · net ${r.rolesDelta >= 0 ? '+' : ''}${r.rolesDelta} Montreal roles\n`,
   );
 
   // A board that starts failing silently would quietly freeze counts, so make
