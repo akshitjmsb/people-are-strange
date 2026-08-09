@@ -199,14 +199,6 @@ export default function Map({
 
   const layers = useMemo(
     () => [
-      ...createClusterLayers({
-        city,
-        clusters: clustered.clusters,
-        lens,
-        opportunities,
-        onClick: openCluster,
-        onHover: setHoverCursor,
-      }),
       ...createCompanyLayers({
         city,
         companies: clustered.singles,
@@ -218,6 +210,16 @@ export default function Map({
         lens,
         opportunities,
         onClick: onSelect,
+        onHover: setHoverCursor,
+      }),
+      // Clusters render last so nearby single-company markers can never cover
+      // their count badges at dense city-level zooms.
+      ...createClusterLayers({
+        city,
+        clusters: clustered.clusters,
+        lens,
+        opportunities,
+        onClick: openCluster,
         onHover: setHoverCursor,
       }),
     ],
