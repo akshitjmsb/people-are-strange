@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MapGL, {
   GeolocateControl,
+  Marker,
   NavigationControl,
   useControl,
   type MapRef,
@@ -12,12 +13,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { useCategories } from '@/lib/use-categories';
 import { useCity } from '@/lib/city-context';
-import type { CompanyOpportunity, OpportunityLens } from '@/lib/opportunity-map';
+import { MATCH_COLORS, type CompanyOpportunity, type OpportunityLens } from '@/lib/opportunity-map';
 
 import type { AICompany } from '@/lib/types';
 import {
   createCompanyLayers,
-  createClusterLayers,
   labelText,
   radiusFor,
   type CompanyCluster,
@@ -133,6 +133,7 @@ export default function Map({
   neighborhoodBounds = null,
 }: MapProps) {
   const city = useCity();
+  const { typeColor } = useCategories();
   const INITIAL_VIEW = useMemo(() => initialViewFor(city), [city]);
   const mapRef = useRef<MapRef>(null);
   const styleLoadedRef = useRef(false);
@@ -149,30 +150,67 @@ export default function Map({
     if (zoom >= 13 || companies.length < 2) {
       return { clusters: [] as CompanyCluster[], singles: companies };
     }
-    const cellSize = zoom < 11 ? 0.035 : zoom < 12 ? 0.018 : 0.009;
-    const cells = new globalThis.Map<string, AICompany[]>();
-    for (const company of companies) {
-      const key = `${Math.floor(company.lng / cellSize)}:${Math.floor(company.lat / cellSize)}`;
-      const cell = cells.get(key);
-      if (cell) cell.push(company);
-      else cells.set(key, [company]);
+
+    const map = mapRef.current;
+    if (!map) return { clusters: [] as CompanyCluster[], singles: companies };
+
+    // Cluster in projected screen pixels instead of geographic grid cells.
+    // Connected components make the result boundary-free: two nearby markers
+    // cannot remain separate merely because they fall on opposite grid edges.
+    const points = companies.map((company) => map.project([company.lng, company.lat]));
+    const distance = zoom < 11 ? 72 : zoom < 12 ? 62 : 50;
+    const distanceSquared = distance * distance;
+    const parent = companies.map((_, index) => index);
+    const find = (index: number): number => {
+      let root = index;
+      while (parent[root] !== root) root = parent[root];
+      while (parent[index] !== index) {
+        const next = parent[index];
+        parent[index] = root;
+        index = next;
+      }
+      return root;
+    };
+    const union = (left: number, right: number) => {
+      const leftRoot = find(left);
+      const rightRoot = find(right);
+      if (leftRoot !== rightRoot) parent[rightRoot] = leftRoot;
+    };
+
+    for (let left = 0; left < points.length; left += 1) {
+      for (let right = left + 1; right < points.length; right += 1) {
+        const dx = points[left].x - points[right].x;
+        const dy = points[left].y - points[right].y;
+        if (dx * dx + dy * dy <= distanceSquared) union(left, right);
+      }
     }
+
+    const groups = new globalThis.Map<number, AICompany[]>();
+    companies.forEach((company, index) => {
+      const root = find(index);
+      const group = groups.get(root);
+      if (group) group.push(company);
+      else groups.set(root, [company]);
+    });
+
     const clusters: CompanyCluster[] = [];
     const singles: AICompany[] = [];
-    for (const [id, members] of cells) {
+    for (const [id, members] of groups) {
       if (members.length === 1) {
         singles.push(members[0]);
         continue;
       }
       clusters.push({
-        id,
+        id: String(id),
         companies: members,
         longitude: members.reduce((sum, company) => sum + company.lng, 0) / members.length,
         latitude: members.reduce((sum, company) => sum + company.lat, 0) / members.length,
       });
     }
     return { clusters, singles };
-  }, [companies, zoom]);
+    // viewTick updates the projected groups after a camera move completes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companies, zoom, viewTick]);
 
   const setHoverCursor = useCallback((hovering: boolean) => {
     const canvas = mapRef.current?.getCanvas();
@@ -198,8 +236,8 @@ export default function Map({
   }, []);
 
   const layers = useMemo(
-    () => [
-      ...createCompanyLayers({
+    () =>
+      createCompanyLayers({
         city,
         companies: clustered.singles,
         selectedId,
@@ -212,19 +250,21 @@ export default function Map({
         onClick: onSelect,
         onHover: setHoverCursor,
       }),
-      // Clusters render last so nearby single-company markers can never cover
-      // their count badges at dense city-level zooms.
-      ...createClusterLayers({
-        city,
-        clusters: clustered.clusters,
-        lens,
-        opportunities,
-        onClick: openCluster,
-        onHover: setHoverCursor,
-      }),
-    ],
-    [city, clustered, selectedId, showLabels, showIcons, labelIds, neighborhood, lens, opportunities, onSelect, openCluster, setHoverCursor],
+    [city, clustered.singles, selectedId, showLabels, showIcons, labelIds, neighborhood, lens, opportunities, onSelect, setHoverCursor],
   );
+
+  const clusterColor = useCallback((cluster: CompanyCluster) => {
+    if (lens === 'matches') {
+      let best: CompanyOpportunity | undefined;
+      for (const company of cluster.companies) {
+        const opportunity = opportunities.get(company.id);
+        if (opportunity && (!best || opportunity.best.score > best.best.score)) best = opportunity;
+      }
+      if (best) return MATCH_COLORS[best.best.band];
+    }
+    if (lens === 'hiring') return '#00B894';
+    return typeColor(cluster.companies[0].type);
+  }, [lens, opportunities, typeColor]);
 
   // Glide the camera to the selected company, lifted above the detail sheet.
   useEffect(() => {
@@ -321,13 +361,14 @@ export default function Map({
       mapStyle={MAP_STYLES[styleTier] as string}
       onMove={(e) => {
         setZoom(e.viewState.zoom);
-        setViewTick((t) => t + 1);
       }}
+      onMoveEnd={() => setViewTick((tick) => tick + 1)}
       onLoad={() => {
         styleLoadedRef.current = true;
         // belt-and-braces: make sure the canvas matches the container even if
         // the map initialized before layout settled
         mapRef.current?.resize();
+        setViewTick((tick) => tick + 1);
         if (process.env.NODE_ENV === 'development') {
           // debugging handle for the dev console
           (window as unknown as Record<string, unknown>).__map = mapRef.current?.getMap();
@@ -341,6 +382,37 @@ export default function Map({
           into the maplibre render pass caused depth-fighting artifacts on the
           translucent markers. pickingRadius makes small dots tappable. */}
       <DeckOverlay layers={layers} pickingRadius={8} />
+      {clustered.clusters.map((cluster) => {
+        const color = clusterColor(cluster);
+        const count = cluster.companies.length;
+        const size = Math.min(58, 40 + Math.sqrt(count) * 3);
+        return (
+          <Marker
+            key={cluster.id}
+            longitude={cluster.longitude}
+            latitude={cluster.latitude}
+            anchor="center"
+            style={{ zIndex: 8 }}
+          >
+            <button
+              type="button"
+              onClick={() => openCluster(cluster)}
+              aria-label={`${count} companies in this area. Zoom in`}
+              title={`${count} companies — zoom in`}
+              className="flex items-center justify-center rounded-full border-[3px] border-white font-display text-[15px] font-black leading-none tabular-nums text-white transition-transform hover:scale-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/90"
+              style={{
+                width: size,
+                height: size,
+                backgroundColor: color,
+                boxShadow: `0 0 0 7px ${color}30, 0 5px 14px rgba(45,52,54,0.28)`,
+                textShadow: '0 1px 2px rgba(45,52,54,0.5)',
+              }}
+            >
+              {count}
+            </button>
+          </Marker>
+        );
+      })}
       <GeolocateControl
         position="bottom-right"
         trackUserLocation
