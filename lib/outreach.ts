@@ -55,6 +55,14 @@ function naturalList(values: string[]): string {
   return `${values.slice(0, -1).join(', ')} and ${values[values.length - 1]}`;
 }
 
+function naturalHeadline(value: string): string {
+  if (value !== value.toUpperCase()) return value;
+  return value
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/\bAi\b/g, 'AI');
+}
+
 export function buildOutreachDraft({ profile, company, person, match }: DraftInput): string {
   const domain = INDUSTRY_FOCUS[company.industry]
     ?? profile.domains[0]?.label.toLowerCase()
@@ -63,9 +71,10 @@ export function buildOutreachDraft({ profile, company, person, match }: DraftInp
   const roleFocus = evidence.length
     ? naturalList(evidence)
     : profile.responsibilities[0]?.label.toLowerCase();
-  const article = /^[aeiou]/i.test(profile.headline) ? 'an' : 'a';
+  const headline = naturalHeadline(profile.headline);
+  const article = /^[aeiou]/i.test(headline) ? 'an' : 'a';
 
-  const opening = `Hi ${firstName(person.personName)} — I’m ${article} ${profile.headline} in Montréal with ${profile.yearsExperience}+ years delivering ${domain}.`;
+  const opening = `Hi ${firstName(person.personName)} — I’m ${article} ${headline} in Montréal with ${profile.yearsExperience}+ years delivering ${domain}.`;
   const interest = match
     ? `${company.name}’s ${match.title} role stood out${roleFocus ? `, especially its focus on ${roleFocus}` : ''}.`
     : `${company.name}’s work caught my attention.`;
