@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useCategories } from '@/lib/use-categories';
 import { useCity } from '@/lib/city-context';
 import { reportCompanyUrl } from '@/lib/feedback';
+import type { OutreachDraftResponse } from '@/lib/outreach';
 import { linkedinSearchUrl, peopleFor } from '@/lib/people-data';
 import { roleSummary } from '@/lib/roles';
 import type { AICompany, KeyPerson, Person, PersonRole } from '@/lib/types';
@@ -197,6 +198,7 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
                         <KeyPersonRow
                           key={`${p.role}-${p.name}-${p.title}`}
                           person={p}
+                          companyId={company.id}
                           companyName={company.name}
                           accent={t.color}
                         />
@@ -513,59 +515,167 @@ const PERSON_GROUPS: { role: PersonRole; label: string }[] = [
  */
 function KeyPersonRow({
   person,
+  companyId,
   companyName,
   accent,
 }: {
   person: KeyPerson;
+  companyId: string;
   companyName: string;
   accent: string;
 }) {
   const verified = Boolean(person.linkedIn);
   const href = person.linkedIn ?? linkedinSearchUrl(person.name, companyName);
+  const [draftOpen, setDraftOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [context, setContext] = useState<OutreachDraftResponse['context'] | null>(null);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [draftCopied, setDraftCopied] = useState(false);
+
+  const toggleDraft = async () => {
+    if (draftOpen) {
+      setDraftOpen(false);
+      return;
+    }
+    setDraftOpen(true);
+    if (draft) return;
+
+    setDraftLoading(true);
+    setDraftError(null);
+    try {
+      const response = await fetch('/api/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+        body: JSON.stringify({
+          companyId,
+          personName: person.name,
+          personTitle: person.title,
+          personRole: person.role,
+        }),
+      });
+      const payload = await response.json() as OutreachDraftResponse;
+      if (!response.ok) throw new Error(payload.error ?? 'Could not create a draft');
+      setDraft(payload.draft);
+      setContext(payload.context);
+    } catch (error) {
+      setDraftError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setDraftLoading(false);
+    }
+  };
+
+  const copyDraft = async () => {
+    try {
+      await navigator.clipboard.writeText(draft);
+      setDraftCopied(true);
+      setTimeout(() => setDraftCopied(false), 1600);
+    } catch {
+      setDraftError('Copy failed. Select the message text and copy it manually.');
+    }
+  };
 
   return (
-    <li>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={
-          verified
-            ? `Open ${person.name}'s verified LinkedIn profile — ${person.title}`
-            : `Find ${person.name} on LinkedIn — ${person.title} at ${companyName}`
-        }
-        className="flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5 transition hover:bg-black/[0.07] active:bg-black/[0.09]"
-      >
-      <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
-        style={{ backgroundColor: `${accent}1a`, color: accent }}
-        aria-hidden
-      >
-        {initialsOf(person.name)}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold text-asphalt">{person.name}</span>
-        <span className="block text-xs font-medium leading-snug text-asphalt/60">{person.title}</span>
-      </span>
-      <span
-        className={`flex h-7 shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-bold ${
-          verified ? 'bg-[#0A66C2] text-white' : 'bg-[#0A66C2]/10 text-[#0A66C2]'
-        }`}
-        aria-hidden
-      >
-        {verified ? (
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-            <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.4c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.07 1.4-2.07 2.85V21H9z" />
-          </svg>
-        ) : (
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-4-4" />
-          </svg>
-        )}
-        {verified ? 'Profile' : 'Find'}
-      </span>
-      </a>
+    <li className="rounded-2xl bg-black/[0.03] px-3 py-2.5">
+      <div className="flex items-center gap-3">
+        <span
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
+          style={{ backgroundColor: `${accent}1a`, color: accent }}
+          aria-hidden
+        >
+          {initialsOf(person.name)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-bold text-asphalt">{person.name}</span>
+          <span className="block text-xs font-medium leading-snug text-asphalt/60">{person.title}</span>
+        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={
+              verified
+                ? `Open ${person.name}'s verified LinkedIn profile — ${person.title}`
+                : `Find ${person.name} on LinkedIn — ${person.title} at ${companyName}`
+            }
+            className={`flex h-7 items-center gap-1 rounded-full px-2 text-[10px] font-bold transition hover:brightness-95 ${
+              verified ? 'bg-[#0A66C2] text-white' : 'bg-[#0A66C2]/10 text-[#0A66C2]'
+            }`}
+          >
+            {verified ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.4c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.07 1.4-2.07 2.85V21H9z" />
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+              </svg>
+            )}
+            {verified ? 'Profile' : 'Find'}
+          </a>
+          <button
+            type="button"
+            onClick={toggleDraft}
+            aria-expanded={draftOpen}
+            className="flex h-7 items-center gap-1 rounded-full bg-asphalt px-2 text-[10px] font-bold text-white transition hover:bg-asphalt/85"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+            </svg>
+            Draft
+          </button>
+        </div>
+      </div>
+
+      {draftOpen && (
+        <div className="mt-2.5 border-t border-black/5 pt-2.5">
+          {draftLoading && (
+            <p className="text-xs font-semibold text-asphalt/50">Checking the latest resume and role match…</p>
+          )}
+          {draftError && (
+            <div className="rounded-xl bg-plateau-pink/10 px-3 py-2 text-xs font-semibold leading-relaxed text-plateau-pink">
+              {draftError}{' '}
+              {draftError.includes('Resume') || draftError.includes('Google') ? (
+                <a href="/settings/resume" className="underline">Open Resume sync</a>
+              ) : null}
+            </div>
+          )}
+          {draft && context && (
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-asphalt/40">
+                <span>Latest {context.resumeTitle}</span>
+                {context.matchedRole && (
+                  <span>· {context.matchedRole.score}% match: {context.matchedRole.title}</span>
+                )}
+              </div>
+              <textarea
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                rows={6}
+                aria-label={`Editable LinkedIn draft for ${person.name}`}
+                className="w-full resize-y rounded-xl border border-black/10 bg-white px-3 py-2.5 text-xs leading-relaxed text-asphalt outline-none focus:border-jazz-blue/50 focus:ring-2 focus:ring-jazz-blue/10"
+              />
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-[10px] font-semibold tabular-nums text-asphalt/35">{draft.length} characters</span>
+                <button
+                  type="button"
+                  onClick={copyDraft}
+                  className="rounded-full bg-jazz-blue px-3 py-1.5 text-[10px] font-bold text-white hover:bg-jazz-blue/90"
+                >
+                  {draftCopied ? 'Copied' : 'Copy message'}
+                </button>
+              </div>
+              <p className="mt-2 text-[10px] leading-snug text-asphalt/40">
+                Editable draft only. PAS never sends messages automatically.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </li>
   );
 }
