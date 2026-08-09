@@ -1,6 +1,6 @@
 import type { Layer } from '@deck.gl/core';
-import { IconLayer, PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
-import { companyTypes, typeColor } from '@/lib/categories';
+import { PolygonLayer, ScatterplotLayer, TextLayer } from '@deck.gl/layers';
+import { typeColor } from '@/lib/categories';
 import type { CityConfig } from '@/lib/city-config';
 import { hexToRgb } from '@/lib/colors';
 import { MATCH_COLORS, type CompanyOpportunity, type OpportunityLens } from '@/lib/opportunity-map';
@@ -47,40 +47,6 @@ export function labelText(c: AICompany): string {
   return c.name.replace(/ — .*$/, '').replace(/ \(.*\)$/, '');
 }
 
-// ── Emoji icon atlas ─────────────────────────────────────────────────────
-// deck.gl's TextLayer can't render colour emoji (its font atlas is
-// alpha-only), so we rasterize each company type's emoji onto a canvas once
-// and feed it to an IconLayer. Built lazily on the client, cached forever.
-interface EmojiAtlas {
-  atlas: string; // data URL
-  mapping: Record<string, { x: number; y: number; width: number; height: number }>;
-}
-
-const emojiAtlases = new Map<string, EmojiAtlas>();
-
-function getEmojiAtlas(city: CityConfig): EmojiAtlas | null {
-  const cached = emojiAtlases.get(city.id);
-  if (cached || typeof document === 'undefined') return cached ?? null;
-  const CELL = 64;
-  const defs = Object.values(companyTypes(city));
-  const canvas = document.createElement('canvas');
-  canvas.width = CELL * defs.length;
-  canvas.height = CELL;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = `${CELL * 0.72}px system-ui, sans-serif`;
-  const mapping: EmojiAtlas['mapping'] = {};
-  defs.forEach((d, i) => {
-    ctx.fillText(d.emoji, i * CELL + CELL / 2, CELL / 2 + CELL * 0.04);
-    mapping[d.key] = { x: i * CELL, y: 0, width: CELL, height: CELL };
-  });
-  const built = { atlas: canvas.toDataURL(), mapping };
-  emojiAtlases.set(city.id, built);
-  return built;
-}
-
 interface LayerOpts {
   city: CityConfig;
   companies: AICompany[];
@@ -98,12 +64,11 @@ interface LayerOpts {
 }
 
 /**
- * Stacked deck.gl layers give each company a street-art "glow":
- *  1. a soft, large translucent halo
- *  2. a solid core dot, colour-coded by company type
- *  3. the type's emoji stamped on the dot (at street-level zoom)
- *  4. floating, collision-managed name labels (at higher zoom)
- *  5. a white ring pulsing attention onto the selected company
+ * Stacked deck.gl layers give each company a compact map marker:
+ *  1. a solid core dot, colour-coded by company type
+ *  2. floating, collision-managed name labels (at higher zoom)
+ *  3. a white ring pulsing attention onto the selected company
+ * Company logos are screen-facing HTML markers rendered by Map.tsx.
  */
 export function createCompanyLayers({
   city,
@@ -140,20 +105,6 @@ export function createCompanyLayers({
     );
   }
 
-  const glow = new ScatterplotLayer<AICompany>({
-    id: 'company-glow',
-    data: companies,
-    getPosition: (c) => [c.lng, c.lat],
-    getRadius: (c) => radiusFor(c) * 2.6,
-    radiusUnits: 'meters',
-    radiusMinPixels: 14,
-    radiusMaxPixels: 64,
-    getFillColor: (c) => [...hexToRgb(markerColor(city, c, lens, opportunities)), c.id === selectedId ? 90 : 55],
-    stroked: false,
-    pickable: false,
-    updateTriggers: { getFillColor: selectedId },
-  });
-
   // Verified address → solid filled dot. Neighbourhood-only → hollow ring,
   // so the map never pretends an approximate pin is a precise location.
   const isExact = (c: AICompany) => c.locationPrecision !== 'approximate';
@@ -184,12 +135,14 @@ export function createCompanyLayers({
     },
   });
 
-  layers.push(glow, core);
+  // Once the screen-facing company logo is visible, it replaces this map dot
+  // instead of stacking on top of it as a thick coloured halo.
+  if (!showIcons) layers.push(core);
 
   // Selected company gets a calm, oversized white ring — easy to find again
   // after the detail sheet opens and the camera glides over.
   const selected = selectedId ? companies.find((c) => c.id === selectedId) : undefined;
-  if (selected) {
+  if (selected && !showIcons) {
     layers.push(
       new ScatterplotLayer<AICompany>({
         id: 'company-selected-ring',
@@ -204,41 +157,6 @@ export function createCompanyLayers({
         getLineColor: [255, 255, 255, 235],
         getLineWidth: 2.5,
         lineWidthUnits: 'pixels',
-        pickable: false,
-      }),
-    );
-  }
-
-  // Street-level zoom: each dot becomes a little POI badge — a white inner
-  // disc with the type's emoji inside (🧠 research, ✈️ OEM, 🚀 startup…) —
-  // so the map reads at a glance without losing the colour coding.
-  const atlas = showIcons ? getEmojiAtlas(city) : null;
-  if (atlas) {
-    layers.push(
-      new ScatterplotLayer<AICompany>({
-        id: 'company-icon-disc',
-        data: companies,
-        getPosition: (c) => [c.lng, c.lat],
-        getRadius: (c) => radiusFor(c) * 0.78,
-        radiusUnits: 'meters',
-        radiusMinPixels: 5,
-        radiusMaxPixels: 20,
-        getFillColor: (c) => [255, 255, 255, isExact(c) ? 235 : 200],
-        stroked: false,
-        pickable: false,
-      }),
-      new IconLayer<AICompany>({
-        id: 'company-icons',
-        data: companies,
-        getPosition: (c) => [c.lng, c.lat],
-        iconAtlas: atlas.atlas,
-        iconMapping: atlas.mapping,
-        getIcon: (c) => c.type,
-        getSize: (c) => radiusFor(c) * 1.1,
-        sizeUnits: 'meters',
-        sizeMinPixels: 8,
-        sizeMaxPixels: 28,
-        alphaCutoff: 0.05,
         pickable: false,
       }),
     );

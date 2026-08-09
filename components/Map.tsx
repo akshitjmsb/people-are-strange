@@ -111,6 +111,68 @@ function webglSupported(): boolean {
   }
 }
 
+function companyLogoUrl(company: AICompany): string | null {
+  if (!company.website) return null;
+  try {
+    const domain = new URL(company.website).hostname;
+    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+  } catch {
+    return null;
+  }
+}
+
+function CompanyLogoMarker({
+  company,
+  color,
+  selected,
+  onSelect,
+}: {
+  company: AICompany;
+  color: string;
+  selected: boolean;
+  onSelect: (company: AICompany) => void;
+}) {
+  const [logoFailed, setLogoFailed] = useState(false);
+  const logo = companyLogoUrl(company);
+  const size = selected ? 40 : 34;
+
+  return (
+    <Marker longitude={company.lng} latitude={company.lat} anchor="center" style={{ zIndex: selected ? 10 : 7 }}>
+      <button
+        type="button"
+        onClick={() => onSelect(company)}
+        aria-label={`Open ${company.name}`}
+        title={company.name}
+        className="flex items-center justify-center overflow-hidden rounded-full bg-white font-display text-[12px] font-black text-ink shadow-[0_3px_10px_rgba(45,52,54,0.24)] transition-transform hover:scale-110 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/90"
+        style={{
+          width: size,
+          height: size,
+          border: `3px solid ${color}`,
+          boxShadow: selected
+            ? `0 0 0 4px white, 0 4px 14px rgba(45,52,54,0.3)`
+            : '0 3px 10px rgba(45,52,54,0.24)',
+        }}
+      >
+        {logo && !logoFailed ? (
+          // Remote favicons vary by company and are intentionally rendered
+          // unoptimized at this tiny size; failures fall back to an initial.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logo}
+            alt=""
+            width={size - 10}
+            height={size - 10}
+            className="h-[70%] w-[70%] object-contain"
+            onError={() => setLogoFailed(true)}
+          />
+        ) : (
+          <span aria-hidden="true">{labelText(company).charAt(0).toUpperCase()}</span>
+        )}
+      </button>
+    </Marker>
+  );
+}
+
 interface MapProps {
   companies: AICompany[];
   selectedId: string | null;
@@ -266,6 +328,15 @@ export default function Map({
     return typeColor(cluster.companies[0].type);
   }, [lens, opportunities, typeColor]);
 
+  const companyColor = useCallback((company: AICompany) => {
+    if (lens === 'matches') {
+      const opportunity = opportunities.get(company.id);
+      if (opportunity) return MATCH_COLORS[opportunity.best.band];
+    }
+    if (lens === 'hiring') return '#00B894';
+    return typeColor(company.type);
+  }, [lens, opportunities, typeColor]);
+
   // Glide the camera to the selected company, lifted above the detail sheet.
   useEffect(() => {
     if (!selectedId) return;
@@ -382,6 +453,15 @@ export default function Map({
           into the maplibre render pass caused depth-fighting artifacts on the
           translucent markers. pickingRadius makes small dots tappable. */}
       <DeckOverlay layers={layers} pickingRadius={8} />
+      {showIcons && clustered.singles.map((company) => (
+        <CompanyLogoMarker
+          key={company.id}
+          company={company}
+          color={companyColor(company)}
+          selected={company.id === selectedId}
+          onSelect={onSelect}
+        />
+      ))}
       {clustered.clusters.map((cluster) => {
         const color = clusterColor(cluster);
         const count = cluster.companies.length;
