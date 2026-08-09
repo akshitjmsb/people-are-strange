@@ -57,7 +57,13 @@ export default function OpportunityControls({
             >
               <span className="sm:hidden">{option.short}</span>
               <span className="hidden sm:inline">{option.label}</span>
-              <span className="ml-1 tabular-nums opacity-60">{counts[option.key]}</span>
+              <span
+                className={`ml-1.5 rounded-full px-1.5 py-0.5 tabular-nums ${
+                  active ? 'bg-white/15 text-white' : 'bg-asphalt/[0.07] text-asphalt/70'
+                }`}
+              >
+                {counts[option.key]}
+              </span>
             </button>
           );
         })}
@@ -87,7 +93,7 @@ export default function OpportunityControls({
           <div
             role="dialog"
             aria-label="Map filters"
-            className="absolute right-0 top-full z-40 mt-2 max-h-[65vh] w-[min(42rem,calc(100vw-1.5rem))] overflow-y-auto rounded-3xl border border-black/5 bg-white/95 p-4 shadow-2xl backdrop-blur-xl"
+            className="absolute right-0 top-full z-40 mt-2 w-[min(42rem,calc(100vw-1.5rem))] overflow-visible rounded-3xl border border-black/5 bg-white/95 p-4 shadow-2xl backdrop-blur-xl sm:max-h-[65vh] sm:overflow-y-auto"
           >
             <div className="mb-3 flex items-center justify-between">
               <div>
