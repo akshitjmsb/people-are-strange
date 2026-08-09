@@ -194,12 +194,20 @@ export default function CompanyDetail({ company, onClose, saved = false, onToggl
                     <SectionTitle>{label}</SectionTitle>
                     <ul className="space-y-1.5">
                       {group.map((p) => (
-                        <KeyPersonRow key={`${p.role}-${p.name}-${p.title}`} person={p} accent={t.color} />
+                        <KeyPersonRow
+                          key={`${p.role}-${p.name}-${p.title}`}
+                          person={p}
+                          companyName={company.name}
+                          accent={t.color}
+                        />
                       ))}
                     </ul>
                   </div>
                 );
               })}
+              <p className="text-[10px] leading-snug text-asphalt/40">
+                Profile opens a verified LinkedIn URL. Find searches LinkedIn by name and company.
+              </p>
             </div>
           )}
 
@@ -500,13 +508,34 @@ const PERSON_GROUPS: { role: PersonRole; label: string }[] = [
 ];
 
 /**
- * One key person. The whole row opens their LinkedIn when we hold a real profile
- * URL; otherwise it's a plain, non-interactive identity row — we never fake a
- * link. Mirrors the "People to know" rows so the whole card reads as one family.
+ * One key person. A verified URL opens the exact LinkedIn profile; otherwise
+ * the row opens a name + company people search. We never guess a profile slug.
  */
-function KeyPersonRow({ person, accent }: { person: KeyPerson; accent: string }) {
-  const inner = (
-    <>
+function KeyPersonRow({
+  person,
+  companyName,
+  accent,
+}: {
+  person: KeyPerson;
+  companyName: string;
+  accent: string;
+}) {
+  const verified = Boolean(person.linkedIn);
+  const href = person.linkedIn ?? linkedinSearchUrl(person.name, companyName);
+
+  return (
+    <li>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={
+          verified
+            ? `Open ${person.name}'s verified LinkedIn profile — ${person.title}`
+            : `Find ${person.name} on LinkedIn — ${person.title} at ${companyName}`
+        }
+        className="flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5 transition hover:bg-black/[0.07] active:bg-black/[0.09]"
+      >
       <span
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold"
         style={{ backgroundColor: `${accent}1a`, color: accent }}
@@ -518,35 +547,26 @@ function KeyPersonRow({ person, accent }: { person: KeyPerson; accent: string })
         <span className="block truncate text-sm font-bold text-asphalt">{person.name}</span>
         <span className="block text-xs font-medium leading-snug text-asphalt/60">{person.title}</span>
       </span>
-      {person.linkedIn && (
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#0A66C2] text-white"
-          aria-hidden
-        >
+      <span
+        className={`flex h-7 shrink-0 items-center gap-1 rounded-full px-2 text-[10px] font-bold ${
+          verified ? 'bg-[#0A66C2] text-white' : 'bg-[#0A66C2]/10 text-[#0A66C2]'
+        }`}
+        aria-hidden
+      >
+        {verified ? (
           <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.4c0-1.29-.02-2.95-1.8-2.95-1.8 0-2.07 1.4-2.07 2.85V21H9z" />
           </svg>
-        </span>
-      )}
-    </>
-  );
-
-  const base = 'flex items-center gap-3 rounded-2xl bg-black/[0.03] px-3 py-2.5';
-
-  return person.linkedIn ? (
-    <li>
-      <a
-        href={person.linkedIn}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`Open ${person.name} on LinkedIn — ${person.title}`}
-        className={`${base} transition hover:bg-black/[0.07] active:bg-black/[0.09]`}
-      >
-        {inner}
+        ) : (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-4-4" />
+          </svg>
+        )}
+        {verified ? 'Profile' : 'Find'}
+      </span>
       </a>
     </li>
-  ) : (
-    <li className={base}>{inner}</li>
   );
 }
 
