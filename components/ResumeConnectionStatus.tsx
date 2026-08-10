@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface StatusResponse {
@@ -55,7 +56,7 @@ export default function ResumeConnectionStatus({ configured }: { configured: boo
           </span>
         )}
       </div>
-      <a
+      <Link
         href="/api/google/connect"
         className={`mt-6 inline-flex rounded-full px-5 py-3 text-sm font-bold text-white ${
           configured ? 'bg-asphalt hover:bg-asphalt/85' : 'pointer-events-none bg-asphalt/25'
@@ -63,7 +64,7 @@ export default function ResumeConnectionStatus({ configured }: { configured: boo
         aria-disabled={!configured}
       >
         {status?.connected ? 'Reconnect Google Drive' : 'Connect Google Drive'}
-      </a>
+      </Link>
     </>
   );
 }

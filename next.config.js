@@ -1,12 +1,14 @@
 /** @type {import('next').NextConfig} */
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
+const withSerwistInit = require('@serwist/next').default;
+
+const withSerwist = withSerwistInit({
+  swSrc: 'app/sw.ts',
+  swDest: 'public/sw.js',
   disable: process.env.NODE_ENV === 'development',
+  reloadOnOnline: true,
 });
 
-module.exports = withPWA({
+module.exports = withSerwist({
   reactStrictMode: true,
   images: {
     domains: [],

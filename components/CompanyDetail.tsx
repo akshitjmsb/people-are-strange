@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { useCategories } from '@/lib/use-categories';
@@ -640,7 +641,7 @@ function KeyPersonRow({
             <div className="rounded-xl bg-plateau-pink/10 px-3 py-2 text-xs font-semibold leading-relaxed text-plateau-pink">
               {draftError}{' '}
               {draftError.includes('Resume') || draftError.includes('Google') ? (
-                <a href="/settings/resume" className="underline">Open Resume sync</a>
+                <Link href="/settings/resume" className="underline">Open Resume sync</Link>
               ) : null}
             </div>
           )}

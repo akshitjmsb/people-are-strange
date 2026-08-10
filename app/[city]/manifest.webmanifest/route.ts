@@ -11,7 +11,8 @@ export function generateStaticParams() {
   return CITY_IDS.map((city) => ({ city }));
 }
 
-export function GET(_req: Request, { params }: { params: { city: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ city: string }> }) {
+  const params = await props.params;
   if (!isCityId(params.city)) {
     return NextResponse.json({ error: 'unknown city' }, { status: 404 });
   }

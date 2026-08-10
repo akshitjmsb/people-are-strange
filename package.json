@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "tsx scripts/migrate.ts --on-deploy && next build && tsx scripts/seed.ts --on-deploy",
+    "dev": "next dev --webpack",
+    "build": "tsx scripts/migrate.ts --on-deploy && next build --webpack && tsx scripts/seed.ts --on-deploy",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "validate": "tsx scripts/validate-data.ts",
     "check:links": "tsx scripts/check-links.ts",
@@ -19,33 +19,37 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@deck.gl/core": "^9.0.33",
-    "@deck.gl/geo-layers": "^9.0.33",
-    "@deck.gl/layers": "^9.0.33",
-    "@deck.gl/mapbox": "^9.0.33",
+    "@deck.gl/core": "^9.3.9",
+    "@deck.gl/layers": "^9.3.9",
+    "@deck.gl/mapbox": "^9.3.9",
     "@neondatabase/serverless": "^1.1.0",
+    "@serwist/next": "^9.5.12",
     "drizzle-orm": "^0.45.2",
     "google-auth-library": "^10.9.1",
     "h3-js": "^4.1.0",
     "maplibre-gl": "^4.7.1",
-    "next": "14.2.15",
-    "next-pwa": "^5.6.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-map-gl": "^7.1.7"
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-map-gl": "^7.1.7",
+    "serwist": "^9.5.12"
   },
   "devDependencies": {
     "@types/node": "^20.16.11",
-    "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
     "autoprefixer": "^10.4.20",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "14.2.15",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.3.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
     "tsx": "^4.22.4",
     "typescript": "^5.6.3"
+  },
+  "overrides": {
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4"
   }
 }
