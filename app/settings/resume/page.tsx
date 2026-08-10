@@ -16,11 +16,12 @@ const ERRORS: Record<string, string> = {
   callback_failed: 'The Google connection could not be completed.',
 };
 
-export default async function ResumeSettingsPage({
-  searchParams,
-}: {
-  searchParams: { connected?: string; error?: string };
-}) {
+export default async function ResumeSettingsPage(
+  props: {
+    searchParams: Promise<{ connected?: string; error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const configured = googleResumeSyncConfigured();
   const message = searchParams.error ? ERRORS[searchParams.error] ?? 'Google connection failed.' : null;
 

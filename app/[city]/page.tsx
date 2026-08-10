@@ -15,7 +15,8 @@ export function generateStaticParams() {
   return CITY_IDS.map((city) => ({ city }));
 }
 
-export function generateMetadata({ params }: { params: { city: string } }): Metadata {
+export async function generateMetadata(props: { params: Promise<{ city: string }> }): Promise<Metadata> {
+  const params = await props.params;
   if (!isCityId(params.city)) return {};
   const city = getCity(params.city);
   return {
@@ -26,7 +27,8 @@ export function generateMetadata({ params }: { params: { city: string } }): Meta
 }
 
 /** Theme colour is per city, so it cannot live in the root layout. */
-export function generateViewport({ params }: { params: { city: string } }): Viewport {
+export async function generateViewport(props: { params: Promise<{ city: string }> }): Promise<Viewport> {
+  const params = await props.params;
   return {
     themeColor: getCity(params.city).themeColor,
     width: 'device-width',
@@ -37,7 +39,8 @@ export function generateViewport({ params }: { params: { city: string } }): View
   };
 }
 
-export default function CityPage({ params }: { params: { city: string } }) {
+export default async function CityPage(props: { params: Promise<{ city: string }> }) {
+  const params = await props.params;
   if (!isCityId(params.city)) notFound();
   return (
     <CityProvider cityId={params.city}>

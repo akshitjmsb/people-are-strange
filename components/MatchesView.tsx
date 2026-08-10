@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { useCity, useCityId } from '@/lib/city-context';
@@ -106,12 +107,12 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
               </a>
               <span>resume {ago(data.profile.syncedAt)}</span>
               <span>jobs {ago(data.refreshedAt)}</span>
-              <a
+              <Link
                 href="/settings/resume"
                 className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
               >
                 {data.resumeSync.connected ? 'Resume sync settings' : 'Connect automatic resume sync'}
-              </a>
+              </Link>
             </div>
           )}
         </header>
