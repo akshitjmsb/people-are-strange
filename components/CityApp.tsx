@@ -69,7 +69,7 @@ export default function CityApp() {
   const [query, setQuery] = useState('');
   const [industry, setIndustry] = useState<IndustrySelection>('all');
   const [activeTypes, setActiveTypes] = useState<Set<CompanyType>>(new Set());
-  const [lens, setLens] = useState<OpportunityLens>('matches');
+  const [lens, setLens] = useState<OpportunityLens>('all');
   const [savedOnly, setSavedOnly] = useState(false);
   const [selected, setSelected] = useState<AICompany | null>(null);
   const [detailCompany, setDetailCompany] = useState<AICompany | null>(null);
@@ -203,7 +203,7 @@ export default function CityApp() {
     if (activeTypes.size) p.set('type', [...activeTypes].join(','));
     if (activeArea) p.set('neighborhood', neighborhoodSlug(activeArea));
     if (query.trim()) p.set('q', query.trim());
-    if (lens !== 'matches') p.set('lens', lens);
+    if (lens !== 'all') p.set('lens', lens);
     if (savedOnly) p.set('saved', '1');
     if (view !== 'map') p.set('view', view);
     if (selected) p.set('company', selected.id);
