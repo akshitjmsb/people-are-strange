@@ -10,6 +10,13 @@ export interface FinancialEvidence {
   sourceUrl: string;
 }
 
+interface PayProfile {
+  confidence: 'Exceptional' | 'Strong' | 'Role-dependent';
+  targetLevel: string;
+  marketPoints: number;
+  roleFitPoints: number;
+}
+
 export interface UpsideAssessment {
   company: AICompany;
   score: number;
@@ -17,6 +24,7 @@ export interface UpsideAssessment {
   risk: string;
   reasons: string[];
   cautions: string[];
+  targetLevel?: string;
   opportunity?: CompanyOpportunity;
   financialEvidence?: FinancialEvidence;
 }
@@ -36,6 +44,60 @@ const FINANCIAL_EVIDENCE: Record<string, FinancialEvidence> = {
     period: 'FY2025',
     sourceUrl: 'https://investor.atmeta.com/investor-news/press-release-details/2026/Meta-Reports-Fourth-Quarter-and-Full-Year-2025-Results/',
   },
+  'google-deepmind-montreal': {
+    entity: 'Alphabet',
+    result: 'US$132.2B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://abc.xyz/investor/news/news-details/2026/Alphabet-Announces-Fourth-Quarter-2025-and-Fiscal-Year-Results-2026-KEvZIMKBLS/default.aspx',
+  },
+  'servicenow-research': {
+    entity: 'ServiceNow',
+    result: 'US$1.75B GAAP net income',
+    period: 'FY2025',
+    sourceUrl: 'https://newsroom.servicenow.com/press-releases/details/2026/ServiceNow-Reports-Fourth-Quarter-and-Full-Year-2025-Financial-Results-Board-of-Directors-Authorizes-Additional-5B-for-Share-Repurchase-Program/default.aspx',
+  },
+  sap: {
+    entity: 'SAP SE',
+    result: '€7.33B profit after tax',
+    period: 'FY2025',
+    sourceUrl: 'https://www.sap.com/integrated-reports/2025/en/datahub/financial-data.html',
+  },
+  oracle: {
+    entity: 'Oracle',
+    result: 'US$17.0B GAAP net income',
+    period: 'FY2026',
+    sourceUrl: 'https://www.oracle.com/news/announcement/q4fy26-earnings-release-2026-06-10/',
+  },
+  ibm: {
+    entity: 'IBM',
+    result: 'US$10.6B net income from continuing operations',
+    period: 'FY2025',
+    sourceUrl: 'https://newsroom.ibm.com/2026-01-28-IBM-RELEASES-FOURTH-QUARTER-RESULTS',
+  },
+  cisco: {
+    entity: 'Cisco',
+    result: 'US$10.5B GAAP net income',
+    period: 'FY2025',
+    sourceUrl: 'https://investor.cisco.com/news/news-details/2025/CISCO-REPORTS-FOURTH-QUARTER-AND-FISCAL-YEAR-2025-EARNINGS/',
+  },
+  autodesk: {
+    entity: 'Autodesk',
+    result: 'US$1.12B net income',
+    period: 'FY2026',
+    sourceUrl: 'https://investors.autodesk.com/news-releases/news-release-details/autodesk-inc-announces-fiscal-2026-fourth-quarter-results',
+  },
+  workday: {
+    entity: 'Workday',
+    result: 'US$693M net income',
+    period: 'FY2026',
+    sourceUrl: 'https://investor.workday.com/news-and-events/press-releases/news-details/2026/Workday-Announces-Fiscal-2026-Fourth-Quarter-and-Full-Year-Financial-Results/default.aspx',
+  },
+  'morgan-stanley': {
+    entity: 'Morgan Stanley',
+    result: 'US$16.9B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://www.morganstanley.com/press-releases/morgan-stanley-reports-fourth-quarter-and-full-year-2025',
+  },
   rbc: {
     entity: 'RBC',
     result: 'C$20.4B net income',
@@ -53,6 +115,18 @@ const FINANCIAL_EVIDENCE: Record<string, FinancialEvidence> = {
     result: 'C$8.7B net income',
     period: 'FY2025',
     sourceUrl: 'https://www.bmo.com/ir/archive/en/bmo_ar2025.pdf',
+  },
+  scotiabank: {
+    entity: 'Scotiabank',
+    result: 'C$7.76B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://www.scotiabank.com/ca/en/about/investors-shareholders/annual-reports.html',
+  },
+  cibc: {
+    entity: 'CIBC',
+    result: 'C$8.45B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://www.cibc.com/en/about-cibc/investor-relations/annual-reports-and-proxy-circulars.html',
   },
   'national-bank': {
     entity: 'National Bank of Canada',
@@ -78,6 +152,39 @@ const FINANCIAL_EVIDENCE: Record<string, FinancialEvidence> = {
     period: 'FY2025',
     sourceUrl: 'https://www.telus.com/en/about/investor-relations/reports/annual-reports/2025/performance-at-a-glance',
   },
+  'airbus-canada-a220': {
+    entity: 'Airbus',
+    result: '€5.22B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://www.airbus.com/en/newsroom/press-releases/2026-02-airbus-reports-full-year-fy-2025-results',
+  },
+};
+
+// Pay-market strength is deliberately separate from profit. A bank may earn
+// more than a SaaS company while the SaaS company has the stronger pay ceiling
+// for a senior AI/data/product role. These profiles express that distinction.
+const PAY_PROFILES: Record<string, PayProfile> = {
+  'google-deepmind-montreal': { confidence: 'Exceptional', targetLevel: 'Senior / Staff / Lead', marketPoints: 34, roleFitPoints: 20 },
+  'microsoft-research-montreal': { confidence: 'Exceptional', targetLevel: 'Senior / Principal / Manager', marketPoints: 34, roleFitPoints: 20 },
+  'meta-fair-montreal': { confidence: 'Exceptional', targetLevel: 'Senior / Staff / Manager', marketPoints: 34, roleFitPoints: 20 },
+  'servicenow-research': { confidence: 'Exceptional', targetLevel: 'Senior / Staff / Product Manager', marketPoints: 34, roleFitPoints: 20 },
+  'morgan-stanley': { confidence: 'Exceptional', targetLevel: 'Vice President / Senior Manager', marketPoints: 32, roleFitPoints: 18 },
+  sap: { confidence: 'Strong', targetLevel: 'Senior / Principal / Product Manager', marketPoints: 30, roleFitPoints: 20 },
+  oracle: { confidence: 'Strong', targetLevel: 'Senior / Principal / Manager', marketPoints: 30, roleFitPoints: 18 },
+  autodesk: { confidence: 'Strong', targetLevel: 'Senior / Staff / Product Manager', marketPoints: 30, roleFitPoints: 19 },
+  workday: { confidence: 'Strong', targetLevel: 'Senior / Principal / Manager', marketPoints: 29, roleFitPoints: 18 },
+  cisco: { confidence: 'Strong', targetLevel: 'Senior / Principal / Manager', marketPoints: 28, roleFitPoints: 17 },
+  ibm: { confidence: 'Strong', targetLevel: 'Senior / Managing Consultant / Manager', marketPoints: 27, roleFitPoints: 17 },
+  rbc: { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 26, roleFitPoints: 16 },
+  'td-bank': { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 26, roleFitPoints: 15 },
+  bmo: { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 26, roleFitPoints: 15 },
+  'national-bank': { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 26, roleFitPoints: 16 },
+  scotiabank: { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 26, roleFitPoints: 15 },
+  cibc: { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 26, roleFitPoints: 15 },
+  desjardins: { confidence: 'Strong', targetLevel: 'Senior Manager / Director', marketPoints: 25, roleFitPoints: 16 },
+  cgi: { confidence: 'Role-dependent', targetLevel: 'Director / Vice-President', marketPoints: 22, roleFitPoints: 17 },
+  telus: { confidence: 'Role-dependent', targetLevel: 'Senior Manager / Director', marketPoints: 23, roleFitPoints: 15 },
+  'airbus-canada-a220': { confidence: 'Role-dependent', targetLevel: 'Senior Manager / HO / Director', marketPoints: 22, roleFitPoints: 17 },
 };
 
 const EQUITY_TYPES = new Set<CompanyType>([
@@ -197,11 +304,11 @@ export function rankEquityUpside(
 
 function profitScale(result: string): number {
   const amount = fundingMillions(result);
-  if (amount >= 50_000) return 52;
-  if (amount >= 10_000) return 47;
-  if (amount >= 5_000) return 43;
-  if (amount >= 1_000) return 38;
-  return 32;
+  if (amount >= 50_000) return 20;
+  if (amount >= 10_000) return 18;
+  if (amount >= 5_000) return 16;
+  if (amount >= 1_000) return 14;
+  return 12;
 }
 
 export function rankCashCapacity(
@@ -211,31 +318,36 @@ export function rankCashCapacity(
   return companies
     .flatMap((company) => {
       const financialEvidence = FINANCIAL_EVIDENCE[company.id];
-      if (!financialEvidence) return [];
+      const payProfile = PAY_PROFILES[company.id];
+      if (!financialEvidence || !payProfile) return [];
       const opportunity = opportunities.get(company.id);
-      let score = profitScale(financialEvidence.result) + fitPoints(opportunity);
-      if (headcountUpper(company.headcount) >= 10_000) score += 14;
-      else if (headcountUpper(company.headcount) >= 500) score += 8;
-      if (company.hiring || (company.openRolesTotal ?? 0) > 0) score += 10;
-      if (company.careersUrl) score += 5;
+      let score = profitScale(financialEvidence.result) + payProfile.marketPoints + payProfile.roleFitPoints;
+      score += Math.min(10, fitPoints(opportunity));
+      if (headcountUpper(company.headcount) >= 1_000) score += 7;
+      else if (headcountUpper(company.headcount) >= 50) score += 4;
+      else if (headcountUpper(company.headcount) > 0) score += 2;
+      if (company.hiring || (company.openRolesTotal ?? 0) > 0) score += 6;
+      if (company.careersUrl) score += 3;
 
       const reasons = [
-        `${financialEvidence.result} (${financialEvidence.period})`,
-        company.headcount ? `${company.headcount} employees` : 'Large profitable parent organization',
+        `${payProfile.confidence} C$150K total-comp path at ${payProfile.targetLevel} level`,
+        `${financialEvidence.entity}: ${financialEvidence.result} (${financialEvidence.period})`,
       ];
+      if (company.headcount) reasons.push(`${company.headcount} local or listed-team employees`);
       if (company.hiring || (company.openRolesTotal ?? 0) > 0) reasons.push('Active careers or hiring signal');
       if (opportunity) reasons.push(`${opportunity.best.score}% resume match on the best live role`);
 
       return [{
         company,
         score: Math.min(99, score),
-        label: 'Strong pay-capacity signal',
-        risk: 'Lower',
-        reasons,
+        label: `${payProfile.confidence} target`,
+        risk: payProfile.confidence === 'Exceptional' ? 'Lower' : payProfile.confidence === 'Strong' ? 'Moderate' : 'Role-dependent',
+        reasons: reasons.slice(0, 4),
         cautions: [
-          'Company profit is not proof that a specific Montreal role pays C$150K.',
+          'The C$150K target is total compensation, not guaranteed base salary.',
           'Confirm base, target bonus, pension and equity as separate offer components.',
         ],
+        targetLevel: payProfile.targetLevel,
         opportunity,
         financialEvidence,
       } satisfies UpsideAssessment];

@@ -36,12 +36,12 @@ export default function UpsideView({ companies, opportunities, loading, onShowOn
             <div>
               <h1 className="font-display text-2xl font-bold sm:text-3xl">Two money paths in {city.name}</h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65">
-                Compare private-company equity upside with profitable employers that have the capacity for senior C$150K total packages. Signals, never promises.
+                Compare private-company equity upside with Montréal employers where a senior C$150K total package is genuinely plausible. Signals, never promises.
               </p>
             </div>
             <div className="flex shrink-0 gap-5">
               <Metric value={loading ? '—' : equity.length} label="private bets" />
-              <Metric value={loading ? '—' : cash.length} label="profit-backed" />
+              <Metric value={loading ? '—' : cash.length} label="C$150K targets" />
             </div>
           </div>
 
@@ -50,7 +50,7 @@ export default function UpsideView({ companies, opportunities, loading, onShowOn
               Pre-IPO equity
             </TrackButton>
             <TrackButton active={track === 'cash'} onClick={() => setTrack('cash')}>
-              C$150K capacity
+              C$150K targets
             </TrackButton>
           </div>
         </header>
@@ -59,9 +59,18 @@ export default function UpsideView({ companies, opportunities, loading, onShowOn
           {track === 'equity' ? (
             <><strong className="text-asphalt">Upside is not liquidity.</strong> A private-company grant may end up valuable, worthless, or impossible to sell for years. PAS ranks company signals; only a written offer reveals your economics.</>
           ) : (
-            <><strong className="text-asphalt">Capacity is not an offer.</strong> Annual profit supports ability to pay, but role level, business unit, location and negotiation determine whether total compensation reaches C$150K.</>
+            <><strong className="text-asphalt">This is total compensation, not base salary.</strong> The ranking combines pay-market strength, AI/data/product fit, financial capacity and live hiring signals. The exact role and level still determine the offer.</>
           )}
         </div>
+
+        {track === 'cash' && (
+          <div className="mt-3 grid grid-cols-2 gap-2 rounded-2xl border border-black/5 bg-white p-3 sm:grid-cols-4">
+            <MethodWeight value="34" label="Pay market" />
+            <MethodWeight value="20" label="Role fit" />
+            <MethodWeight value="20" label="Financial strength" />
+            <MethodWeight value="26" label="Scale + live signals" />
+          </div>
+        )}
 
         {loading ? (
           <div className="mt-4 rounded-3xl border border-black/5 bg-white p-6 text-center text-sm text-asphalt/55">
@@ -94,6 +103,15 @@ function Metric({ value, label }: { value: number | string; label: string }) {
     <div className="text-right">
       <div className="font-display text-2xl font-bold tabular-nums">{value}</div>
       <div className="text-[9px] font-black uppercase tracking-wider text-white/45">{label}</div>
+    </div>
+  );
+}
+
+function MethodWeight({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl bg-black/[0.035] px-3 py-2">
+      <div className="font-display text-lg font-bold text-asphalt">{value}<span className="text-xs text-asphalt/35">%</span></div>
+      <div className="text-[9px] font-black uppercase tracking-wide text-asphalt/45">{label}</div>
     </div>
   );
 }
