@@ -16,6 +16,7 @@ import OpportunityControls from '@/components/OpportunityControls';
 import OpportunityPreview from '@/components/OpportunityPreview';
 import SavedToggle from '@/components/SavedToggle';
 import SearchBar from '@/components/SearchBar';
+import UpsideView from '@/components/UpsideView';
 import ViewSwitcher, { type ViewMode } from '@/components/ViewSwitcher';
 import { useCategories } from '@/lib/use-categories';
 import { loadCompanies } from '@/lib/companies';
@@ -112,6 +113,7 @@ export default function CityApp() {
 
     if (p.get('view') === 'list') setView('list');
     if (p.get('view') === 'matches') setView('matches');
+    if (p.get('view') === 'upside') setView('upside');
     const requestedLens = p.get('lens');
     if (requestedLens === 'matches' || requestedLens === 'hiring' || requestedLens === 'all') {
       setLens(requestedLens);
@@ -382,10 +384,11 @@ export default function CityApp() {
     : null;
 
   const showEmpty = !loading && view === 'map' && filtered.length === 0;
+  const mapVisible = view === 'map' || view === 'list';
 
   return (
     <main className="relative h-full w-full">
-      {view !== 'matches' && (
+      {mapVisible && (
         <Map
           companies={filtered}
           selectedId={selected?.id ?? null}
@@ -421,11 +424,20 @@ export default function CityApp() {
         />
       )}
 
+      {view === 'upside' && (
+        <UpsideView
+          companies={all}
+          opportunities={opportunities}
+          loading={loading}
+          onShowOnMap={showOnMap}
+        />
+      )}
+
       {/* Montreal-palette hairline across the very top */}
       <div aria-hidden className="mtl-hairline pointer-events-none absolute inset-x-0 top-0 z-30 h-[3px]" />
 
       {/* top chrome */}
-      {view !== 'matches' && <div
+      {mapVisible && <div
         ref={chromeRef}
         className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2.5 px-3 pt-[max(0.85rem,env(safe-area-inset-top))]"
       >
@@ -515,7 +527,7 @@ export default function CityApp() {
         activeArea={activeArea}
       />
 
-      {loading && view !== 'matches' && <LoadingOverlay />}
+      {loading && mapVisible && <LoadingOverlay />}
       {showEmpty && <EmptyState hasData={all.length > 0} />}
 
       {areasOpen && (

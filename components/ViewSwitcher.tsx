@@ -2,7 +2,7 @@
 
 import { useCategories } from '@/lib/use-categories';
 
-export type ViewMode = 'map' | 'list' | 'matches';
+export type ViewMode = 'map' | 'list' | 'matches' | 'upside';
 
 interface Props {
   view: ViewMode;
@@ -39,6 +39,9 @@ export default function ViewSwitcher({
           </SegButton>
           <SegButton active={view === 'matches'} onClick={() => onView('matches')} label="Matches">
             <MatchIcon />
+          </SegButton>
+          <SegButton active={view === 'upside'} onClick={() => onView('upside')} label="Upside">
+            <UpsideIcon />
           </SegButton>
         </div>
 
@@ -139,6 +142,15 @@ function MatchIcon() {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M9 11 12 14 22 4" />
       <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+  );
+}
+
+function UpsideIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 17 10 11l4 4 6-8" />
+      <path d="M15 7h5v5" />
     </svg>
   );
 }
