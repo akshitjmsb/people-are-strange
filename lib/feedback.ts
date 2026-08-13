@@ -1,5 +1,5 @@
 // ── Community feedback ───────────────────────────────────────────────────
-// The people using this map know the Montreal scene — let them feed data back.
+// The people using each map know the local scene — let them feed data back.
 // Both flows open a prefilled GitHub issue on the public repo: zero backend,
 // and every submission lands somewhere trackable.
 
@@ -18,7 +18,7 @@ export function suggestCompanyUrl(): string {
     '',
     '**Website:**',
     '',
-    '**Industry (ai / aerospace / energy / marine / gaming / lifesci):**',
+    '**Industry / sector:**',
     '',
     '**What they do (one sentence):**',
     '',

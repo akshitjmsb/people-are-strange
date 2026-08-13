@@ -9,7 +9,8 @@
 // Exits 1 only on CONFIRMED dead (404/410). Bot-walls (403/405/429) are
 // reported separately and never fail the run — Cloudflare blocking a datacenter
 // IP says nothing about whether the page exists.
-import { COMPANIES } from '../lib/companies-data';
+import { bundledCompanies } from '../lib/companies';
+import { CITY_IDS } from '../lib/cities';
 
 const CONCURRENCY = 8;
 const TIMEOUT_MS = 15_000;
@@ -32,11 +33,15 @@ interface Result extends Target {
 const checkAllSources = process.argv.includes('--all');
 
 const targets: Target[] = [];
-for (const c of COMPANIES) {
-  if (c.website) targets.push({ company: c.id, field: 'website', url: c.website });
-  if (c.careersUrl) targets.push({ company: c.id, field: 'careersUrl', url: c.careersUrl });
+const allCompanies = CITY_IDS.flatMap((cityId) =>
+  bundledCompanies(cityId).map((company) => ({ cityId, company })),
+);
+for (const { cityId, company: c } of allCompanies) {
+  const company = `${cityId}/${c.id}`;
+  if (c.website) targets.push({ company, field: 'website', url: c.website });
+  if (c.careersUrl) targets.push({ company, field: 'careersUrl', url: c.careersUrl });
   if (checkAllSources) {
-    for (const s of c.sources ?? []) targets.push({ company: c.id, field: 'source', url: s });
+    for (const s of c.sources ?? []) targets.push({ company, field: 'source', url: s });
   }
 }
 
@@ -77,7 +82,7 @@ async function run() {
   const serverErr = results.filter((r) => r.status !== null && r.status >= 500);
   const ok = results.length - dead.length - blocked.length - unreachable.length - serverErr.length;
 
-  console.log(`\nchecked ${results.length} links across ${COMPANIES.length} companies`);
+  console.log(`\nchecked ${results.length} links across ${allCompanies.length} companies in ${CITY_IDS.length} cities`);
   console.log(`  ✓ ${ok} ok`);
   if (blocked.length) console.log(`  ? ${blocked.length} bot-walled (inconclusive)`);
   if (unreachable.length) console.log(`  ? ${unreachable.length} unreachable (timeout/DNS)`);

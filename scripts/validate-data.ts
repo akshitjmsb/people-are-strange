@@ -6,13 +6,14 @@
 //   npm run validate
 //
 // Exits 1 on any ERROR. Warnings are reported but never fail the build.
-import { COMPANIES } from '../lib/companies-data';
+import { bundledCompanies } from '../lib/companies';
 import { COMPANY_PROFILES } from '../lib/company-profiles';
 import { PEOPLE } from '../lib/people-data';
 import { companyTypes, industryOrder } from '../lib/categories';
-import { getCity, DEFAULT_CITY_ID } from '../lib/cities';
+import { CITY_IDS, getCity } from '../lib/cities';
 import type { AtsProvider } from '../lib/ats';
-import type { Industry } from '../lib/types';
+import type { CityConfig, CityId } from '../lib/city-config';
+import type { AICompany, Industry } from '../lib/types';
 
 const ATS_PROVIDERS: AtsProvider[] = [
   'ashby',
@@ -24,19 +25,37 @@ const ATS_PROVIDERS: AtsProvider[] = [
   'ubisoft-mtl',
 ];
 
-// Impossible-coordinate bounds: anything outside this is a sign flip, a
-// transposed lat/lng, a 0/0, or a pin in another province.
-const QUEBEC = { latMin: 45.0, latMax: 46.5, lngMin: -74.6, lngMax: -71.0 };
-// Greater Montreal proper. Outside this is legitimate (the Québec aerospace
-// corridor reaches Bromont and Sherbrooke) but worth surfacing on an MTL map.
-const METRO = { latMin: 45.35, latMax: 45.75, lngMin: -74.15, lngMax: -73.3 };
+interface Bounds {
+  label: string;
+  latMin: number;
+  latMax: number;
+  lngMin: number;
+  lngMax: number;
+}
 
-// This validator is still Montréal-specific (it imports companies-data directly
-// and checks Québec bounds). It is pinned to the default city rather than
-// pretending to cover every city — generalizing it is separate work.
-const city = getCity(DEFAULT_CITY_ID);
-const COMPANY_TYPES = companyTypes(city);
-const INDUSTRY_ORDER = industryOrder(city);
+// Broad sanity bounds catch sign flips and pins in the wrong province. Core
+// bounds are narrower and only warn: a regional map may legitimately include
+// a company outside the urban centre.
+const GEO_BOUNDS: Record<CityId, { region: Bounds; core: Bounds }> = {
+  montreal: {
+    region: { label: 'Québec', latMin: 45.0, latMax: 46.5, lngMin: -74.6, lngMax: -71.0 },
+    core: { label: 'Greater Montréal', latMin: 45.35, latMax: 45.75, lngMin: -74.15, lngMax: -73.3 },
+  },
+  victoria: {
+    region: { label: 'southern Vancouver Island', latMin: 48.1, latMax: 49.0, lngMin: -124.2, lngMax: -122.8 },
+    core: { label: 'Greater Victoria', latMin: 48.3, latMax: 48.75, lngMin: -123.8, lngMax: -123.1 },
+  },
+  vancouver: {
+    region: { label: 'southwest British Columbia', latMin: 48.8, latMax: 50.1, lngMin: -124.0, lngMax: -121.8 },
+    core: { label: 'Metro Vancouver', latMin: 49.0, latMax: 49.5, lngMin: -123.5, lngMax: -122.4 },
+  },
+};
+
+const companyRows = CITY_IDS.flatMap((cityId) => {
+  const city = getCity(cityId);
+  return bundledCompanies(cityId).map((company) => ({ cityId, city, company }));
+});
+const allCompanies = companyRows.map(({ company }) => company);
 
 const errors: string[] = [];
 /** Warnings are grouped by kind so the report reads as counts, not a wall. */
@@ -48,15 +67,21 @@ const warn = (kind: string, detail: string) => {
   warnings.set(kind, list);
 };
 
-const industryOf = (c: { industry?: Industry }): Industry => c.industry ?? 'ai';
+const industryOf = (c: { industry?: Industry }, city: CityConfig): Industry =>
+  c.industry ?? city.industries[0];
 const isUrl = (u: string) => /^https?:\/\/[^\s"']+$/.test(u);
+const inside = (lat: number, lng: number, bounds: Bounds) =>
+  lat >= bounds.latMin && lat <= bounds.latMax && lng >= bounds.lngMin && lng <= bounds.lngMax;
 
 // ── Companies ────────────────────────────────────────────────────────────────
 const seenIds = new Map<string, string>();
 const seenNames = new Map<string, string>();
 
-for (const c of COMPANIES) {
-  const at = `${c.id} (${c.name})`;
+for (const { cityId, city, company: c } of companyRows) {
+  const at = `${cityId}/${c.id} (${c.name})`;
+  const COMPANY_TYPES = companyTypes(city);
+  const INDUSTRY_ORDER = industryOrder(city);
+  const bounds = GEO_BOUNDS[cityId];
 
   // Identity — the duplicate that broke the seed.
   if (seenIds.has(c.id)) err(`duplicate id "${c.id}" — also used by ${seenIds.get(c.id)}`);
@@ -77,10 +102,10 @@ for (const c of COMPANIES) {
   if (typeof c.lat !== 'number' || typeof c.lng !== 'number' || Number.isNaN(c.lat) || Number.isNaN(c.lng)) {
     err(`${at}: lat/lng must be numbers`);
   } else {
-    if (c.lat < QUEBEC.latMin || c.lat > QUEBEC.latMax || c.lng < QUEBEC.lngMin || c.lng > QUEBEC.lngMax) {
-      err(`${at}: coords ${c.lat},${c.lng} are outside Québec — sign flip or transposed lat/lng?`);
-    } else if (c.lat < METRO.latMin || c.lat > METRO.latMax || c.lng < METRO.lngMin || c.lng > METRO.lngMax) {
-      warn('outside Greater Montreal', `${at} — ${c.neighborhood ?? 'no neighborhood'}`);
+    if (!inside(c.lat, c.lng, bounds.region)) {
+      err(`${at}: coords ${c.lat},${c.lng} are outside ${bounds.region.label} — wrong city, sign flip, or transposed lat/lng?`);
+    } else if (!inside(c.lat, c.lng, bounds.core)) {
+      warn(`outside ${bounds.core.label}`, `${at} — ${c.neighborhood ?? 'no neighborhood'}`);
     }
   }
 
@@ -88,8 +113,8 @@ for (const c of COMPANIES) {
   const def = COMPANY_TYPES[c.type];
   if (!def) {
     err(`${at}: unknown type "${c.type}"`);
-  } else if (def.industry !== industryOf(c)) {
-    err(`${at}: type "${c.type}" belongs to ${def.industry}, but industry is ${industryOf(c)}`);
+  } else if (def.industry !== industryOf(c, city)) {
+    err(`${at}: type "${c.type}" belongs to ${def.industry}, but industry is ${industryOf(c, city)}`);
   }
   if (c.industry && !INDUSTRY_ORDER.includes(c.industry)) err(`${at}: unknown industry "${c.industry}"`);
 
@@ -102,7 +127,7 @@ for (const c of COMPANIES) {
     const seen = new Set<string>();
     for (const ind of c.secondaryIndustries) {
       if (!INDUSTRY_ORDER.includes(ind)) err(`${at}: unknown secondary industry "${ind}"`);
-      if (ind === industryOf(c)) err(`${at}: secondary industry "${ind}" duplicates its own primary industry`);
+      if (ind === industryOf(c, city)) err(`${at}: secondary industry "${ind}" duplicates its own primary industry`);
       if (seen.has(ind)) err(`${at}: secondary industry "${ind}" listed twice`);
       seen.add(ind);
     }
@@ -145,7 +170,7 @@ for (const c of COMPANIES) {
 }
 
 // ── People ───────────────────────────────────────────────────────────────────
-const companyIds = new Set(COMPANIES.map((c) => c.id));
+const companyIds = new Set(allCompanies.map((c) => c.id));
 const seenPeople = new Set<string>();
 
 for (const p of PEOPLE) {
@@ -182,16 +207,20 @@ for (const [id, profile] of Object.entries(COMPANY_PROFILES)) {
 }
 
 // ── Report ───────────────────────────────────────────────────────────────────
-const byIndustry = INDUSTRY_ORDER.map((i) => {
-  const n = COMPANIES.filter((c) => industryOf(c) === i).length;
-  return `${i} ${n}`;
-}).join('  ·  ');
+const citySummaries = CITY_IDS.map((cityId) => {
+  const city = getCity(cityId);
+  const companies = companyRows.filter((row) => row.cityId === cityId).map((row) => row.company);
+  const byIndustry = industryOrder(city)
+    .map((industry) => `${industry} ${companies.filter((c) => industryOf(c, city) === industry).length}`)
+    .join('  ·  ');
+  return `${city.name}: ${companies.length} companies  ·  ${byIndustry}`;
+});
 
 console.log(
-  `\n${COMPANIES.length} companies  ·  ${PEOPLE.length} people  ·  ` +
+  `\n${allCompanies.length} companies across ${CITY_IDS.length} cities  ·  ${PEOPLE.length} people  ·  ` +
     `${Object.keys(COMPANY_PROFILES).length} profiles (${profilesWithPeople} with people, ${peopleTotal} contacts)`,
 );
-console.log(`${byIndustry}\n`);
+console.log(`${citySummaries.join('\n')}\n`);
 
 const warnTotal = [...warnings.values()].reduce((n, l) => n + l.length, 0);
 if (warnTotal) {
