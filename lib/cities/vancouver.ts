@@ -3,7 +3,7 @@
 // North Shore. The data is regional because the local job market crosses
 // municipal borders every day.
 
-import { GAMING, LIFESCI, MARINE } from '../colors';
+import { AERO, GAMING, LIFESCI, MARINE } from '../colors';
 import type { CityConfig } from '../city-config';
 
 const PALETTE = {
@@ -34,18 +34,19 @@ const CLEAN = {
 export const vancouver: CityConfig = {
   id: 'vancouver',
   name: 'Vancouver',
-  tagline: "Vancouver's tech, gaming, clean-tech & life-science scene, mapped",
+  tagline: "Vancouver's tech, creative, clean-tech, life-science, aerospace & marine scene, mapped",
   mapCenter: [49.2675, -123.0900],
   defaultZoom: 10.5,
   themeColor: PALETTE.pacificBlue,
 
-  industries: ['tech', 'gaming', 'cleantech', 'lifesci', 'marine'],
+  industries: ['tech', 'gaming', 'cleantech', 'lifesci', 'aerospace', 'marine'],
 
   industryMeta: {
     tech: { label: 'Tech & AI', emoji: '💻', color: TECH.enterprise },
     gaming: { label: 'Gaming / VFX', emoji: '🎮', color: GAMING.neonPurple },
     cleantech: { label: 'Clean Tech', emoji: '🌿', color: CLEAN.utility },
     lifesci: { label: 'Life Sciences', emoji: '🧬', color: LIFESCI.pharmaTeal },
+    aerospace: { label: 'Aerospace', emoji: '✈️', color: AERO.jetNavy },
     marine: { label: 'Marine', emoji: '🚢', color: MARINE.deepSea },
   },
 
@@ -66,6 +67,7 @@ export const vancouver: CityConfig = {
 
     'cleantech-utility': { key: 'cleantech-utility', label: 'Utility / Producer', emoji: '⚡', color: CLEAN.utility, industry: 'cleantech' },
     'cleantech-startup': { key: 'cleantech-startup', label: 'CleanTech Company', emoji: '🌱', color: CLEAN.startup, industry: 'cleantech' },
+    'cleantech-scaleup': { key: 'cleantech-scaleup', label: 'CleanTech Scaleup', emoji: '📈', color: TECH.scaleup, industry: 'cleantech' },
     'cleantech-services': { key: 'cleantech-services', label: 'CleanTech Services', emoji: '🔧', color: CLEAN.services, industry: 'cleantech' },
     'cleantech-research': { key: 'cleantech-research', label: 'CleanTech Research', emoji: '🧪', color: CLEAN.research, industry: 'cleantech' },
 
@@ -74,6 +76,16 @@ export const vancouver: CityConfig = {
     'lifesci-cro': { key: 'lifesci-cro', label: 'Research Services', emoji: '🔬', color: LIFESCI.labCoral, industry: 'lifesci' },
     'lifesci-research': { key: 'lifesci-research', label: 'Research Institute', emoji: '🏥', color: LIFESCI.researchIndigo, industry: 'lifesci' },
     'lifesci-org': { key: 'lifesci-org', label: 'Cluster / Accelerator', emoji: '🌐', color: LIFESCI.clusterSlate, industry: 'lifesci' },
+
+    oem: { key: 'oem', label: 'OEM / Prime', emoji: '✈️', color: AERO.jetNavy, industry: 'aerospace' },
+    tier1: { key: 'tier1', label: 'Tier 1 Supplier', emoji: '🔧', color: AERO.steelBlue, industry: 'aerospace' },
+    tier2: { key: 'tier2', label: 'Tier 2 Supplier', emoji: '⚙️', color: AERO.fuselageBlue, industry: 'aerospace' },
+    mro: { key: 'mro', label: 'MRO', emoji: '🛠️', color: AERO.turbineTeal, industry: 'aerospace' },
+    defense: { key: 'defense', label: 'Defense / Avionics', emoji: '🛡️', color: AERO.carbonSlate, industry: 'aerospace' },
+    space: { key: 'space', label: 'Space', emoji: '🚀', color: AERO.rocketRust, industry: 'aerospace' },
+    'aero-research': { key: 'aero-research', label: 'Research / Education', emoji: '🔬', color: AERO.skyCyan, industry: 'aerospace' },
+    'aero-startup': { key: 'aero-startup', label: 'Startup / Scale-up', emoji: '🛩️', color: AERO.hangarAqua, industry: 'aerospace' },
+    'aero-incubator': { key: 'aero-incubator', label: 'Cluster / Fund', emoji: '🌐', color: AERO.titaniumGrey, industry: 'aerospace' },
 
     'marine-shipping': { key: 'marine-shipping', label: 'Shipowner / Carrier', emoji: '🚢', color: MARINE.deepSea, industry: 'marine' },
     'marine-port': { key: 'marine-port', label: 'Port & Terminals', emoji: '⚓', color: MARINE.containerRust, industry: 'marine' },
@@ -84,14 +96,16 @@ export const vancouver: CityConfig = {
   typeOrder: {
     tech: ['tech-startup', 'tech-scaleup', 'tech-enterprise', 'tech-platform', 'tech-agency', 'tech-govtech'],
     gaming: ['gaming-aaa', 'gaming-mid', 'gaming-indie', 'gaming-vfx', 'gaming-services', 'gaming-org'],
-    cleantech: ['cleantech-startup', 'cleantech-utility', 'cleantech-services', 'cleantech-research'],
+    cleantech: ['cleantech-startup', 'cleantech-scaleup', 'cleantech-utility', 'cleantech-services', 'cleantech-research'],
     lifesci: ['lifesci-biotech', 'lifesci-pharma', 'lifesci-cro', 'lifesci-research', 'lifesci-org'],
+    aerospace: ['oem', 'tier1', 'tier2', 'mro', 'defense', 'space', 'aero-research', 'aero-startup', 'aero-incubator'],
     marine: ['marine-shipping', 'marine-port', 'marine-services', 'marine-org'],
     all: [
       'tech-startup', 'tech-scaleup', 'tech-enterprise', 'tech-platform', 'tech-agency', 'tech-govtech',
       'gaming-aaa', 'gaming-mid', 'gaming-indie', 'gaming-vfx', 'gaming-services', 'gaming-org',
-      'cleantech-startup', 'cleantech-utility', 'cleantech-services', 'cleantech-research',
+      'cleantech-startup', 'cleantech-scaleup', 'cleantech-utility', 'cleantech-services', 'cleantech-research',
       'lifesci-biotech', 'lifesci-pharma', 'lifesci-cro', 'lifesci-research', 'lifesci-org',
+      'oem', 'tier1', 'tier2', 'mro', 'defense', 'space', 'aero-research', 'aero-startup', 'aero-incubator',
       'marine-shipping', 'marine-port', 'marine-services', 'marine-org',
     ],
   },
@@ -113,6 +127,11 @@ export const vancouver: CityConfig = {
     'medical-devices': 'Medical Devices', 'cell-gene-therapy': 'Cell & Gene Therapy', diagnostics: 'Diagnostics',
     shipping: 'Shipping', 'port-operations': 'Port Operations', 'marine-logistics': 'Marine Logistics',
     'ship-services': 'Shipbuilding & Services', 'green-shipping': 'Green Shipping',
+    propulsion: 'Propulsion / Engines', avionics: 'Avionics', aerostructures: 'Aerostructures',
+    mro: 'MRO', space: 'Space / Satellites', defense: 'Defense', uav: 'UAV / Drones',
+    simulation: 'Simulation / Training', 'landing-gear': 'Landing Gear', interiors: 'Cabin Interiors',
+    materials: 'Advanced Materials', systems: 'Aircraft Systems', manufacturing: 'Advanced Manufacturing',
+    'aero-research': 'Aerospace Research', 'sustainable-aviation': 'Sustainable Aviation',
   },
 
   canonicalNeighborhoods: {
@@ -122,10 +141,11 @@ export const vancouver: CityConfig = {
     UBC: 'UBC', Burnaby: 'Burnaby', Richmond: 'Richmond', Surrey: 'Surrey', Delta: 'Delta',
     'North Vancouver': 'North Vancouver', 'West Vancouver': 'West Vancouver',
     'New Westminster': 'New Westminster', Coquitlam: 'Coquitlam', 'Port Coquitlam': 'Port Coquitlam',
+    'Port Moody': 'Port Moody', 'Maple Ridge': 'Maple Ridge', Langley: 'Langley',
     Vancouver: 'Vancouver', 'Metro Vancouver': 'Metro Vancouver',
   },
 
-  localityPattern: /vancouver|burnaby|richmond|surrey|delta|north vancouver|west vancouver|new westminster|coquitlam|port coquitlam|lower mainland|metro vancouver|ubc|university of british columbia/,
+  localityPattern: /vancouver|burnaby|richmond|surrey|delta|north vancouver|west vancouver|new westminster|coquitlam|port coquitlam|port moody|maple ridge|langley|lower mainland|metro vancouver|ubc|university of british columbia/,
   localityAmbiguousPattern: /^(?:canada\s*[-–—]?\s*)?(?:remote|hybrid)$|^canada$|^british columbia$|^bc$|^anywhere$|^worldwide$/,
 
   lngScale: 1 / Math.cos((49.27 * Math.PI) / 180),
@@ -133,7 +153,7 @@ export const vancouver: CityConfig = {
   areaAccent: PALETTE.mountainInk,
 
   metaTitle: 'People Are Strange — Vancouver Industry Map',
-  metaDescription: "Metro Vancouver's tech, gaming, clean-tech, life-science and marine employers on one living map — what they build, where they are, and where to look for work.",
+  metaDescription: "Metro Vancouver's tech, gaming, clean-tech, life-science, aerospace and marine employers on one living map — what they build, where they are, and where to look for work.",
   loadingText: 'Mapping Vancouver…',
   csvPrefix: 'vancouver',
 };

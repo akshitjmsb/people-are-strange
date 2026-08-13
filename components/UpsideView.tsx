@@ -36,7 +36,7 @@ export default function UpsideView({ companies, opportunities, loading, onShowOn
             <div>
               <h1 className="font-display text-2xl font-bold sm:text-3xl">Two money paths in {city.name}</h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/65">
-                Compare private-company equity upside with Montréal employers where a senior C$150K total package is genuinely plausible. Signals, never promises.
+                Compare private-company equity upside with {city.name} employers where a senior C$150K total package is genuinely plausible. Signals, never promises.
               </p>
             </div>
             <div className="flex shrink-0 gap-5">

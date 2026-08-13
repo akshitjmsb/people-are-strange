@@ -1,5 +1,7 @@
 import { COMPANIES as MONTREAL_COMPANIES } from './companies-data';
 import { COMPANIES as VANCOUVER_COMPANIES } from './companies-data-vancouver';
+import { COMPANIES as VANCOUVER_ECOSYSTEM_COMPANIES } from './companies-data-vancouver-ecosystem';
+import { COMPANIES as VANCOUVER_HIGH_TECH_COMPANIES } from './companies-data-vancouver-high-tech';
 import { COMPANIES as VICTORIA_COMPANIES } from './companies-data-victoria';
 import { COMPANY_PROFILES } from './company-profiles';
 import { getCity, DEFAULT_CITY_ID } from './cities';
@@ -13,7 +15,7 @@ import type { CityId } from './city-config';
 const DATASETS: Record<CityId, AICompany[]> = {
   montreal: MONTREAL_COMPANIES,
   victoria: VICTORIA_COMPANIES,
-  vancouver: VANCOUVER_COMPANIES,
+  vancouver: [...VANCOUVER_COMPANIES, ...VANCOUVER_ECOSYSTEM_COMPANIES, ...VANCOUVER_HIGH_TECH_COMPANIES],
 };
 
 export function bundledCompanies(city: CityId): AICompany[] {
