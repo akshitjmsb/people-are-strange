@@ -14,6 +14,13 @@
 
 - Always end user-facing task handoffs with clear, concrete next steps.
 
+## City feature parity
+
+- Treat every supported city as a first-class experience at the same feature level.
+- A city is not complete unless it supports the same map, list, matches, upside, search, filtering, mobile, metadata/PWA, validation, and data-quality capabilities as every other city.
+- Build shared functionality through city configuration and shared components; do not introduce city-specific feature gaps.
+- When adding or changing a cross-city feature, verify it for every supported city before handoff.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

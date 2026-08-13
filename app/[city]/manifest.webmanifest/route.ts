@@ -2,7 +2,7 @@
 // One deployment serves several cities, so a single static manifest would
 // install every city under the same name, colour and start_url. Each city
 // gets its own so "Add to Home Screen" produces a Montréal app and a
-// Victoria app, not two identical icons.
+// Victoria or Vancouver app, not several identical icons.
 
 import { NextResponse } from 'next/server';
 import { CITY_IDS, getCity, isCityId } from '@/lib/cities';

@@ -6,9 +6,10 @@
 
 import type { CityConfig, CityId } from '../city-config';
 import { montreal } from './montreal';
+import { vancouver } from './vancouver';
 import { victoria } from './victoria';
 
-const CITIES: Record<CityId, CityConfig> = { montreal, victoria };
+const CITIES: Record<CityId, CityConfig> = { montreal, victoria, vancouver };
 
 /** Every city this build knows about, in display order. */
 export const CITY_IDS = Object.keys(CITIES) as CityId[];

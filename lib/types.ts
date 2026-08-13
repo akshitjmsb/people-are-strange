@@ -1,7 +1,8 @@
 // ── People Are Strange — city industry maps ─────────────────────────────────
 // Multiple cities share one map and one data shape. Each city defines its own
 // industries (Montreal has AI/aerospace/energy/marine/gaming/lifesci; Victoria
-// has tech/defense/ocean/cleantech/government/lifesci). Each company is placed
+// and Vancouver reuse the shared tech, clean-tech, life-science, gaming, and
+// marine vocabulary). Each company is placed
 // on the map with as much real knowledge about it as we can gather.
 
 /** Which industry layer a company belongs to. Drives the top-level toggle and
@@ -11,7 +12,7 @@ export type Industry =
   // Montreal industries
   | 'ai' | 'aerospace' | 'energy' | 'marine' | 'gaming' | 'lifesci'
   | 'financial' | 'enterprise'
-  // Victoria industries
+  // Shared Victoria / Vancouver industries
   | 'tech' | 'defense' | 'ocean' | 'cleantech' | 'government';
 
 /** What kind of player in an ecosystem this is. Drives marker colour. The union
@@ -71,13 +72,13 @@ export type CompanyType =
   | 'ent-saas' // SaaS / enterprise software (Datadog, Workday, Unity)
   | 'ent-telecom' // telecom operator (Bell, Telus, Videotron)
   | 'ent-itservices' // IT services / systems integration (CGI)
-  // ── Victoria: Tech ecosystem ──
+  // ── Victoria / Vancouver: Tech ecosystem ──
   | 'tech-startup' | 'tech-scaleup' | 'tech-enterprise' | 'tech-agency' | 'tech-govtech' | 'tech-platform'
   // ── Victoria: Defense ecosystem ──
   | 'defense-naval' | 'defense-contractor' | 'defense-services' | 'defense-research'
   // ── Victoria: Ocean Tech ecosystem ──
   | 'ocean-tech' | 'ocean-research' | 'ocean-services' | 'ocean-startup'
-  // ── Victoria: CleanTech ecosystem ──
+  // ── Victoria / Vancouver: CleanTech ecosystem ──
   | 'cleantech-utility' | 'cleantech-startup' | 'cleantech-services' | 'cleantech-research'
   // ── Victoria: Government ecosystem ──
   | 'gov-provincial' | 'gov-federal' | 'gov-crown' | 'gov-municipal';
@@ -193,9 +194,9 @@ export type EnterpriseDomain =
   | 'cybersecurity'
   | 'digital-transformation';
 
-// ── Victoria domain types ────────────────────────────────────────────────
+// ── Victoria / Vancouver domain types ────────────────────────────────────
 
-/** Victoria tech capability areas. */
+/** Shared tech capability areas. */
 export type TechDomain =
   | 'saas' | 'fintech' | 'edtech' | 'healthtech' | 'proptech' | 'martech'
   | 'cybersecurity' | 'data-analytics' | 'cloud-infra' | 'devtools'
@@ -215,7 +216,9 @@ export type OceanDomain =
 /** Victoria clean tech capability areas. */
 export type CleanTechDomain =
   | 'clean-water' | 'renewable-energy' | 'grid-management'
-  | 'energy-efficiency' | 'electric-utility' | 'gas-utility';
+  | 'energy-efficiency' | 'electric-utility' | 'gas-utility'
+  | 'hydrogen' | 'carbon-capture' | 'fusion-energy'
+  | 'battery-materials' | 'industrial-decarbonization' | 'mining-tech';
 
 /** Victoria government capability areas. */
 export type GovernmentDomain =

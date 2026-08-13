@@ -5,7 +5,7 @@
 
 import type { Industry, CompanyType } from './types';
 
-export type CityId = 'montreal' | 'victoria';
+export type CityId = 'montreal' | 'victoria' | 'vancouver';
 
 export interface TypeDef {
   key: CompanyType;
@@ -17,7 +17,7 @@ export interface TypeDef {
 
 export interface CityConfig {
   id: CityId;
-  name: string;             // "Montréal" or "Victoria"
+  name: string;             // display name, e.g. "Montréal" or "Vancouver"
   tagline: string;          // one-line descriptor for the brand mark
   mapCenter: [number, number]; // [lat, lng]
   defaultZoom: number;
