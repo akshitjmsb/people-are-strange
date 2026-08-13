@@ -1,5 +1,6 @@
 'use client';
 
+import CitySwitcher from '@/components/CitySwitcher';
 import { useCategories } from '@/lib/use-categories';
 
 export type ViewMode = 'map' | 'list' | 'matches' | 'upside';
@@ -14,9 +15,8 @@ interface Props {
 }
 
 /**
- * Floating bottom toolbar: the Map/List switch plus quick access to the
- * neighborhood picker and the ecosystem dashboard. Thumb-reachable on mobile,
- * centred on desktop; the whole app's extra views hang off this one bar.
+ * Floating bottom controls: the persistent city filter, Map/List switch, and
+ * quick access to the neighborhood picker and ecosystem dashboard.
  */
 export default function ViewSwitcher({
   view,
@@ -27,7 +27,8 @@ export default function ViewSwitcher({
 }: Props) {
   const { AREA_ACCENT } = useCategories();
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[max(0.9rem,env(safe-area-inset-bottom))] z-20 flex justify-center px-3">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[max(0.9rem,env(safe-area-inset-bottom))] z-20 flex flex-col items-center gap-2 px-3">
+      <CitySwitcher />
       <div className="pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-black/5 bg-white/90 p-1.5 shadow-xl backdrop-blur-xl">
         {/* Map / List segmented control */}
         <div className="flex items-center rounded-xl bg-black/[0.04] p-0.5">
