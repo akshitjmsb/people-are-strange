@@ -32,6 +32,60 @@ export interface UpsideAssessment {
 // Annual, company-wide results from primary investor-relations sources. These
 // prove financial capacity, not what a Montreal team will offer one candidate.
 const FINANCIAL_EVIDENCE: Record<string, FinancialEvidence> = {
+  amazon: {
+    entity: 'Amazon',
+    result: 'US$77.7B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://ir.aboutamazon.com/news-release/news-release-details/2026/Amazon-com-Announces-Fourth-Quarter-Results/default.aspx',
+  },
+  apple: {
+    entity: 'Apple',
+    result: 'US$112.0B net income',
+    period: 'FY2025',
+    sourceUrl: 'https://images.apple.com/newsroom/pdfs/fy2025-q4/FY25_Q4_Consolidated_Financial_Statements.pdf',
+  },
+  salesforce: {
+    entity: 'Salesforce',
+    result: 'US$7.46B GAAP net income',
+    period: 'FY2026',
+    sourceUrl: 'https://investor.salesforce.com/news/news-details/2026/Salesforce-Delivers-Record-Fourth-Quarter-Fiscal-2026-Results/default.aspx',
+  },
+  mastercard: {
+    entity: 'Mastercard',
+    result: 'US$14.97B GAAP net income',
+    period: 'FY2025',
+    sourceUrl: 'https://www.sec.gov/Archives/edgar/data/1141391/000114139126000013/ma-20251231.htm',
+  },
+  amd: {
+    entity: 'AMD',
+    result: 'US$4.34B GAAP net income',
+    period: 'FY2025',
+    sourceUrl: 'https://ir.amd.com/news-events/press-releases/detail/1276/amd-reports-fourth-quarter-and-full-year-2025-financial-results',
+  },
+  samsung: {
+    entity: 'Samsung Electronics',
+    result: 'KRW45,200B net profit',
+    period: 'FY2025',
+    sourceUrl: 'https://news.samsung.com/global/fast-facts',
+  },
+  broadcom: {
+    entity: 'Broadcom',
+    result: 'US$26.9B free cash flow',
+    period: 'FY2025',
+    sourceUrl: 'https://investors.broadcom.com/news-releases/news-release-details/broadcom-inc-announces-fourth-quarter-and-fiscal-year-2025',
+  },
+  arista: {
+    entity: 'Arista Networks',
+    result: 'US$3.51B GAAP net income',
+    period: 'FY2025',
+    sourceUrl: 'https://www.arista.com/en/company/news/press-release/23416-pr-20260212',
+  },
+  fortinet: {
+    entity: 'Fortinet',
+    result: 'US$1.85B GAAP net income',
+    period: 'FY2025',
+    sourceUrl: 'https://investor.fortinet.com/news-releases/news-release-details/fortinet-reports-strong-fourth-quarter-and-full-year-2025',
+  },
   'microsoft-research-montreal': {
     entity: 'Microsoft',
     result: 'US$101.8B net income',
@@ -164,6 +218,15 @@ const FINANCIAL_EVIDENCE: Record<string, FinancialEvidence> = {
 // more than a SaaS company while the SaaS company has the stronger pay ceiling
 // for a senior AI/data/product role. These profiles express that distinction.
 const PAY_PROFILES: Record<string, PayProfile> = {
+  amazon: { confidence: 'Exceptional', targetLevel: 'Senior / Principal / Product Manager', marketPoints: 34, roleFitPoints: 20 },
+  apple: { confidence: 'Exceptional', targetLevel: 'Senior / Staff / Engineering Manager', marketPoints: 34, roleFitPoints: 19 },
+  salesforce: { confidence: 'Exceptional', targetLevel: 'Senior / Lead / Product Manager', marketPoints: 32, roleFitPoints: 20 },
+  mastercard: { confidence: 'Strong', targetLevel: 'Senior / Lead / Product Manager', marketPoints: 29, roleFitPoints: 19 },
+  amd: { confidence: 'Exceptional', targetLevel: 'Senior / Principal / Technical Program Manager', marketPoints: 33, roleFitPoints: 19 },
+  samsung: { confidence: 'Strong', targetLevel: 'Senior / Lead / Manager', marketPoints: 29, roleFitPoints: 18 },
+  broadcom: { confidence: 'Exceptional', targetLevel: 'Senior / Principal / Manager', marketPoints: 33, roleFitPoints: 18 },
+  arista: { confidence: 'Strong', targetLevel: 'Senior / Principal / Manager', marketPoints: 31, roleFitPoints: 18 },
+  fortinet: { confidence: 'Strong', targetLevel: 'Senior / Principal / Manager', marketPoints: 29, roleFitPoints: 18 },
   'google-deepmind-montreal': { confidence: 'Exceptional', targetLevel: 'Senior / Staff / Lead', marketPoints: 34, roleFitPoints: 20 },
   'microsoft-research-montreal': { confidence: 'Exceptional', targetLevel: 'Senior / Principal / Manager', marketPoints: 34, roleFitPoints: 20 },
   'meta-fair-montreal': { confidence: 'Exceptional', targetLevel: 'Senior / Staff / Manager', marketPoints: 34, roleFitPoints: 20 },
@@ -199,6 +262,7 @@ const EQUITY_TYPES = new Set<CompanyType>([
   'tech-scaleup',
   'ocean-startup',
   'cleantech-startup',
+  'cleantech-scaleup',
 ]);
 
 const STARTUP_IDENTITY_TYPES = new Set<CompanyType>([
@@ -209,6 +273,7 @@ const STARTUP_IDENTITY_TYPES = new Set<CompanyType>([
   'tech-scaleup',
   'ocean-startup',
   'cleantech-startup',
+  'cleantech-scaleup',
 ]);
 
 const DISQUALIFYING_OWNERSHIP = /public|subsidiary|acquired|government|non-profit|university|cooperative/i;
@@ -317,8 +382,9 @@ export function rankCashCapacity(
 ): UpsideAssessment[] {
   return companies
     .flatMap((company) => {
-      const financialEvidence = FINANCIAL_EVIDENCE[company.id];
-      const payProfile = PAY_PROFILES[company.id];
+      const evidenceKey = company.upsideKey ?? company.id;
+      const financialEvidence = FINANCIAL_EVIDENCE[evidenceKey];
+      const payProfile = PAY_PROFILES[evidenceKey];
       if (!financialEvidence || !payProfile) return [];
       const opportunity = opportunities.get(company.id);
       let score = profitScale(financialEvidence.result) + payProfile.marketPoints + payProfile.roleFitPoints;

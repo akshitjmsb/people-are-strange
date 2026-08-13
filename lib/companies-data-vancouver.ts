@@ -14,6 +14,7 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'microsoft-vancouver',
     name: 'Microsoft Vancouver',
+    upsideKey: 'microsoft-research-montreal',
     industry: 'tech',
     type: 'tech-enterprise',
     lat: 49.2824,
@@ -35,6 +36,7 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'amazon-vancouver',
     name: 'Amazon Vancouver',
+    upsideKey: 'amazon',
     industry: 'tech',
     type: 'tech-enterprise',
     lat: 49.2797,
@@ -55,6 +57,7 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'sap-labs-vancouver',
     name: 'SAP Labs Vancouver',
+    upsideKey: 'sap',
     industry: 'tech',
     type: 'tech-enterprise',
     lat: 49.2757,
@@ -252,6 +255,7 @@ export const COMPANIES: AICompany[] = [
   {
     id: 'fortinet-burnaby',
     name: 'Fortinet (Burnaby)',
+    upsideKey: 'fortinet',
     industry: 'tech',
     type: 'tech-enterprise',
     lat: 49.2608,

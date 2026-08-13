@@ -1,0 +1,227 @@
+import type { AICompany } from './types';
+
+// ── Metro Vancouver multinational and high-tech office layer ────────────────
+// Invest Vancouver maintains a current regional inventory of multinational
+// software, cloud, cybersecurity, semiconductor, electronics, and industrial-
+// technology operations. These are verified Metro Vancouver operations, not
+// companies included merely because they advertise Canada-remote roles.
+
+const HIGH_TECH_SOURCE = 'https://investvancouver.ca/industries/high-tech/Pages/default.aspx';
+const SOFTWARE_SOURCE = 'https://investvancouver.ca/Documents/iv-profile-software.pdf';
+
+type HighTechCompany = Omit<AICompany, 'verifiedAt'>;
+
+const companies: HighTechCompany[] = [
+  {
+    id: 'arista-networks-vancouver', name: 'Arista Networks Vancouver', upsideKey: 'arista',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2827, lng: -123.1164, neighborhood: 'Downtown',
+    oneLiner: 'Cloud-networking company building high-performance switching, routing, and observability platforms.',
+    aiDomains: ['cloud-infra', 'cybersecurity', 'data-analytics'], industries: ['networking', 'cloud infrastructure'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://www.arista.com/en/careers', website: 'https://www.arista.com/',
+    sources: [HIGH_TECH_SOURCE, 'https://www.arista.com/en/careers'],
+  },
+  {
+    id: 'asana-vancouver', name: 'Asana Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2841, lng: -123.1128, neighborhood: 'Downtown',
+    oneLiner: 'Vancouver operation of the global work-management software company.',
+    aiDomains: ['saas', 'ai-ml', 'data-analytics'], industries: ['enterprise software', 'collaboration'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://asana.com/jobs', website: 'https://asana.com/',
+    sources: [HIGH_TECH_SOURCE, 'https://asana.com/jobs'],
+  },
+  {
+    id: 'brex-vancouver', name: 'Brex Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2815, lng: -123.1181, neighborhood: 'Downtown',
+    oneLiner: 'Financial-technology platform for corporate cards, spend management, banking, and travel.',
+    aiDomains: ['fintech', 'saas', 'ai-ml'], industries: ['financial technology', 'expense management'],
+    fundingStage: 'Private', hiring: true, careersUrl: 'https://www.brex.com/careers', website: 'https://www.brex.com/',
+    sources: [HIGH_TECH_SOURCE, 'https://www.brex.com/careers'],
+  },
+  {
+    id: 'cisco-vancouver', name: 'Cisco Systems Vancouver', upsideKey: 'cisco',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2804, lng: -123.1153, neighborhood: 'Downtown',
+    oneLiner: 'Networking, security, collaboration, and cloud-infrastructure teams serving Western Canada.',
+    aiDomains: ['cloud-infra', 'cybersecurity', 'iot'], industries: ['networking', 'enterprise technology'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://jobs.cisco.com/', website: 'https://www.cisco.com/c/en_ca/',
+    sources: [HIGH_TECH_SOURCE, 'https://jobs.cisco.com/'],
+  },
+  {
+    id: 'grammarly-vancouver', name: 'Grammarly Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2860, lng: -123.1167, neighborhood: 'Downtown',
+    oneLiner: 'AI communication-assistance company with a verified Metro Vancouver operation.',
+    aiDomains: ['ai-ml', 'saas', 'devtools'], industries: ['artificial intelligence', 'productivity software'],
+    fundingStage: 'Private', hiring: true, careersUrl: 'https://www.grammarly.com/jobs', website: 'https://www.grammarly.com/',
+    sources: [HIGH_TECH_SOURCE, 'https://www.grammarly.com/jobs'],
+  },
+  {
+    id: 'amd-silo-ai-vancouver', name: 'AMD / Silo AI Vancouver', upsideKey: 'amd', aka: 'Silo AI',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2820, lng: -123.1170, neighborhood: 'Downtown',
+    oneLiner: 'AMD engineering and Silo AI teams working across GPUs, silicon, AI infrastructure, and enterprise AI.',
+    aiDomains: ['ai-ml', 'cloud-infra', 'devtools'], industries: ['semiconductors', 'artificial intelligence'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://careers.amd.com/careers-home/', website: 'https://www.amd.com/',
+    sources: [SOFTWARE_SOURCE, 'https://careers.amd.com/careers-home/jobs/84287'],
+  },
+  {
+    id: 'broadcom-richmond', name: 'Broadcom Richmond', upsideKey: 'broadcom',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.1717, lng: -123.1367, neighborhood: 'Richmond',
+    oneLiner: 'Semiconductor and infrastructure-software operation serving connectivity, data-centre, and enterprise markets.',
+    aiDomains: ['cloud-infra', 'iot', 'cybersecurity'], industries: ['semiconductors', 'infrastructure software'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://www.broadcom.com/company/careers', website: 'https://www.broadcom.com/',
+    sources: [HIGH_TECH_SOURCE, 'https://www.broadcom.com/company/careers'],
+  },
+  {
+    id: 'intel-vancouver', name: 'Intel Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2488, lng: -122.9805, neighborhood: 'Burnaby',
+    oneLiner: 'Metro Vancouver operation of the global semiconductor, computing, and AI-platform company.',
+    aiDomains: ['ai-ml', 'cloud-infra', 'iot'], industries: ['semiconductors', 'computing'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://jobs.intel.com/', website: 'https://www.intel.ca/',
+    sources: [HIGH_TECH_SOURCE, 'https://jobs.intel.com/'],
+  },
+  {
+    id: 'samsung-electronics-vancouver', name: 'Samsung Electronics Vancouver', upsideKey: 'samsung',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2668, lng: -123.0914,
+    address: '565 Great Northern Way, Vancouver, BC', neighborhood: 'False Creek Flats',
+    oneLiner: 'Samsung engineering teams working on SmartThings, cloud platforms, connected devices, and large-scale data systems.',
+    aiDomains: ['cloud-infra', 'iot', 'ai-ml'], industries: ['consumer technology', 'connected devices'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://sec.wd3.myworkdayjobs.com/Samsung_Careers', website: 'https://www.samsung.com/ca/',
+    sources: [HIGH_TECH_SOURCE, 'https://sec.wd3.myworkdayjobs.com/en-US/Samsung_Careers/job/Senior-Site-Reliability-Engineer--SRE-_R116221'],
+  },
+  {
+    id: 'schneider-electric-vancouver', name: 'Schneider Electric Vancouver',
+    industry: 'tech', secondaryIndustries: ['cleantech'], type: 'tech-enterprise', lat: 49.1885, lng: -122.8508, neighborhood: 'Surrey',
+    oneLiner: 'Energy-management and industrial-automation company delivering connected electrical and digital systems.',
+    aiDomains: ['iot', 'energy-efficiency', 'data-analytics'], industries: ['energy management', 'industrial automation'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://www.se.com/ca/en/about-us/careers/overview.jsp', website: 'https://www.se.com/ca/en/',
+    sources: [HIGH_TECH_SOURCE, 'https://www.se.com/ca/en/about-us/careers/overview.jsp'],
+  },
+  {
+    id: 'teledyne-flir-richmond', name: 'Teledyne FLIR Richmond',
+    industry: 'tech', secondaryIndustries: ['aerospace'], type: 'tech-enterprise', lat: 49.1719, lng: -123.1369, neighborhood: 'Richmond',
+    oneLiner: 'Imaging and sensing technology operation building thermal, visible, and intelligent detection systems.',
+    aiDomains: ['iot', 'computer-vision', 'systems'], industries: ['sensors', 'aerospace and defense'],
+    fundingStage: 'Subsidiary of Teledyne', hiring: true, careersUrl: 'https://careers.teledyne.com/', website: 'https://www.flir.ca/',
+    sources: [HIGH_TECH_SOURCE, 'https://careers.teledyne.com/'],
+  },
+  {
+    id: 'asco-aerospace-delta', name: 'ASCO Aerospace Canada',
+    industry: 'aerospace', secondaryIndustries: ['tech'], type: 'tier1', lat: 49.0952, lng: -123.0250, neighborhood: 'Delta',
+    oneLiner: 'Aerospace structures and precision-components operation serving major global aircraft programs.',
+    aiDomains: ['aerostructures', 'manufacturing', 'systems'], industries: ['aerospace manufacturing', 'precision engineering'],
+    fundingStage: 'Subsidiary', website: 'https://www.asco.be/', sources: [HIGH_TECH_SOURCE, 'https://www.asco.be/'],
+  },
+  {
+    id: 'cellcentric-burnaby', name: 'cellcentric Burnaby',
+    industry: 'cleantech', secondaryIndustries: ['tech'], type: 'cleantech-scaleup', lat: 49.2486, lng: -122.9797, neighborhood: 'Burnaby',
+    oneLiner: 'Daimler Truck and Volvo Group fuel-cell venture developing systems for heavy-duty transportation.',
+    aiDomains: ['hydrogen', 'industrial-decarbonization', 'iot'], industries: ['fuel cells', 'heavy transportation'],
+    fundingStage: 'Joint venture', hiring: true, careersUrl: 'https://www.cellcentric.net/en/career/', website: 'https://www.cellcentric.net/',
+    sources: [HIGH_TECH_SOURCE, 'https://www.cellcentric.net/en/career/'],
+  },
+  {
+    id: 'molicel-maple-ridge', name: 'Molicel (E-One Moli Energy)',
+    industry: 'cleantech', secondaryIndustries: ['tech'], type: 'cleantech-scaleup', lat: 49.2193, lng: -122.5984, neighborhood: 'Maple Ridge',
+    oneLiner: 'High-performance lithium-ion cell developer and manufacturer with a long-standing Metro Vancouver base.',
+    aiDomains: ['battery-materials', 'energy-storage'], industries: ['batteries', 'advanced manufacturing'],
+    fundingStage: 'Subsidiary of Taiwan Cement', website: 'https://www.molicel.com/', sources: [HIGH_TECH_SOURCE, 'https://www.molicel.com/'],
+  },
+  {
+    id: 'mongodb-vancouver', name: 'MongoDB Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2838, lng: -123.1139, neighborhood: 'Downtown',
+    oneLiner: 'Developer-data platform company behind MongoDB Atlas and the MongoDB document database.',
+    aiDomains: ['cloud-infra', 'devtools', 'data-analytics'], industries: ['databases', 'developer platforms'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://www.mongodb.com/company/careers', website: 'https://www.mongodb.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.mongodb.com/company/careers'],
+  },
+  {
+    id: 'dropbox-vancouver', name: 'Dropbox Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2799, lng: -123.1195, neighborhood: 'Downtown',
+    oneLiner: 'Cloud content, collaboration, and document-workflow company with a Metro Vancouver presence.',
+    aiDomains: ['cloud-infra', 'saas', 'ai-ml'], industries: ['cloud storage', 'collaboration'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://jobs.dropbox.com/', website: 'https://www.dropbox.com/',
+    sources: [SOFTWARE_SOURCE, 'https://jobs.dropbox.com/'],
+  },
+  {
+    id: 'dialpad-vancouver', name: 'Dialpad Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2764, lng: -123.1179, neighborhood: 'Yaletown',
+    oneLiner: 'AI-powered business communications platform spanning calling, contact centres, meetings, and coaching.',
+    aiDomains: ['ai-ml', 'saas', 'cloud-infra'], industries: ['communications software', 'contact centres'],
+    fundingStage: 'Private', hiring: true, careersUrl: 'https://www.dialpad.com/careers/', website: 'https://www.dialpad.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.dialpad.com/careers/'],
+  },
+  {
+    id: 'darktrace-vancouver', name: 'Darktrace Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2852, lng: -123.1188, neighborhood: 'Downtown',
+    oneLiner: 'AI cybersecurity company detecting and responding to threats across cloud, network, email, and endpoints.',
+    aiDomains: ['cybersecurity', 'ai-ml', 'data-analytics'], industries: ['cybersecurity', 'enterprise software'],
+    fundingStage: 'Private; owned by Thoma Bravo', hiring: true, careersUrl: 'https://careers.darktrace.com/', website: 'https://www.darktrace.com/',
+    sources: [SOFTWARE_SOURCE, 'https://careers.darktrace.com/'],
+  },
+  {
+    id: 'ping-identity-vancouver', name: 'Ping Identity Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2846, lng: -123.1149, neighborhood: 'Downtown',
+    oneLiner: 'Enterprise identity platform providing authentication, authorization, and identity governance.',
+    aiDomains: ['cybersecurity', 'saas', 'cloud-infra'], industries: ['identity security', 'enterprise software'],
+    fundingStage: 'Private; owned by Thoma Bravo', hiring: true, careersUrl: 'https://www.pingidentity.com/en/company/careers.html', website: 'https://www.pingidentity.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.pingidentity.com/en/company/careers.html'],
+  },
+  {
+    id: 'sage-vancouver', name: 'Sage Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2823, lng: -123.1157, neighborhood: 'Downtown',
+    oneLiner: 'Accounting, payroll, and business-management software company serving small and mid-sized organizations.',
+    aiDomains: ['saas', 'fintech', 'ai-ml'], industries: ['accounting software', 'enterprise software'],
+    fundingStage: 'Public company', hiring: true, careersUrl: 'https://www.sage.com/en-ca/company/careers/', website: 'https://www.sage.com/en-ca/',
+    sources: [SOFTWARE_SOURCE, 'https://www.sage.com/en-ca/company/careers/'],
+  },
+  {
+    id: 'diligent-vancouver', name: 'Diligent Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2810, lng: -123.1168, neighborhood: 'Downtown',
+    oneLiner: 'Governance, risk, compliance, audit, and board-management software platform.',
+    aiDomains: ['saas', 'data-analytics', 'cybersecurity'], industries: ['governance technology', 'enterprise software'],
+    fundingStage: 'Private', hiring: true, careersUrl: 'https://www.diligent.com/company/careers', website: 'https://www.diligent.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.diligent.com/company/careers'],
+  },
+  {
+    id: 'cvent-vancouver', name: 'Cvent Vancouver',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2830, lng: -123.1190, neighborhood: 'Downtown',
+    oneLiner: 'Event-management and hospitality technology platform supporting in-person, virtual, and hybrid programs.',
+    aiDomains: ['saas', 'data-analytics', 'martech'], industries: ['event technology', 'hospitality software'],
+    fundingStage: 'Private; owned by Blackstone', hiring: true, careersUrl: 'https://www.cvent.com/en/careers', website: 'https://www.cvent.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.cvent.com/en/careers'],
+  },
+  {
+    id: 'aquanow-vancouver', name: 'Aquanow',
+    industry: 'tech', type: 'tech-scaleup', lat: 49.2847, lng: -123.1180, neighborhood: 'Downtown',
+    oneLiner: 'Vancouver-headquartered digital-asset infrastructure and liquidity platform for institutions.',
+    aiDomains: ['fintech', 'cloud-infra', 'data-analytics'], industries: ['digital assets', 'financial infrastructure'],
+    fundingStage: 'Private', hiring: true, careersUrl: 'https://www.aquanow.com/careers', website: 'https://www.aquanow.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.aquanow.com/careers'],
+  },
+  {
+    id: 'avigilon-motorola-vancouver', name: 'Avigilon / Motorola Solutions',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2675, lng: -123.0900, neighborhood: 'False Creek Flats',
+    oneLiner: 'Vancouver-founded video-security and analytics operation within Motorola Solutions.',
+    aiDomains: ['computer-vision', 'ai-ml', 'iot'], industries: ['physical security', 'video analytics'],
+    fundingStage: 'Subsidiary of Motorola Solutions', hiring: true, careersUrl: 'https://www.motorolasolutions.com/en_us/about/careers.html', website: 'https://www.avigilon.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.motorolasolutions.com/en_us/about/careers.html'],
+  },
+  {
+    id: 'copperleaf-vancouver', name: 'Copperleaf / IFS',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2761, lng: -123.1191, neighborhood: 'Yaletown',
+    oneLiner: 'Vancouver-founded decision-analytics software for planning and managing critical infrastructure investments.',
+    aiDomains: ['data-analytics', 'saas', 'ai-ml'], industries: ['asset investment planning', 'enterprise software'],
+    fundingStage: 'Subsidiary of IFS', hiring: true, careersUrl: 'https://www.copperleaf.com/careers/', website: 'https://www.copperleaf.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.copperleaf.com/careers/'],
+  },
+  {
+    id: 'paybyphone-vancouver', name: 'PayByPhone',
+    industry: 'tech', type: 'tech-enterprise', lat: 49.2680, lng: -123.1017, neighborhood: 'Mount Pleasant',
+    oneLiner: 'Vancouver-founded mobile parking-payment and mobility platform operating in cities worldwide.',
+    aiDomains: ['fintech', 'saas', 'gis-geospatial'], industries: ['mobility', 'payments'],
+    fundingStage: 'Subsidiary of Corpay', hiring: true, careersUrl: 'https://www.paybyphone.co.uk/about/careers', website: 'https://www.paybyphone.com/',
+    sources: [SOFTWARE_SOURCE, 'https://www.paybyphone.co.uk/about/careers'],
+  },
+];
+
+export const COMPANIES: AICompany[] = companies.map((company) => ({
+  ...company,
+  verifiedAt: '2026-08',
+}));

@@ -79,7 +79,7 @@ export type CompanyType =
   // ── Victoria: Ocean Tech ecosystem ──
   | 'ocean-tech' | 'ocean-research' | 'ocean-services' | 'ocean-startup'
   // ── Victoria / Vancouver: CleanTech ecosystem ──
-  | 'cleantech-utility' | 'cleantech-startup' | 'cleantech-services' | 'cleantech-research'
+  | 'cleantech-utility' | 'cleantech-startup' | 'cleantech-scaleup' | 'cleantech-services' | 'cleantech-research'
   // ── Victoria: Government ecosystem ──
   | 'gov-provincial' | 'gov-federal' | 'gov-crown' | 'gov-municipal';
 
@@ -263,6 +263,9 @@ export interface AICompany {
   id: string;
   name: string;
   aka?: string; // former / alternate name (e.g. "ex-Element AI")
+  /** Canonical key for shared compensation / financial evidence when several
+   *  city records represent the same parent company. Defaults to `id`. */
+  upsideKey?: string;
 
   // Which industry layer this belongs to (drives the marker's home lens and
   // `type` must be one of that industry's CompanyTypes). Optional for

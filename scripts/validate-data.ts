@@ -87,7 +87,9 @@ for (const { cityId, city, company: c } of companyRows) {
   if (seenIds.has(c.id)) err(`duplicate id "${c.id}" — also used by ${seenIds.get(c.id)}`);
   else seenIds.set(c.id, c.name);
 
-  const nameKey = c.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  // The same parent employer can legitimately have a record in several city
+  // maps. Only flag duplicate display names inside the same city.
+  const nameKey = `${cityId}:${c.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
   if (seenNames.has(nameKey)) warn('duplicate name', `"${c.name}" — also ${seenNames.get(nameKey)}`);
   else seenNames.set(nameKey, c.id);
 
