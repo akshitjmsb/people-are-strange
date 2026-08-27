@@ -87,7 +87,7 @@ export async function getResumeSyncStatus(database: DB = db): Promise<ResumeSync
   };
 }
 
-/** Fetch PAS_Resume_MASTER and rebuild the profile only when its revision changed. */
+/** Fetch the PAS resume sync mirror and rebuild the profile only when its revision changed. */
 export async function syncResumeProfile(database: DB = db): Promise<ResumeSyncResult> {
   const checkedAt = new Date().toISOString();
   const { connection, stored } = await currentRows(database);

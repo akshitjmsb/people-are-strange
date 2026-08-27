@@ -39,9 +39,9 @@ export default async function ResumeSettingsPage(
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-plateau-pink">
             Resume source of truth
           </p>
-          <h1 className="mt-2 font-display text-3xl font-bold">Connect PAS_Resume_MASTER</h1>
+          <h1 className="mt-2 font-display text-3xl font-bold">Connect PAS resume sync</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-asphalt/60">
-            Connect Google once. PAS will check the master Doc whenever Matches opens and during the daily job refresh, then rebuild matching signals when the revision changes.
+            Connect Google once. PAS will check the text mirror of your master PDF whenever Matches opens and during the daily job refresh, then rebuild matching signals when the revision changes.
           </p>
 
           {message && (
@@ -65,7 +65,7 @@ export default async function ResumeSettingsPage(
               rel="noopener noreferrer"
               className="mt-1 inline-block font-bold underline decoration-asphalt/20 underline-offset-4"
             >
-              PAS_Resume_MASTER ↗
+              PAS_Resume_SYNC_SOURCE ↗
             </a>
             <p className="mt-1 text-xs text-asphalt/50">Only read-only Google Docs access is requested.</p>
           </div>

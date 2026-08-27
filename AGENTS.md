@@ -3,11 +3,10 @@
 ## Resume source of truth
 
 - Use the `$pas-resume-coach` skill when Akshit starts a resume-refinement session, asks to work on his resume, approves resume edits, or asks for resume-to-role matching.
-- When Akshit says "my resume", use the latest content from the connected Google Drive folder `PAS_Resume`.
-- The editable source of truth is the Google Doc `PAS_Resume_MASTER` (file ID `1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc`).
-- `PAS_Resume_CURRENT.pdf` (file ID `1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne`) is the current export for applications, not the editing source.
-- Fetch the Google Doc again at the start of resume, job-search, or role-matching work so the task uses the latest revision; do not rely on a copy remembered from an earlier chat.
-- When resume edits are approved, update `PAS_Resume_MASTER`. Refresh `PAS_Resume_CURRENT.pdf` only when Akshit asks to create or update the application-ready export.
+- When Akshit says "my resume", use `PAS_Resume_MASTER.pdf` (file ID `1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne`) from the connected Google Drive folder `PAS_Resume`.
+- `PAS_Resume_MASTER.pdf` is the only canonical resume and the application-ready file. Fetch it again at the start of resume, job-search, or role-matching work; do not rely on remembered text or an older export.
+- `PAS_Resume_SYNC_SOURCE` (Google Doc ID `1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc`) is a text mirror used only because PAS currently ingests Google Docs. It is not a second master and must not override the PDF.
+- Keep proposed edits as drafts until approved. After approval, update the master PDF first, then mirror its approved resume text into `PAS_Resume_SYNC_SOURCE` and verify both artifacts.
 - If Google Drive is unavailable or disconnected, say so instead of silently using stale resume text.
 
 ## Communication
