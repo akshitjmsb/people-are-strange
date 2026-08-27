@@ -1,4 +1,4 @@
-// Generated from the canonical Google Doc PAS_Resume_MASTER. This contains
+// Generated from the Google Doc text mirror of PAS_Resume_MASTER.pdf. This contains
 // only matching signals — never contact details or the resume's full text.
 // The source revision makes stale profile data visible instead of pretending
 // an old snapshot is current.
@@ -33,7 +33,7 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
   yearsExperience: 10,
   location: 'Montréal, QC',
   source: {
-    title: 'PAS_Resume_MASTER',
+    title: 'PAS_Resume_SYNC_SOURCE',
     documentId: '1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc',
     url: 'https://docs.google.com/document/d/1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc',
     revisionId: 'AIroW362n0XbfeKqzA2zTSkmFXqp5LJYjpd8VkghHGafjUkO0pcILDEdD0Gwabm3PLoGDwJ-qi835Yom-U_CHKTmU9ZjV0dTABB36qIXgA',
@@ -171,7 +171,7 @@ export function buildCandidateProfileFromResume(
     yearsExperience: yearsMatch ? Number.parseInt(yearsMatch[1], 10) : CANDIDATE_PROFILE.yearsExperience,
     location,
     source: {
-      title: source.title || 'PAS_Resume_MASTER',
+      title: source.title || 'PAS_Resume_SYNC_SOURCE',
       documentId: source.documentId,
       url: `https://docs.google.com/document/d/${source.documentId}`,
       revisionId: source.revisionId,
