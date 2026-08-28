@@ -77,6 +77,9 @@ export async function GET(req: Request) {
           state: resume.state,
           connected: resume.connected,
           checkedAt: resume.checkedAt,
+          syncedAt: resume.syncedAt,
+          requiresReconnect: resume.requiresReconnect,
+          usingLastKnownGood: resume.usingLastKnownGood,
         },
         profile: {
           name: resume.profile.name,

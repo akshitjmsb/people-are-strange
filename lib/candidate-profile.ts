@@ -20,6 +20,7 @@ export interface CandidateProfile {
     url: string;
     revisionId: string;
     syncedAt: string;
+    parserVersion?: number;
   };
   targetTitles: CandidateSignal[];
   skills: CandidateSignal[];
@@ -27,10 +28,12 @@ export interface CandidateProfile {
   domains: CandidateSignal[];
 }
 
+export const CANDIDATE_PROFILE_PARSER_VERSION = 2;
+
 export const CANDIDATE_PROFILE: CandidateProfile = {
   name: 'Akshit Gupta',
-  headline: 'AI Data Product Owner',
-  yearsExperience: 10,
+  headline: 'DATA PRODUCT & AI STRATEGY LEADER | MBA',
+  yearsExperience: 11,
   location: 'Montréal, QC',
   source: {
     title: 'PAS_Resume_SYNC_SOURCE',
@@ -38,6 +41,7 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
     url: 'https://docs.google.com/document/d/1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc',
     revisionId: 'AIroW362n0XbfeKqzA2zTSkmFXqp5LJYjpd8VkghHGafjUkO0pcILDEdD0Gwabm3PLoGDwJ-qi835Yom-U_CHKTmU9ZjV0dTABB36qIXgA',
     syncedAt: '2026-08-08T04:07:07.140Z',
+    parserVersion: CANDIDATE_PROFILE_PARSER_VERSION,
   },
   targetTitles: [
     { label: 'AI Data Product Owner', patterns: ['ai data product owner'], weight: 30 },
@@ -151,7 +155,7 @@ export function buildCandidateProfileFromResume(
 ): CandidateProfile {
   const lines = resumeText
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .map((line) => line.replace(/^\uFEFF/, '').trim())
     .filter(Boolean);
   const yearsMatch = resumeText.match(/(\d{1,2})\+?\s+years?/i);
   const contactLine = lines.slice(0, 6).find((line) => /Montr[ée]al|\bQC\b/i.test(line));
@@ -161,7 +165,8 @@ export function buildCandidateProfileFromResume(
     return filtered.length ? filtered : signals;
   };
   const titleLine = lines.slice(1, 6).find((line) =>
-    /product owner|product manager|data governance/i.test(line),
+    /product|data|ai|strategy|leader|manager|owner|governance/i.test(line)
+    && !/@|https?:|linkedin|github|\+\d|Montr[ée]al|\bQC\b/i.test(line),
   );
   const dynamicCompetencies = extractCompetencies(lines);
 
@@ -176,6 +181,7 @@ export function buildCandidateProfileFromResume(
       url: `https://docs.google.com/document/d/${source.documentId}`,
       revisionId: source.revisionId,
       syncedAt: source.syncedAt,
+      parserVersion: CANDIDATE_PROFILE_PARSER_VERSION,
     },
     targetTitles: evidenced(CANDIDATE_PROFILE.targetTitles),
     skills: mergeSignals(evidenced(CANDIDATE_PROFILE.skills), dynamicCompetencies),

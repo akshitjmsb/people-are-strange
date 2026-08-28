@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 const ERRORS: Record<string, string> = {
   missing_config: 'Google sync needs the environment variables listed below.',
   invalid_state: 'The connection expired or could not be verified. Please try again.',
+  missing_access_token: 'Google did not return a usable access token. Please try again.',
   missing_refresh_token: 'Google did not return long-term access. Please connect again and approve access.',
   identity_check_failed: 'Google could not confirm the account identity.',
   wrong_account: 'That is not the configured resume-owner Google account.',
@@ -44,18 +45,11 @@ export default async function ResumeSettingsPage(
             Connect Google once. PAS will check the text mirror of your master PDF whenever Matches opens and during the daily job refresh, then rebuild matching signals when the revision changes.
           </p>
 
-          {message && (
-            <div className="mt-5 rounded-2xl bg-plateau-pink/10 p-4 text-sm font-semibold text-plateau-pink">
-              {message}
-            </div>
-          )}
-          {searchParams.connected === '1' && (
-            <div className="mt-5 rounded-2xl bg-parc-emerald/10 p-4 text-sm font-semibold text-parc-emerald">
-              Google Drive is connected and the latest resume revision has been synced.
-            </div>
-          )}
-
-          <ResumeConnectionStatus configured={configured} />
+          <ResumeConnectionStatus
+            configured={configured}
+            oauthMessage={message}
+            connectionCompleted={searchParams.connected === '1'}
+          />
 
           <div className="mt-6 rounded-2xl border border-black/5 bg-snow-white p-4">
             <p className="text-xs font-black uppercase tracking-wider text-asphalt/40">Active document</p>
@@ -72,7 +66,7 @@ export default async function ResumeSettingsPage(
 
         </section>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-6 shadow-sm sm:p-8">
+        {!configured && <section className="mt-4 rounded-3xl border border-black/5 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="font-display text-xl font-bold">One-time setup</h2>
           <ol className="mt-4 space-y-4 text-sm leading-relaxed text-asphalt/70">
             <SetupStep number="1">
@@ -97,7 +91,7 @@ RESUME_TOKEN_ENCRYPTION_KEY=<run: openssl rand -base64 32>`}</pre>
           <p className="mt-4 text-xs leading-relaxed text-asphalt/45">
             Optional: PAS_RESUME_DOCUMENT_ID overrides the built-in master Doc ID. Do not place secrets in NEXT_PUBLIC_ variables.
           </p>
-        </section>
+        </section>}
       </div>
     </main>
   );

@@ -76,7 +76,7 @@ async function runRefresh(req: Request, trigger: 'cron' | 'manual') {
   try {
     const [result, resume] = await Promise.all([
       refreshRoles(db, { trigger, dryRun }),
-      syncResumeProfile(db),
+      syncResumeProfile(db, { force: true }),
     ]);
     // A run where every board failed is a real failure, even though it was
     // handled — surface it as 500 so a cron alert can catch a total outage.

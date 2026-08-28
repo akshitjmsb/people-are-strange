@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
@@ -25,6 +26,7 @@ function matchesState(expected: string | undefined, actual: string | null): bool
 function finish(req: NextRequest, query: string) {
   const response = NextResponse.redirect(new URL(`/settings/resume?${query}`, req.url));
   response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
+  response.headers.set('Cache-Control', 'no-store');
   return response;
 }
 
@@ -38,9 +40,7 @@ export async function GET(req: NextRequest) {
     const config = googleOAuthConfig(req.nextUrl.origin);
     const oauth = googleOAuthClient(config);
     const { tokens } = await oauth.getToken(code);
-    if (!tokens.refresh_token || !tokens.access_token) {
-      return finish(req, 'error=missing_refresh_token');
-    }
+    if (!tokens.access_token) return finish(req, 'error=missing_access_token');
 
     const userResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
@@ -55,8 +55,19 @@ export async function GET(req: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const encrypted = encryptSecret(tokens.refresh_token);
-    const scopes = tokens.scope?.split(/\s+/).filter(Boolean) ?? [...GOOGLE_OAUTH_SCOPES];
+    const [existing] = await db.select().from(googleDriveConnections)
+      .where(eq(googleDriveConnections.id, 'primary')).limit(1);
+    if (!tokens.refresh_token && (!existing || existing.ownerEmail !== email)) {
+      return finish(req, 'error=missing_refresh_token');
+    }
+    const encrypted = tokens.refresh_token ? encryptSecret(tokens.refresh_token) : {
+      ciphertext: existing!.encryptedRefreshToken,
+      iv: existing!.tokenIv,
+      authTag: existing!.tokenAuthTag,
+    };
+    const scopes = tokens.scope?.split(/\s+/).filter(Boolean)
+      ?? existing?.scopes
+      ?? [...GOOGLE_OAUTH_SCOPES];
     const [savedConnection] = await db.insert(googleDriveConnections).values({
       id: 'primary',
       ownerEmail: email,
@@ -82,7 +93,7 @@ export async function GET(req: NextRequest) {
     if (!savedConnection) throw new Error('Google connection was not persisted');
     console.log('[google/callback] encrypted Google connection persisted');
 
-    const sync = await syncResumeProfile(db);
+    const sync = await syncResumeProfile(db, { force: true });
     console.log('[google/callback] initial resume sync finished:', sync.state);
     return finish(
       req,

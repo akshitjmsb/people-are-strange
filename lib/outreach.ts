@@ -60,7 +60,8 @@ function naturalHeadline(value: string): string {
   return value
     .toLowerCase()
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
-    .replace(/\bAi\b/g, 'AI');
+    .replace(/\bAi\b/g, 'AI')
+    .replace(/\s*\|\s*Mba\b/g, '');
 }
 
 export function buildOutreachDraft({ profile, company, person, match }: DraftInput): string {
