@@ -58,13 +58,13 @@ export async function POST(request: Request) {
     if (!company) {
       return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
-    if (!resume.connected) {
+    if (!resume.connected || resume.requiresReconnect) {
       return NextResponse.json(
         { error: 'Connect Google Drive before drafting from your latest resume.' },
         { status: 409 },
       );
     }
-    if (resume.state === 'stale') {
+    if (resume.state === 'degraded') {
       return NextResponse.json(
         { error: 'PAS could not verify the latest resume revision. Check Resume sync and try again.' },
         { status: 503 },

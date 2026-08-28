@@ -14,6 +14,12 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const config = googleOAuthConfig(req.nextUrl.origin);
+    const callbackOrigin = new URL(config.redirectUri).origin;
+    if (req.nextUrl.origin !== callbackOrigin) {
+      return NextResponse.redirect(new URL('/api/google/connect', callbackOrigin), {
+        headers: { 'Cache-Control': 'no-store' },
+      });
+    }
     const state = randomBytes(32).toString('base64url');
     const authUrl = googleOAuthClient(config).generateAuthUrl({
       access_type: 'offline',
@@ -26,10 +32,12 @@ export async function GET(req: NextRequest) {
     response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: new URL(config.redirectUri).protocol === 'https:',
       path: '/',
-      maxAge: 10 * 60,
+      maxAge: 15 * 60,
+      priority: 'high',
     });
+    response.headers.set('Cache-Control', 'no-store');
     return response;
   } catch (error) {
     console.error('[google/connect] OAuth setup failed:', error instanceof Error ? error.message : error);

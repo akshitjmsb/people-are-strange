@@ -111,7 +111,11 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
                 href="/settings/resume"
                 className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
               >
-                {data.resumeSync.connected ? 'Resume sync settings' : 'Connect automatic resume sync'}
+                {data.resumeSync.requiresReconnect
+                  ? 'Reconnect resume sync'
+                  : data.resumeSync.connected
+                    ? 'Resume sync settings'
+                    : 'Connect automatic resume sync'}
               </Link>
             </div>
           )}

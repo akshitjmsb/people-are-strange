@@ -1,4 +1,5 @@
 import type { JobMatch, MatchBand } from './job-matching';
+import type { ResumeSyncState } from './resume-sync';
 
 export type OpportunityLens = 'matches' | 'hiring' | 'all';
 
@@ -9,9 +10,12 @@ export interface JobsResponse {
   strongMatches: number;
   refreshedAt: string | null;
   resumeSync: {
-    state: 'current' | 'updated' | 'stale' | 'not_connected';
+    state: ResumeSyncState;
     connected: boolean;
     checkedAt: string | null;
+    syncedAt: string | null;
+    requiresReconnect: boolean;
+    usingLastKnownGood: boolean;
     error?: string;
   };
   profile: {
