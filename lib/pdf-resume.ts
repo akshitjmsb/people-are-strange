@@ -38,6 +38,10 @@ export async function extractResumePdfText(data: Uint8Array): Promise<string> {
       Path2D: canvas.Path2D,
     });
   }
+  // Register the in-process worker explicitly. pdfjs otherwise resolves its
+  // fake worker through a runtime-relative dynamic import that is not present
+  // in a bundled Vercel function.
+  await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
   const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loadingTask = getDocument({
     data,
