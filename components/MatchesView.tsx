@@ -33,18 +33,21 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
   const cityId = useCityId();
   const [data, setData] = useState<JobsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function loadMatches() {
+    const response = await fetch(`/api/jobs?city=${encodeURIComponent(cityId)}`, { cache: 'no-store' });
+    const payload = await response.json() as JobsResponse;
+    if (!response.ok) throw new Error(payload.error ?? 'Could not load job matches');
+    return payload;
+  }
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setError(null);
-    fetch(`/api/jobs?city=${encodeURIComponent(cityId)}`, { cache: 'no-store' })
-      .then(async (response) => {
-        const payload = await response.json() as JobsResponse;
-        if (!response.ok) throw new Error(payload.error ?? 'Could not load job matches');
-        return payload;
-      })
+    loadMatches()
       .then((payload) => {
         if (alive) setData(payload);
       })
@@ -56,6 +59,18 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
       });
     return () => { alive = false; };
   }, [cityId]);
+
+  async function refreshMatches() {
+    setRefreshing(true);
+    setError(null);
+    try {
+      setData(await loadMatches());
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const visibleMatches = focusCompanyId
     ? data?.matches.filter((match) => match.companyId === focusCompanyId) ?? []
@@ -88,35 +103,58 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
           </div>
 
           {data?.profile && (
-            <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-black/5 pt-4 text-[11px] font-semibold text-asphalt/55">
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
-                data.resumeSync.state === 'current' || data.resumeSync.state === 'updated'
-                  ? 'bg-parc-emerald/10 text-parc-emerald'
-                  : 'bg-montroyal-amber/15 text-montroyal-amber'
-              }`}>
-                <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                {data.profile.headline}
-              </span>
-              <a
-                href={data.profile.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
-              >
-                {data.profile.sourceTitle}
-              </a>
-              <span>resume {ago(data.profile.syncedAt)}</span>
-              <span>jobs {ago(data.refreshedAt)}</span>
-              <Link
-                href="/settings/resume"
-                className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
-              >
-                {data.resumeSync.requiresReconnect
-                  ? 'Reconnect resume sync'
-                  : data.resumeSync.connected
-                    ? 'Resume sync settings'
-                    : 'Connect automatic resume sync'}
-              </Link>
+            <div className="mt-5 border-t border-black/5 pt-4">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-semibold text-asphalt/55">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
+                  data.resumeSync.state === 'current' || data.resumeSync.state === 'updated'
+                    ? 'bg-parc-emerald/10 text-parc-emerald'
+                    : 'bg-montroyal-amber/15 text-montroyal-amber'
+                }`}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                  {data.profile.headline}
+                </span>
+                <a
+                  href={data.profile.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
+                >
+                  {data.profile.sourceTitle}
+                </a>
+                <span>resume {ago(data.profile.syncedAt)}</span>
+                <span>jobs {ago(data.refreshedAt)}</span>
+                <Link
+                  href="/settings/resume"
+                  className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
+                >
+                  {data.resumeSync.requiresReconnect
+                    ? 'Reconnect resume sync'
+                    : data.resumeSync.connected
+                      ? 'Resume sync settings'
+                      : 'Connect automatic resume sync'}
+                </Link>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
+                <button
+                  type="button"
+                  onClick={refreshMatches}
+                  disabled={refreshing}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-asphalt px-5 py-2.5 text-xs font-black text-white transition hover:bg-asphalt/85 disabled:cursor-wait disabled:opacity-60"
+                >
+                  <span className={refreshing ? 'animate-spin' : ''} aria-hidden>↻</span>
+                  {refreshing ? 'Matching latest resume…' : 'Refresh hiring matches'}
+                </button>
+                <a
+                  href="https://github.com/akshitjmsb/people-are-strange/actions/workflows/refresh-roles.yml"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-xs font-black text-asphalt transition hover:border-black/20 hover:bg-asphalt/[0.03]"
+                >
+                  View refresh executions
+                  <span aria-hidden>↗</span>
+                </a>
+              </div>
             </div>
           )}
         </header>
