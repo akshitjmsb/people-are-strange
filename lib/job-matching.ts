@@ -62,11 +62,17 @@ function matchingSignals(text: string, signals: CandidateSignal[]): CandidateSig
 }
 
 function bandFor(score: number): MatchBand {
-  if (score >= 78) return 'strong';
-  if (score >= 58) return 'good';
+  if (score >= 76) return 'strong';
+  if (score >= 60) return 'good';
   if (score >= 42) return 'stretch';
   return 'low';
 }
+
+const LEADERSHIP_TITLE = /\b(senior|sr|lead|principal|manager|owner|head|director|directeur|directrice|gestionnaire|responsable)\b/;
+const MANAGEMENT_TITLE = /\b(manager|owner|head|director|vice president|vp|directeur|directrice|gestionnaire|responsable)\b/;
+const IMPLEMENTATION_TITLE = /\b(engineer|developer|scientist|architect|analyst|specialist|designer|artist|accountant|recruiter|ingenieur|ingenieure|developpeur|developpeuse|scientifique|architecte|analyste|specialiste)\b/;
+const OFF_TARGET_TITLE = /\b(account executive|sales|marketing|recruiter|talent acquisition|human resources|artist|animator|producer|production supervisor|writer|translator|audio operations)\b/;
+const MANAGEMENT_SCOPE = /\b(portfolio|roadmap|strategy|governance|stakeholder|cross functional|executive|transformation|prioritization|operating model|change management|product management|program management)\b/;
 
 export function matchJob(
   job: MatchableJob,
@@ -77,7 +83,7 @@ export function matchJob(
   const usOnly = /\b(remote usa|remote us|united states only|must be (based|located) in (the )?(us|usa|united states)|authorized to work in (the )?(us|usa|united states))\b/.test(body);
 
   const titleSignals = matchingSignals(title, profile.targetTitles);
-  const titleScore = Math.min(45, Math.max(0, ...titleSignals.map((signal) => signal.weight * 1.6)));
+  const titleScore = Math.min(50, Math.max(0, ...titleSignals.map((signal) => signal.weight * 1.6)));
 
   const skills = matchingSignals(body, profile.skills);
   const skillScore = Math.min(20, skills.reduce((sum, signal) => sum + signal.weight, 0));
@@ -88,24 +94,33 @@ export function matchJob(
   const domains = matchingSignals(body, profile.domains);
   const domainScore = Math.min(10, domains.reduce((sum, signal) => sum + signal.weight, 0));
 
-  let seniorityScore = 6;
-  if (/\b(senior|sr|lead|principal)\b/.test(title)) seniorityScore = 10;
-  if (/\b(director|head|vice president|vp)\b/.test(title)) seniorityScore = 7;
+  let seniorityScore = LEADERSHIP_TITLE.test(title) ? 8 : 3;
+  if (/\b(senior|sr|lead|principal|gestionnaire principal)\b/.test(title)) seniorityScore = 11;
+  if (/\b(director|head|vice president|vp|directeur|directrice)\b/.test(title)) seniorityScore = 10;
   if (/\b(junior|jr|intern|student|graduate|entry level)\b/.test(title)) seniorityScore = 0;
 
-  const locationScore = job.locality === 'here' ? 10 : job.locality === 'maybe' ? 6 : 0;
+  const locationScore = job.locality === 'here' ? 8 : job.locality === 'maybe' ? 5 : 0;
+  const managementScopeScore = MANAGEMENT_SCOPE.test(body) ? 6 : 0;
   let penalty = 0;
-  if (/\b(junior|jr|intern|student|graduate|entry level)\b/.test(title)) penalty += 20;
-  if (titleScore === 0 && /\b(engineer|developer|scientist|designer|artist|accountant|recruiter)\b/.test(title)) penalty += 12;
+  if (/\b(junior|jr|intern|student|graduate|entry level)\b/.test(title)) penalty += 30;
+  if (IMPLEMENTATION_TITLE.test(title) && !MANAGEMENT_TITLE.test(title)) penalty += 24;
+  if (OFF_TARGET_TITLE.test(title)) penalty += 32;
   if (usOnly) penalty += 35;
 
-  const score = Math.max(
+  let score = Math.max(
     0,
-    Math.min(100, Math.round(titleScore + skillScore + responsibilityScore + domainScore + seniorityScore + locationScore - penalty)),
+    Math.min(100, Math.round(titleScore + skillScore + responsibilityScore + domainScore + seniorityScore + locationScore + managementScopeScore - penalty)),
   );
+
+  // A role without a credible target-title family is not a resume match,
+  // regardless of generic words such as stakeholder, operations or data in
+  // the description. This prevents sales and engineering roles from floating
+  // above real product-management openings.
+  if (titleSignals.length === 0) score = Math.min(score, 39);
 
   const reasons: string[] = [];
   if (titleSignals[0]) reasons.push(`Role aligns with ${titleSignals[0].label}`);
+  if (managementScopeScore) reasons.push('Management-led scope: strategy, governance or cross-functional delivery');
   if (responsibilities.length) reasons.push(`Relevant ownership: ${responsibilities.slice(0, 2).map((s) => s.label).join(' and ')}`);
   if (skills.length) reasons.push(`Resume evidence for ${skills.slice(0, 4).map((s) => s.label).join(', ')}`);
   if (domains.length) reasons.push(`Domain overlap: ${domains.slice(0, 2).map((s) => s.label).join(' and ')}`);
@@ -120,6 +135,7 @@ export function matchJob(
     .filter((signal) => !signal.patterns.some((pattern) => candidatePatterns.has(normalize(pattern))))
     .map((signal) => signal.label)
     .slice(0, 3);
+  if (IMPLEMENTATION_TITLE.test(title) && !MANAGEMENT_TITLE.test(title)) gaps.unshift('Hands-on implementation role');
   if (usOnly) gaps.unshift('US-only location or work authorization');
 
   const descriptionLength = job.description?.length ?? 0;

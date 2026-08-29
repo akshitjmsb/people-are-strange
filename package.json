@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:resume-sync": "node --import tsx --test tests/resume-sync-*.test.ts",
+    "test:matching": "node --import tsx --test tests/job-matching.test.ts tests/resume-sync-profile.test.ts",
     "validate": "tsx scripts/validate-data.ts",
     "check:links": "tsx scripts/check-links.ts",
     "roles:refresh": "tsx scripts/refresh-roles.ts",
