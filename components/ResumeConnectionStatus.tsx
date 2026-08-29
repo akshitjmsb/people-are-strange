@@ -1,6 +1,6 @@
 'use client';
+/* eslint-disable @next/next/no-html-link-for-pages -- OAuth requires a document navigation. */
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import ResumeFilePicker from './ResumeFilePicker';
 
@@ -155,7 +155,7 @@ export default function ResumeConnectionStatus({
           </button>
         )}
         {status && (!status.connected || reconnectRequired) && (
-          <Link
+          <a
             href="/api/google/connect"
             className={`inline-flex rounded-full px-5 py-3 text-sm font-bold text-white ${
               configured ? 'bg-asphalt hover:bg-asphalt/85' : 'pointer-events-none bg-asphalt/25'
@@ -163,15 +163,15 @@ export default function ResumeConnectionStatus({
             aria-disabled={!configured}
           >
             {reconnectRequired ? 'Reconnect Google Drive' : 'Connect Google Drive'}
-          </Link>
+          </a>
         )}
         {status?.connected && !reconnectRequired && !selectionRequired && (
-          <Link
+          <a
             href="/api/google/connect"
             className="px-2 py-3 text-xs font-bold text-asphalt/45 underline decoration-asphalt/20 underline-offset-4 hover:text-asphalt"
           >
             Change selected PDF
-          </Link>
+          </a>
         )}
       </div>
     </>
