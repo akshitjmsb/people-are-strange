@@ -28,7 +28,7 @@ export interface CandidateProfile {
   domains: CandidateSignal[];
 }
 
-export const CANDIDATE_PROFILE_PARSER_VERSION = 3;
+export const CANDIDATE_PROFILE_PARSER_VERSION = 4;
 
 export const CANDIDATE_PROFILE: CandidateProfile = {
   name: 'Akshit Gupta',
@@ -44,14 +44,83 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
     parserVersion: CANDIDATE_PROFILE_PARSER_VERSION,
   },
   targetTitles: [
-    { label: 'AI Data Product Owner', patterns: ['ai data product owner'], weight: 30 },
-    { label: 'Data Product Owner', patterns: ['data product owner'], weight: 29 },
-    { label: 'AI Product Manager', patterns: ['ai product manager', 'product manager ai', 'product manager artificial intelligence'], weight: 28 },
-    { label: 'Data Product Manager', patterns: ['data product manager', 'product manager data'], weight: 28 },
-    { label: 'Product Owner', patterns: ['product owner'], weight: 26 },
-    { label: 'Technical Product Manager', patterns: ['technical product manager', 'platform product manager'], weight: 25 },
-    { label: 'Product Manager', patterns: ['product manager'], weight: 22 },
-    { label: 'Data Governance Lead', patterns: ['data governance lead', 'data governance manager', 'data management lead'], weight: 20 },
+    {
+      label: 'Data Product Leadership',
+      patterns: [
+        'data product owner', 'data product manager', 'data products manager',
+        'data product lead', 'data products lead', 'head of data product',
+        'head of data products', 'director data product', 'director of data products',
+        'senior manager data product', 'senior manager data products',
+        'gestionnaire de produit de donnees', 'responsable produit donnees',
+      ],
+      weight: 31,
+    },
+    {
+      label: 'AI Product Leadership',
+      patterns: [
+        'ai product manager', 'product manager ai', 'product manager artificial intelligence',
+        'artificial intelligence product manager', 'generative ai product manager',
+        'conversational ai', 'ai product lead', 'head of ai product', 'director ai product',
+      ],
+      weight: 30,
+    },
+    {
+      label: 'Senior Product Management',
+      patterns: [
+        'principal product manager', 'senior product manager', 'group product manager',
+        'lead product manager', 'product management lead', 'head of product',
+        'director of product', 'director product management',
+        'gestionnaire principal de produit', 'directeur de produit', 'directrice de produit',
+      ],
+      weight: 29,
+    },
+    {
+      label: 'Technical and Platform Product Management',
+      patterns: [
+        'technical product manager', 'platform product manager', 'data platform manager',
+        'data platform product manager', 'enterprise platform product manager',
+      ],
+      weight: 28,
+    },
+    {
+      label: 'Product Management',
+      patterns: [
+        'product manager', 'product owner', 'product lead',
+        'gestionnaire de produit', 'chef de produit', 'responsable de produit',
+      ],
+      weight: 26,
+    },
+    {
+      label: 'Program and Transformation Leadership',
+      patterns: [
+        'technical program manager', 'senior program manager', 'program manager',
+        'programme manager', 'program management lead', 'programme management lead',
+        'transformation manager', 'transformation lead', 'digital transformation manager',
+        'portfolio manager', 'gestionnaire de programme', 'directeur de programme',
+        'directrice de programme',
+      ],
+      weight: 27,
+    },
+    {
+      label: 'Data Strategy and Governance Leadership',
+      patterns: [
+        'data governance lead', 'data governance manager', 'data management lead',
+        'manager data governance', 'senior manager data governance',
+        'data management manager', 'manager data management', 'data strategy lead', 'data strategy manager',
+        'enterprise data lead', 'enterprise data manager', 'master data manager',
+        'head of data governance', 'director data governance', 'director of data governance',
+      ],
+      weight: 27,
+    },
+    {
+      label: 'Operations Transformation Leadership',
+      patterns: [
+        'head of operations performance', 'head field operations', 'operations performance lead',
+        'operations transformation manager', 'operational excellence manager',
+        'business transformation manager', 'business process manager',
+      ],
+      weight: 22,
+    },
   ],
   skills: [
     { label: 'Google Cloud', patterns: ['google cloud', 'gcp', 'bigquery', 'gemini enterprise'], weight: 3 },
@@ -94,6 +163,7 @@ const SECTION_MARKERS = [
   'education',
   'certifications',
   'core competencies',
+  'core leadership platform expertise',
   'skills',
 ];
 
@@ -113,7 +183,10 @@ function hasResumeEvidence(text: string, signal: CandidateSignal): boolean {
 }
 
 function extractCompetencies(lines: string[]): CandidateSignal[] {
-  const start = lines.findIndex((line) => normalizeSignal(line) === 'core competencies');
+  const start = lines.findIndex((line) => {
+    const normalized = normalizeSignal(line);
+    return normalized === 'core competencies' || normalized === 'core leadership platform expertise';
+  });
   if (start < 0) return [];
 
   const values: string[] = [];
@@ -184,7 +257,11 @@ export function buildCandidateProfileFromResume(
       syncedAt: source.syncedAt,
       parserVersion: CANDIDATE_PROFILE_PARSER_VERSION,
     },
-    targetTitles: evidenced(CANDIDATE_PROFILE.targetTitles),
+    // Career targets are a durable matching preference, not a list of phrases
+    // that must appear verbatim in the PDF. The resume provides capability
+    // evidence; it should not erase Product Manager or Program Manager roles
+    // simply because Akshit's official titles say Product Owner.
+    targetTitles: CANDIDATE_PROFILE.targetTitles,
     skills: mergeSignals(evidenced(CANDIDATE_PROFILE.skills), dynamicCompetencies),
     responsibilities: evidenced(CANDIDATE_PROFILE.responsibilities),
     domains: evidenced(CANDIDATE_PROFILE.domains),

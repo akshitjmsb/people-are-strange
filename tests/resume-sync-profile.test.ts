@@ -35,6 +35,8 @@ test('derives the current leadership headline instead of the legacy fallback', (
   assert.equal(profile.yearsExperience, 11);
   assert.equal(profile.source.parserVersion, CANDIDATE_PROFILE_PARSER_VERSION);
   assert.equal(profile.source.url, 'https://drive.google.com/file/d/pdf-1/view');
+  assert.ok(profile.targetTitles.some((signal) => signal.patterns.includes('product manager')));
+  assert.ok(profile.targetTitles.some((signal) => signal.patterns.includes('technical program manager')));
 });
 
 test('uses the canonical PDF checksum as the resume revision', () => {
