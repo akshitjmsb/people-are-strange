@@ -4,6 +4,10 @@ import ResumeConnectionStatus from '@/components/ResumeConnectionStatus';
 import { DEFAULT_CITY_ID } from '@/lib/cities';
 import { googleResumeSyncConfigured } from '@/lib/google-oauth';
 
+const MASTER_PDF_ID = '1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne';
+const MASTER_PDF_URL = `https://drive.google.com/file/d/${MASTER_PDF_ID}/view`;
+const MASTER_PDF_PREVIEW_URL = `https://drive.google.com/file/d/${MASTER_PDF_ID}/preview`;
+
 export const dynamic = 'force-dynamic';
 
 const ERRORS: Record<string, string> = {
@@ -27,8 +31,8 @@ export default async function ResumeSettingsPage(
   const message = searchParams.error ? ERRORS[searchParams.error] ?? 'Google connection failed.' : null;
 
   return (
-    <main className="min-h-screen bg-snow-white px-4 py-8 text-asphalt sm:px-6">
-      <div className="mx-auto max-w-3xl">
+    <main className="min-h-screen overflow-x-hidden bg-snow-white px-4 py-8 text-asphalt sm:px-6">
+      <div className="mx-auto w-full min-w-0 max-w-3xl">
         <Link
           href={`/${DEFAULT_CITY_ID}?view=matches`}
           className="text-xs font-bold text-asphalt/55 hover:text-asphalt"
@@ -36,13 +40,13 @@ export default async function ResumeSettingsPage(
           ← Back to matches
         </Link>
 
-        <section className="mt-5 rounded-3xl border border-black/5 bg-white p-6 shadow-sm sm:p-8">
+        <section className="mt-5 min-w-0 overflow-hidden rounded-3xl border border-black/5 bg-white p-6 shadow-sm sm:p-8">
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-plateau-pink">
             Resume source of truth
           </p>
-          <h1 className="mt-2 font-display text-3xl font-bold">Connect PAS resume sync</h1>
+          <h1 className="mt-2 font-display text-3xl font-bold">Master resume sync</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-asphalt/60">
-            Connect Google once. PAS will check the text mirror of your master PDF whenever Matches opens and during the daily job refresh, then rebuild matching signals when the revision changes.
+            PAS checks your canonical PDF whenever Matches opens and during the daily job refresh. When the PDF checksum changes, PAS reads that exact file again and rebuilds every matching signal from it.
           </p>
 
           <ResumeConnectionStatus
@@ -51,17 +55,30 @@ export default async function ResumeSettingsPage(
             connectionCompleted={searchParams.connected === '1'}
           />
 
-          <div className="mt-6 rounded-2xl border border-black/5 bg-snow-white p-4">
-            <p className="text-xs font-black uppercase tracking-wider text-asphalt/40">Active document</p>
+          <div className="mt-6 w-full min-w-0 overflow-hidden rounded-2xl border border-black/5 bg-snow-white">
+            <div className="flex min-w-0 flex-col items-stretch gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-wider text-asphalt/40">Canonical resume</p>
+                <p className="mt-1 break-words font-bold">PAS_Resume_MASTER.pdf</p>
+              </div>
             <a
-              href="https://docs.google.com/document/d/1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc"
+              href={MASTER_PDF_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1 inline-block font-bold underline decoration-asphalt/20 underline-offset-4"
+                className="inline-flex w-full items-center justify-center rounded-full bg-asphalt px-4 py-2 text-xs font-bold text-white hover:bg-asphalt/85 sm:w-auto"
             >
-              PAS_Resume_SYNC_SOURCE ↗
+                Open full PDF ↗
             </a>
-            <p className="mt-1 text-xs text-asphalt/50">Only read-only Google Docs access is requested.</p>
+            </div>
+            <iframe
+              src={MASTER_PDF_PREVIEW_URL}
+              title="Latest PAS master resume PDF"
+              className="block h-[520px] w-full max-w-full border-0 bg-white sm:h-[720px]"
+              loading="lazy"
+            />
+            <p className="border-t border-black/5 px-4 py-3 text-xs text-asphalt/50">
+              This preview is served by Google Drive and follows your Drive permissions. PAS requests read-only Drive access and never exposes the PDF through a public download endpoint.
+            </p>
           </div>
 
         </section>
@@ -70,7 +87,7 @@ export default async function ResumeSettingsPage(
           <h2 className="font-display text-xl font-bold">One-time setup</h2>
           <ol className="mt-4 space-y-4 text-sm leading-relaxed text-asphalt/70">
             <SetupStep number="1">
-              Open the <External href="https://console.cloud.google.com/projectselector2/home/dashboard">Google Cloud Console</External>, choose a project, and <External href="https://console.cloud.google.com/apis/library/docs.googleapis.com">enable the Google Docs API</External>.
+              Open the <External href="https://console.cloud.google.com/projectselector2/home/dashboard">Google Cloud Console</External>, choose a project, and <External href="https://console.cloud.google.com/apis/library/drive.googleapis.com">enable the Google Drive API</External>.
             </SetupStep>
             <SetupStep number="2">
               Configure the <External href="https://console.cloud.google.com/auth/overview">OAuth consent screen</External>, then create a Web application in <External href="https://console.cloud.google.com/auth/clients">OAuth Clients</External>.
@@ -89,7 +106,7 @@ GOOGLE_OAUTH_REDIRECT_URI=https://YOUR_DOMAIN/api/google/callback
 RESUME_OWNER_EMAIL=your-google-email@example.com
 RESUME_TOKEN_ENCRYPTION_KEY=<run: openssl rand -base64 32>`}</pre>
           <p className="mt-4 text-xs leading-relaxed text-asphalt/45">
-            Optional: PAS_RESUME_DOCUMENT_ID overrides the built-in master Doc ID. Do not place secrets in NEXT_PUBLIC_ variables.
+            Optional: PAS_RESUME_MASTER_PDF_ID overrides the built-in master PDF ID. Do not place secrets in NEXT_PUBLIC_ variables.
           </p>
         </section>}
       </div>

@@ -13,10 +13,12 @@ import {
 test('classifies revoked credentials as an authorization failure', () => {
   assert.equal(classifyResumeSyncFailure(new Error('invalid_grant: Token has been expired or revoked')), 'auth');
   assert.equal(classifyResumeSyncFailure(new ResumeSyncFailure('Google Docs returned 401', 'auth', 401)), 'auth');
+  assert.equal(classifyResumeSyncFailure(new Error('Google Drive returned 403')), 'auth');
 });
 
 test('classifies retryable Google and network failures as transient', () => {
   assert.equal(classifyResumeSyncFailure(new Error('Google Docs returned 503')), 'transient');
+  assert.equal(classifyResumeSyncFailure(new Error('Google Drive returned 429')), 'transient');
   assert.equal(classifyResumeSyncFailure(new Error('fetch failed')), 'transient');
   assert.equal(retryableGoogleStatus(429), true);
   assert.equal(retryableGoogleStatus(503), true);

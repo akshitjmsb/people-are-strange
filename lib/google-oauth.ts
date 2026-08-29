@@ -1,14 +1,15 @@
 import { OAuth2Client } from 'google-auth-library';
 
-export const GOOGLE_DOCS_READ_SCOPE = 'https://www.googleapis.com/auth/documents.readonly';
-export const GOOGLE_OAUTH_SCOPES = ['openid', 'email', GOOGLE_DOCS_READ_SCOPE] as const;
+export const GOOGLE_DRIVE_READ_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+export const GOOGLE_OAUTH_SCOPES = ['openid', 'email', GOOGLE_DRIVE_READ_SCOPE] as const;
 export const GOOGLE_OAUTH_STATE_COOKIE = 'pas_google_oauth_state';
+export const PAS_RESUME_MASTER_PDF_ID = '1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne';
 
 export interface GoogleOAuthConfig {
   clientId: string;
   clientSecret: string;
   ownerEmail: string;
-  documentId: string;
+  masterPdfFileId: string;
   redirectUri: string;
 }
 
@@ -16,8 +17,8 @@ export function googleOAuthConfig(origin?: string): GoogleOAuthConfig {
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
   const ownerEmail = process.env.RESUME_OWNER_EMAIL;
-  const documentId = process.env.PAS_RESUME_DOCUMENT_ID
-    ?? '1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc';
+  const masterPdfFileId = process.env.PAS_RESUME_MASTER_PDF_ID
+    ?? PAS_RESUME_MASTER_PDF_ID;
   const deploymentOrigin = process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined;
@@ -29,7 +30,13 @@ export function googleOAuthConfig(origin?: string): GoogleOAuthConfig {
   if (!clientId || !clientSecret || !ownerEmail || !redirectUri) {
     throw new Error('Google resume sync is not fully configured');
   }
-  return { clientId, clientSecret, ownerEmail: ownerEmail.trim().toLowerCase(), documentId, redirectUri };
+  return {
+    clientId,
+    clientSecret,
+    ownerEmail: ownerEmail.trim().toLowerCase(),
+    masterPdfFileId,
+    redirectUri,
+  };
 }
 
 export function googleOAuthClient(config: GoogleOAuthConfig): OAuth2Client {
@@ -43,4 +50,8 @@ export function googleResumeSyncConfigured(): boolean {
     && process.env.RESUME_OWNER_EMAIL
     && process.env.RESUME_TOKEN_ENCRYPTION_KEY,
   );
+}
+
+export function hasGoogleDriveReadScope(scopes: readonly string[]): boolean {
+  return scopes.some((scope) => scope === GOOGLE_DRIVE_READ_SCOPE || scope === 'https://www.googleapis.com/auth/drive');
 }

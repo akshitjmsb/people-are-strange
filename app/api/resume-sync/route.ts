@@ -17,6 +17,12 @@ function responseBody(status: Awaited<ReturnType<typeof getResumeSyncStatus>>) {
     usingLastKnownGood: status.usingLastKnownGood,
     failureKind: status.failureKind,
     error: status.error,
+    source: {
+      title: status.profile.source.title,
+      url: status.profile.source.url,
+      revision: status.profile.source.revisionId,
+      syncedAt: status.profile.source.syncedAt,
+    },
   };
 }
 

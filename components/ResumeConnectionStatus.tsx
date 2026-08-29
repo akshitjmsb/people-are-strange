@@ -12,6 +12,12 @@ interface StatusResponse {
   usingLastKnownGood: boolean;
   failureKind?: 'auth' | 'transient' | 'configuration' | 'source';
   error?: string;
+  source: {
+    title: string;
+    url: string;
+    revision: string;
+    syncedAt: string;
+  };
 }
 
 interface ResumeConnectionStatusProps {
@@ -112,6 +118,12 @@ export default function ResumeConnectionStatus({
           Last successful sync: {formatToronto(status.syncedAt)}
         </p>
       )}
+      {status && current && (
+        <p className="mt-3 text-xs font-semibold text-asphalt/50">
+          Synced directly from <span className="font-black text-asphalt/70">{status.source.title}</span>
+          {' · '}revision {shortRevision(status.source.revision)}
+        </p>
+      )}
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         {failed && (
@@ -168,4 +180,8 @@ function Notice({ children, tone }: { children: React.ReactNode; tone: 'success'
 
 function formatToronto(value: string): string {
   return new Date(value).toLocaleString('en-CA', { timeZone: 'America/Toronto' });
+}
+
+function shortRevision(value: string): string {
+  return value.startsWith('md5:') ? value.slice(4, 12) : value.slice(0, 12);
 }

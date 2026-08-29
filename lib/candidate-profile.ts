@@ -1,4 +1,4 @@
-// Generated from the Google Doc text mirror of PAS_Resume_MASTER.pdf. This contains
+// Generated directly from PAS_Resume_MASTER.pdf. This contains
 // only matching signals — never contact details or the resume's full text.
 // The source revision makes stale profile data visible instead of pretending
 // an old snapshot is current.
@@ -16,7 +16,7 @@ export interface CandidateProfile {
   location: string;
   source: {
     title: string;
-    documentId: string;
+    fileId: string;
     url: string;
     revisionId: string;
     syncedAt: string;
@@ -28,7 +28,7 @@ export interface CandidateProfile {
   domains: CandidateSignal[];
 }
 
-export const CANDIDATE_PROFILE_PARSER_VERSION = 2;
+export const CANDIDATE_PROFILE_PARSER_VERSION = 3;
 
 export const CANDIDATE_PROFILE: CandidateProfile = {
   name: 'Akshit Gupta',
@@ -36,11 +36,11 @@ export const CANDIDATE_PROFILE: CandidateProfile = {
   yearsExperience: 11,
   location: 'Montréal, QC',
   source: {
-    title: 'PAS_Resume_SYNC_SOURCE',
-    documentId: '1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc',
-    url: 'https://docs.google.com/document/d/1Sz8ZeQ3tq2q1SOKLq2Zt5NLqlLOHxlZoYioQ2DoDhPc',
-    revisionId: 'AIroW362n0XbfeKqzA2zTSkmFXqp5LJYjpd8VkghHGafjUkO0pcILDEdD0Gwabm3PLoGDwJ-qi835Yom-U_CHKTmU9ZjV0dTABB36qIXgA',
-    syncedAt: '2026-08-08T04:07:07.140Z',
+    title: 'PAS_Resume_MASTER.pdf',
+    fileId: '1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne',
+    url: 'https://drive.google.com/file/d/1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne/view',
+    revisionId: 'built-in-fallback',
+    syncedAt: '2026-08-27T13:22:21.928Z',
     parserVersion: CANDIDATE_PROFILE_PARSER_VERSION,
   },
   targetTitles: [
@@ -143,19 +143,20 @@ function mergeSignals(primary: CandidateSignal[], additional: CandidateSignal[])
 }
 
 /**
- * Convert the latest Google Doc text into matching signals. Parsing is kept
+ * Convert text extracted from the latest master PDF into matching signals. Parsing is kept
  * deterministic so a resume revision produces the same profile everywhere and
  * does not require sending private resume text to another AI service.
  */
 export function buildCandidateProfileFromResume(
   resumeText: string,
-  source: Pick<CandidateProfile['source'], 'documentId' | 'revisionId' | 'syncedAt'> & {
+  source: Pick<CandidateProfile['source'], 'fileId' | 'revisionId' | 'syncedAt'> & {
     title?: string;
   },
 ): CandidateProfile {
   const lines = resumeText
     .split(/\r?\n/)
     .map((line) => line.replace(/^\uFEFF/, '').trim())
+    .filter((line) => !/\bpage\s+\d+\s+of\s+\d+\b/i.test(line))
     .filter(Boolean);
   const yearsMatch = resumeText.match(/(\d{1,2})\+?\s+years?/i);
   const contactLine = lines.slice(0, 6).find((line) => /Montr[ée]al|\bQC\b/i.test(line));
@@ -176,9 +177,9 @@ export function buildCandidateProfileFromResume(
     yearsExperience: yearsMatch ? Number.parseInt(yearsMatch[1], 10) : CANDIDATE_PROFILE.yearsExperience,
     location,
     source: {
-      title: source.title || 'PAS_Resume_SYNC_SOURCE',
-      documentId: source.documentId,
-      url: `https://docs.google.com/document/d/${source.documentId}`,
+      title: source.title || 'PAS_Resume_MASTER.pdf',
+      fileId: source.fileId,
+      url: `https://drive.google.com/file/d/${source.fileId}/view`,
       revisionId: source.revisionId,
       syncedAt: source.syncedAt,
       parserVersion: CANDIDATE_PROFILE_PARSER_VERSION,
