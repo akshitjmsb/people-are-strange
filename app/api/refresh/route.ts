@@ -1,6 +1,6 @@
-import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 
+import { hasBearerSecret } from '@/lib/cron-auth';
 import { db } from '@/lib/db';
 import { refreshRoles, latestRun } from '@/lib/refresh';
 import type { RefreshRunRow } from '@/lib/db/schema';
@@ -41,12 +41,7 @@ const STALE_AFTER_MS = 36 * 60 * 60 * 1000;
  *  refresh trigger is a free way to hammer every board on the internet. */
 function isAuthorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET ?? process.env.REFRESH_SECRET;
-  if (!secret) return false;
-  const header = req.headers.get('authorization') ?? '';
-  const expected = `Bearer ${secret}`;
-  const a = Buffer.from(header);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  return hasBearerSecret(req, secret);
 }
 
 /** Shape the app consumes to render a "data last updated …" line. */

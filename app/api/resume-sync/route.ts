@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { hasBearerSecret } from '@/lib/cron-auth';
 import { db } from '@/lib/db';
 import { getResumeSyncStatus, syncResumeProfile } from '@/lib/resume-sync';
 
@@ -26,9 +27,14 @@ function responseBody(status: Awaited<ReturnType<typeof getResumeSyncStatus>>) {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    return NextResponse.json(responseBody(await getResumeSyncStatus(db)), {
+    const scheduled = hasBearerSecret(request, process.env.CRON_SECRET);
+    const status = scheduled
+      ? await syncResumeProfile(db, { force: true })
+      : await getResumeSyncStatus(db);
+    if (scheduled) console.log('[api/resume-sync] scheduled master PDF check finished:', status.state);
+    return NextResponse.json(responseBody(status), {
       headers: { 'Cache-Control': 'no-store, max-age=0, must-revalidate' },
     });
   } catch (error) {

@@ -4,6 +4,10 @@
     {
       "path": "/api/refresh",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/resume-sync",
+      "schedule": "0 22 * * *"
     }
   ],
   "functions": {
