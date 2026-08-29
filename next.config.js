@@ -10,6 +10,7 @@ const withSerwist = withSerwistInit({
 
 module.exports = withSerwist({
   reactStrictMode: true,
+  serverExternalPackages: ['@napi-rs/canvas'],
   images: {
     domains: [],
   },
