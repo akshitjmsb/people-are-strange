@@ -119,7 +119,7 @@ export default function ResumeConnectionStatus({
           {status.error}
         </p>
       )}
-      {(selectionRequested || selectionRequired) && !current && (
+      {(selectionRequired || (selectionRequested && !reconnectRequired)) && !current && (
         <ResumeFilePicker onConnected={() => void loadStatus('GET')} />
       )}
       {status?.syncedAt && status.usingLastKnownGood && (
