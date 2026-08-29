@@ -27,6 +27,17 @@ export function validateResumePdf(data: ArrayBuffer, declaredSize?: number): Uin
 }
 
 export async function extractResumePdfText(data: Uint8Array): Promise<string> {
+  // pdfjs loads its Node canvas integration through an optional runtime
+  // require, which Next's server tracer cannot discover. Import it explicitly
+  // so the production function includes the native package and its DOM shims.
+  if (!globalThis.DOMMatrix) {
+    const canvas = await import('@napi-rs/canvas');
+    Object.assign(globalThis, {
+      DOMMatrix: canvas.DOMMatrix,
+      ImageData: canvas.ImageData,
+      Path2D: canvas.Path2D,
+    });
+  }
   const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loadingTask = getDocument({
     data,
