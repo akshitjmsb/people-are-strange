@@ -5,28 +5,35 @@ import { useEffect } from 'react';
 const UPDATE_INTERVAL_MS = 30 * 60 * 1000;
 
 /**
- * Keeps long-running installed PWAs on the current deployment. Serwist claims
- * clients immediately, but an already-open page must reload before it can use
- * the newly precached JavaScript bundle.
+ * Keeps long-running installed PWAs on the current deployment. Updates are
+ * downloaded in the background and applied when the user next returns to the
+ * app, avoiding a disruptive reload in the middle of an active session.
  */
 export default function ServiceWorkerUpdateManager() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
 
     let hadController = Boolean(navigator.serviceWorker.controller);
+    let updateReady = false;
     let reloadStarted = false;
 
-    const reloadForUpdatedWorker = () => {
+    const markUpdatedWorkerReady = () => {
       // The first controller on a brand-new install does not make the current
-      // page stale. Only reload when an existing controller is replaced.
+      // page stale. Only defer a refresh when an existing controller changes.
       if (!hadController) {
         hadController = true;
         return;
       }
 
-      if (reloadStarted) return;
+      updateReady = true;
+    };
+
+    const applyQuietUpdate = () => {
+      if (!updateReady) return false;
+      if (reloadStarted) return true;
       reloadStarted = true;
       window.location.reload();
+      return true;
     };
 
     const checkForUpdate = async () => {
@@ -44,24 +51,27 @@ export default function ServiceWorkerUpdateManager() {
       }
     };
 
-    const checkWhenVisible = () => {
-      if (document.visibilityState === 'visible') void checkForUpdate();
+    const checkWhenActive = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (!applyQuietUpdate()) void checkForUpdate();
     };
 
-    navigator.serviceWorker.addEventListener('controllerchange', reloadForUpdatedWorker);
+    navigator.serviceWorker.addEventListener('controllerchange', markUpdatedWorkerReady);
     window.addEventListener('online', checkForUpdate);
-    window.addEventListener('focus', checkForUpdate);
-    document.addEventListener('visibilitychange', checkWhenVisible);
+    window.addEventListener('focus', checkWhenActive);
+    window.addEventListener('pageshow', checkWhenActive);
+    document.addEventListener('visibilitychange', checkWhenActive);
 
     void checkForUpdate();
     const interval = window.setInterval(checkForUpdate, UPDATE_INTERVAL_MS);
 
     return () => {
       window.clearInterval(interval);
-      navigator.serviceWorker.removeEventListener('controllerchange', reloadForUpdatedWorker);
+      navigator.serviceWorker.removeEventListener('controllerchange', markUpdatedWorkerReady);
       window.removeEventListener('online', checkForUpdate);
-      window.removeEventListener('focus', checkForUpdate);
-      document.removeEventListener('visibilitychange', checkWhenVisible);
+      window.removeEventListener('focus', checkWhenActive);
+      window.removeEventListener('pageshow', checkWhenActive);
+      document.removeEventListener('visibilitychange', checkWhenActive);
     };
   }, []);
 
