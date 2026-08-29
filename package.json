@@ -23,6 +23,7 @@
     "@deck.gl/core": "^9.3.9",
     "@deck.gl/layers": "^9.3.9",
     "@deck.gl/mapbox": "^9.3.9",
+    "@napi-rs/canvas": "^0.1.100",
     "@neondatabase/serverless": "^1.1.0",
     "@serwist/next": "^9.5.12",
     "drizzle-orm": "^0.45.2",
