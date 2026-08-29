@@ -1,5 +1,4 @@
 import { timingSafeEqual } from 'node:crypto';
-import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db } from '@/lib/db';
@@ -70,16 +69,14 @@ export async function GET(req: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const [existing] = await db.select().from(googleDriveConnections)
-      .where(eq(googleDriveConnections.id, 'primary')).limit(1);
-    if (!tokens.refresh_token && (!existing || existing.ownerEmail !== email)) {
+    if (!tokens.refresh_token) {
+      // Reusing a legacy Docs-only refresh token while recording the new
+      // drive.file scope creates a false-success connection. Revoke the old
+      // grant so the next consent always produces a correctly scoped token.
+      await oauth.revokeToken(tokens.access_token).catch(() => undefined);
       return finish(req, 'error=missing_refresh_token');
     }
-    const encrypted = tokens.refresh_token ? encryptSecret(tokens.refresh_token) : {
-      ciphertext: existing!.encryptedRefreshToken,
-      iv: existing!.tokenIv,
-      authTag: existing!.tokenAuthTag,
-    };
+    const encrypted = encryptSecret(tokens.refresh_token);
     const scopes = tokens.scope?.split(/\s+/).filter(Boolean) ?? [...GOOGLE_OAUTH_SCOPES];
     const [savedConnection] = await db.insert(googleDriveConnections).values({
       id: 'primary',
@@ -104,7 +101,7 @@ export async function GET(req: NextRequest) {
       },
     }).returning({ id: googleDriveConnections.id });
     if (!savedConnection) throw new Error('Google connection was not persisted');
-    console.log('[google/callback] encrypted Google connection persisted');
+    console.log('[google/callback] newly scoped encrypted Google connection persisted');
 
     return finish(req, 'select=1', createResumePickerSession(email));
   } catch (error) {
