@@ -8,7 +8,12 @@ import {
 } from './candidate-profile';
 import { db, type DB } from './db';
 import { googleDriveConnections, resumeProfiles, type ResumeSyncStatus } from './db/schema';
-import { googleOAuthClient, googleOAuthConfig } from './google-oauth';
+import {
+  googleOAuthClient,
+  googleOAuthConfig,
+  hasGoogleDriveReadScope,
+} from './google-oauth';
+import { extractResumePdfText, masterPdfRevision, validateResumePdf } from './pdf-resume';
 import { decryptSecret } from './resume-crypto';
 import {
   ResumeSyncFailure,
@@ -23,22 +28,14 @@ import {
 
 const CONNECTION_ID = 'primary';
 
-interface GoogleStructuralElement {
-  paragraph?: { elements?: Array<{ textRun?: { content?: string } }> };
-  table?: { tableRows?: Array<{ tableCells?: Array<{ content?: GoogleStructuralElement[] }> }> };
-  tableOfContents?: { content?: GoogleStructuralElement[] };
-}
-
-interface GoogleDocumentTab {
-  documentTab?: { body?: { content?: GoogleStructuralElement[] } };
-  childTabs?: GoogleDocumentTab[];
-}
-
-interface GoogleDocument {
-  title?: string;
-  revisionId?: string;
-  body?: { content?: GoogleStructuralElement[] };
-  tabs?: GoogleDocumentTab[];
+interface GoogleDriveFile {
+  id?: string;
+  name?: string;
+  mimeType?: string;
+  modifiedTime?: string;
+  md5Checksum?: string;
+  size?: string;
+  trashed?: boolean;
 }
 
 export type ResumeSyncState = 'current' | 'updated' | 'degraded' | 'reconnect_required' | 'not_connected';
@@ -65,29 +62,6 @@ const GOOGLE_TIMEOUT_MS = 12_000;
 const GOOGLE_FETCH_ATTEMPTS = 3;
 let syncInFlight: Promise<ResumeSyncResult> | null = null;
 
-function elementsText(elements: GoogleStructuralElement[] = []): string {
-  const chunks: string[] = [];
-  for (const element of elements) {
-    if (element.paragraph) {
-      chunks.push(...(element.paragraph.elements ?? []).map((part) => part.textRun?.content ?? ''));
-    }
-    if (element.table) {
-      for (const row of element.table.tableRows ?? []) {
-        for (const cell of row.tableCells ?? []) chunks.push(elementsText(cell.content));
-      }
-    }
-    if (element.tableOfContents) chunks.push(elementsText(element.tableOfContents.content));
-  }
-  return chunks.join('');
-}
-
-function tabsText(tabs: GoogleDocumentTab[] = []): string {
-  return tabs.flatMap((tab) => [
-    elementsText(tab.documentTab?.body?.content),
-    tabsText(tab.childTabs),
-  ]).filter(Boolean).join('\n');
-}
-
 function safeError(error: unknown): string {
   if (error instanceof Error) return error.message.slice(0, 500);
   return String(error).slice(0, 500);
@@ -103,7 +77,10 @@ async function currentRows(database: DB) {
 
 export async function getResumeSyncStatus(database: DB = db): Promise<ResumeSyncResult> {
   const { connection, stored } = await currentRows(database);
-  const failureKind = storedResumeSyncFailureKind(stored?.lastError ?? connection?.lastError);
+  const missingPdfPermission = Boolean(connection && !hasGoogleDriveReadScope(connection.scopes));
+  const failureKind = missingPdfPermission
+    ? 'auth'
+    : storedResumeSyncFailureKind(stored?.lastError ?? connection?.lastError);
   const state: ResumeSyncState = !connection
     ? 'not_connected'
     : failureKind === 'auth'
@@ -120,12 +97,17 @@ export async function getResumeSyncStatus(database: DB = db): Promise<ResumeSync
     requiresReconnect: state === 'reconnect_required',
     usingLastKnownGood: state === 'degraded' || state === 'reconnect_required',
     ...(failureKind && state !== 'current'
-      ? { failureKind, error: publicResumeSyncError(failureKind, Boolean(stored)) }
+      ? {
+          failureKind,
+          error: missingPdfPermission
+            ? 'Reconnect Google once to let PAS read the canonical master PDF. Your last synced profile remains active.'
+            : publicResumeSyncError(failureKind, Boolean(stored)),
+        }
       : {}),
   };
 }
 
-/** Fetch the PAS resume sync mirror and rebuild the profile only when its revision changed. */
+/** Fetch PAS_Resume_MASTER.pdf and rebuild the profile only when its checksum changed. */
 export async function syncResumeProfile(
   database: DB = db,
   options: ResumeSyncOptions = {},
@@ -162,6 +144,9 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
 
   try {
     const config = googleOAuthConfig();
+    if (!hasGoogleDriveReadScope(connection.scopes)) {
+      throw new ResumeSyncFailure('Google Drive read permission is required for the master PDF', 'auth');
+    }
     const oauth = googleOAuthClient(config);
     let refreshToken: string;
     try {
@@ -181,12 +166,17 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
       'Google access-token request timed out',
     );
     if (!accessToken.token) throw new Error('Google did not issue an access token');
-    const response = await fetchGoogleDocument(config.documentId, accessToken.token);
-    const document = await response.json() as GoogleDocument;
-    if (!document.revisionId) throw new Error('Google Docs response did not include a revision ID');
+    const metadataResponse = await fetchGoogleDrive(
+      `${encodeURIComponent(config.masterPdfFileId)}?fields=id,name,mimeType,modifiedTime,md5Checksum,size,trashed&supportsAllDrives=true`,
+      accessToken.token,
+    );
+    const masterPdf = await metadataResponse.json() as GoogleDriveFile;
+    validateMasterPdfMetadata(masterPdf, config.masterPdfFileId);
+    const revisionId = masterPdfRevision(masterPdf);
 
     if (
-      stored?.driveRevisionId === document.revisionId
+      stored?.driveFileId === config.masterPdfFileId
+      && stored.driveRevisionId === revisionId
       && stored.profile.source.parserVersion === CANDIDATE_PROFILE_PARSER_VERSION
     ) {
       await database.update(resumeProfiles).set({
@@ -209,18 +199,23 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
       };
     }
 
-    const text = tabsText(document.tabs) || elementsText(document.body?.content);
-    if (text.trim().length < 100) throw new Error('Google Doc did not contain enough resume text');
+    const pdfResponse = await fetchGoogleDrive(
+      `${encodeURIComponent(config.masterPdfFileId)}?alt=media&supportsAllDrives=true`,
+      accessToken.token,
+    );
+    const declaredSize = masterPdf.size ? Number.parseInt(masterPdf.size, 10) : undefined;
+    const pdfBytes = validateResumePdf(await pdfResponse.arrayBuffer(), declaredSize);
+    const text = await extractResumePdfText(pdfBytes);
     const profile = buildCandidateProfileFromResume(text, {
-      title: document.title,
-      documentId: config.documentId,
-      revisionId: document.revisionId,
+      title: masterPdf.name,
+      fileId: config.masterPdfFileId,
+      revisionId,
       syncedAt: checkedAt,
     });
     await database.insert(resumeProfiles).values({
       id: CONNECTION_ID,
-      driveFileId: config.documentId,
-      driveRevisionId: document.revisionId,
+      driveFileId: config.masterPdfFileId,
+      driveRevisionId: revisionId,
       profile,
       status: 'current',
       syncedAt: checkedAt,
@@ -229,8 +224,8 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
     }).onConflictDoUpdate({
       target: resumeProfiles.id,
       set: {
-        driveFileId: config.documentId,
-        driveRevisionId: document.revisionId,
+        driveFileId: config.masterPdfFileId,
+        driveRevisionId: revisionId,
         profile,
         status: 'current',
         syncedAt: checkedAt,
@@ -255,7 +250,7 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
     const message = safeError(error);
     const failureKind = classifyResumeSyncFailure(error);
     const storedError = storedResumeSyncError(failureKind, message);
-    console.error(`[resume-sync] Google Doc sync failed (${failureKind}):`, message);
+    console.error(`[resume-sync] master PDF sync failed (${failureKind}):`, message);
     if (stored) {
       await database.update(resumeProfiles).set({
         status: 'stale' satisfies ResumeSyncStatus,
@@ -281,8 +276,8 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
   }
 }
 
-async function fetchGoogleDocument(documentId: string, accessToken: string): Promise<Response> {
-  const url = `https://docs.googleapis.com/v1/documents/${encodeURIComponent(documentId)}?includeTabsContent=true`;
+async function fetchGoogleDrive(path: string, accessToken: string): Promise<Response> {
+  const url = `https://www.googleapis.com/drive/v3/files/${path}`;
   for (let attempt = 1; attempt <= GOOGLE_FETCH_ATTEMPTS; attempt += 1) {
     try {
       const response = await fetch(url, {
@@ -292,11 +287,11 @@ async function fetchGoogleDocument(documentId: string, accessToken: string): Pro
       });
       if (response.ok) return response;
       if ((response.status === 401 || response.status === 403)) {
-        throw new ResumeSyncFailure(`Google Docs returned ${response.status}`, 'auth', response.status);
+        throw new ResumeSyncFailure(`Google Drive returned ${response.status}`, 'auth', response.status);
       }
       if (!retryableGoogleStatus(response.status) || attempt === GOOGLE_FETCH_ATTEMPTS) {
         throw new ResumeSyncFailure(
-          `Google Docs returned ${response.status}`,
+          `Google Drive returned ${response.status}`,
           retryableGoogleStatus(response.status) ? 'transient' : 'source',
           response.status,
         );
@@ -311,7 +306,14 @@ async function fetchGoogleDocument(documentId: string, accessToken: string): Pro
     }
     await delay(250 * attempt);
   }
-  throw new ResumeSyncFailure('Google Docs request exhausted retries', 'transient');
+  throw new ResumeSyncFailure('Google Drive request exhausted retries', 'transient');
+}
+
+function validateMasterPdfMetadata(file: GoogleDriveFile, expectedId: string): void {
+  if (file.id !== expectedId) throw new Error('Google Drive returned the wrong master resume file');
+  if (file.trashed) throw new Error('Master resume PDF is in Google Drive trash');
+  if (file.mimeType !== 'application/pdf') throw new Error('Canonical master resume is not a PDF');
+  if (file.name !== 'PAS_Resume_MASTER.pdf') throw new Error('Canonical master resume has an unexpected filename');
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {

@@ -30,6 +30,7 @@
     "h3-js": "^4.1.0",
     "maplibre-gl": "^4.7.1",
     "next": "16.3.0",
+    "pdfjs-dist": "^5.4.624",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-map-gl": "^7.1.7",

@@ -23,13 +23,15 @@ export function classifyResumeSyncFailure(error: unknown): ResumeSyncFailureKind
     || message.includes('token has been expired or revoked')
     || message.includes('google docs returned 401')
     || message.includes('google docs returned 403')
+    || message.includes('google drive returned 401')
+    || message.includes('google drive returned 403')
   ) return 'auth';
   if (
     message.includes('timeout')
     || message.includes('aborted')
     || message.includes('fetch failed')
     || message.includes('network')
-    || /google docs returned (429|5\d\d)/.test(message)
+    || /google (docs|drive) returned (429|5\d\d)/.test(message)
   ) return 'transient';
   if (
     message.includes('not fully configured')
