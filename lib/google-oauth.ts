@@ -1,7 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 
-export const GOOGLE_DRIVE_READ_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
-export const GOOGLE_OAUTH_SCOPES = ['openid', 'email', GOOGLE_DRIVE_READ_SCOPE] as const;
+export const GOOGLE_DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+export const GOOGLE_OAUTH_SCOPES = ['openid', 'email', GOOGLE_DRIVE_FILE_SCOPE] as const;
 export const GOOGLE_OAUTH_STATE_COOKIE = 'pas_google_oauth_state';
 export const PAS_RESUME_MASTER_PDF_ID = '1kYGzulxSB2IzTGVUNvkZLWY8cSP-aCne';
 
@@ -52,6 +52,6 @@ export function googleResumeSyncConfigured(): boolean {
   );
 }
 
-export function hasGoogleDriveReadScope(scopes: readonly string[]): boolean {
-  return scopes.some((scope) => scope === GOOGLE_DRIVE_READ_SCOPE || scope === 'https://www.googleapis.com/auth/drive');
+export function hasGoogleDriveFileScope(scopes: readonly string[]): boolean {
+  return scopes.includes(GOOGLE_DRIVE_FILE_SCOPE);
 }

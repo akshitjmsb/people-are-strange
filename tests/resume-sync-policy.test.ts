@@ -30,6 +30,11 @@ test('round-trips tagged failure kinds without exposing implementation details',
   assert.equal(storedResumeSyncFailureKind(stored), 'configuration');
 });
 
+test('preserves the file-selection-required state', () => {
+  const stored = storedResumeSyncError('selection', 'Canonical master PDF selection is required');
+  assert.equal(storedResumeSyncFailureKind(stored), 'selection');
+});
+
 test('throttles only valid recent checks', () => {
   const now = Date.parse('2026-08-28T17:00:00.000Z');
   assert.equal(checkedRecently('2026-08-28T16:59:30.000Z', now, 60_000), true);

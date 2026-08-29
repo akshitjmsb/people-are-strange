@@ -11,7 +11,7 @@ import { googleDriveConnections, resumeProfiles, type ResumeSyncStatus } from '.
 import {
   googleOAuthClient,
   googleOAuthConfig,
-  hasGoogleDriveReadScope,
+  hasGoogleDriveFileScope,
 } from './google-oauth';
 import { extractResumePdfText, masterPdfRevision, validateResumePdf } from './pdf-resume';
 import { decryptSecret } from './resume-crypto';
@@ -38,7 +38,7 @@ interface GoogleDriveFile {
   trashed?: boolean;
 }
 
-export type ResumeSyncState = 'current' | 'updated' | 'degraded' | 'reconnect_required' | 'not_connected';
+export type ResumeSyncState = 'current' | 'updated' | 'degraded' | 'selection_required' | 'reconnect_required' | 'not_connected';
 
 export interface ResumeSyncResult {
   state: ResumeSyncState;
@@ -77,14 +77,19 @@ async function currentRows(database: DB) {
 
 export async function getResumeSyncStatus(database: DB = db): Promise<ResumeSyncResult> {
   const { connection, stored } = await currentRows(database);
-  const missingPdfPermission = Boolean(connection && !hasGoogleDriveReadScope(connection.scopes));
+  const missingPdfPermission = Boolean(connection && !hasGoogleDriveFileScope(connection.scopes));
+  const connectionFailureKind = storedResumeSyncFailureKind(connection?.lastError);
   const failureKind = missingPdfPermission
     ? 'auth'
+    : connectionFailureKind === 'selection'
+      ? 'selection'
     : storedResumeSyncFailureKind(stored?.lastError ?? connection?.lastError);
   const state: ResumeSyncState = !connection
     ? 'not_connected'
     : failureKind === 'auth'
       ? 'reconnect_required'
+      : failureKind === 'selection'
+        ? 'selection_required'
       : stored?.status === 'current'
         ? 'current'
         : 'degraded';
@@ -95,7 +100,7 @@ export async function getResumeSyncStatus(database: DB = db): Promise<ResumeSync
     checkedAt: stored?.checkedAt ?? null,
     syncedAt: stored?.syncedAt ?? null,
     requiresReconnect: state === 'reconnect_required',
-    usingLastKnownGood: state === 'degraded' || state === 'reconnect_required',
+    usingLastKnownGood: state === 'degraded' || state === 'reconnect_required' || state === 'selection_required',
     ...(failureKind && state !== 'current'
       ? {
           failureKind,
@@ -137,6 +142,10 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
     };
   }
 
+  if (storedResumeSyncFailureKind(connection.lastError) === 'selection') {
+    return getResumeSyncStatus(database);
+  }
+
   const minimumIntervalMs = options.minimumIntervalMs ?? DEFAULT_MINIMUM_INTERVAL_MS;
   if (!options.force && checkedRecently(stored?.checkedAt, Date.now(), minimumIntervalMs)) {
     return getResumeSyncStatus(database);
@@ -144,8 +153,8 @@ async function runResumeSync(database: DB, options: ResumeSyncOptions): Promise<
 
   try {
     const config = googleOAuthConfig();
-    if (!hasGoogleDriveReadScope(connection.scopes)) {
-      throw new ResumeSyncFailure('Google Drive read permission is required for the master PDF', 'auth');
+    if (!hasGoogleDriveFileScope(connection.scopes)) {
+      throw new ResumeSyncFailure('Google Drive file permission is required for the selected master PDF', 'auth');
     }
     const oauth = googleOAuthClient(config);
     let refreshToken: string;

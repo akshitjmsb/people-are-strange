@@ -1,6 +1,6 @@
-export type ResumeSyncFailureKind = 'auth' | 'transient' | 'configuration' | 'source';
+export type ResumeSyncFailureKind = 'auth' | 'selection' | 'transient' | 'configuration' | 'source';
 
-const STORED_ERROR = /^\[(auth|transient|configuration|source)\]\s*/i;
+const STORED_ERROR = /^\[(auth|selection|transient|configuration|source)\]\s*/i;
 
 export class ResumeSyncFailure extends Error {
   constructor(
@@ -48,6 +48,8 @@ export function publicResumeSyncError(kind: ResumeSyncFailureKind, hasLastKnownG
   switch (kind) {
     case 'auth':
       return `Google authorization needs to be renewed.${retained}`;
+    case 'selection':
+      return `Choose the canonical master PDF to finish the secure connection.${retained}`;
     case 'transient':
       return `Google is temporarily unavailable.${retained}`;
     case 'configuration':

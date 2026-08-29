@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
       prompt: 'consent select_account',
       scope: [...GOOGLE_OAUTH_SCOPES],
       state,
-      include_granted_scopes: true,
+      // Do not merge a previous broad Drive grant into this intentionally
+      // file-scoped authorization request.
+      include_granted_scopes: false,
     });
     const response = NextResponse.redirect(authUrl);
     response.cookies.set(GOOGLE_OAUTH_STATE_COOKIE, state, {

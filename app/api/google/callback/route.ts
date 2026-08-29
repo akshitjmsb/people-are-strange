@@ -11,7 +11,12 @@ import {
   googleOAuthConfig,
 } from '@/lib/google-oauth';
 import { encryptSecret } from '@/lib/resume-crypto';
-import { syncResumeProfile } from '@/lib/resume-sync';
+import { storedResumeSyncError } from '@/lib/resume-sync-policy';
+import {
+  createResumePickerSession,
+  RESUME_PICKER_SESSION_COOKIE,
+  RESUME_PICKER_SESSION_MAX_AGE_SECONDS,
+} from '@/lib/resume-picker-session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,9 +28,19 @@ function matchesState(expected: string | undefined, actual: string | null): bool
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-function finish(req: NextRequest, query: string) {
+function finish(req: NextRequest, query: string, pickerSession?: string) {
   const response = NextResponse.redirect(new URL(`/settings/resume?${query}`, req.url));
   response.cookies.delete(GOOGLE_OAUTH_STATE_COOKIE);
+  if (pickerSession) {
+    response.cookies.set(RESUME_PICKER_SESSION_COOKIE, pickerSession, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: req.nextUrl.protocol === 'https:',
+      path: '/',
+      maxAge: RESUME_PICKER_SESSION_MAX_AGE_SECONDS,
+      priority: 'high',
+    });
+  }
   response.headers.set('Cache-Control', 'no-store');
   return response;
 }
@@ -65,9 +80,7 @@ export async function GET(req: NextRequest) {
       iv: existing!.tokenIv,
       authTag: existing!.tokenAuthTag,
     };
-    const scopes = tokens.scope?.split(/\s+/).filter(Boolean)
-      ?? existing?.scopes
-      ?? [...GOOGLE_OAUTH_SCOPES];
+    const scopes = tokens.scope?.split(/\s+/).filter(Boolean) ?? [...GOOGLE_OAUTH_SCOPES];
     const [savedConnection] = await db.insert(googleDriveConnections).values({
       id: 'primary',
       ownerEmail: email,
@@ -77,7 +90,7 @@ export async function GET(req: NextRequest) {
       scopes,
       connectedAt: now,
       updatedAt: now,
-      lastError: null,
+      lastError: storedResumeSyncError('selection', 'Canonical master PDF selection is required'),
     }).onConflictDoUpdate({
       target: googleDriveConnections.id,
       set: {
@@ -87,20 +100,13 @@ export async function GET(req: NextRequest) {
         tokenAuthTag: encrypted.authTag,
         scopes,
         updatedAt: now,
-        lastError: null,
+        lastError: storedResumeSyncError('selection', 'Canonical master PDF selection is required'),
       },
     }).returning({ id: googleDriveConnections.id });
     if (!savedConnection) throw new Error('Google connection was not persisted');
     console.log('[google/callback] encrypted Google connection persisted');
 
-    const sync = await syncResumeProfile(db, { force: true });
-    console.log('[google/callback] initial resume sync finished:', sync.state);
-    return finish(
-      req,
-      sync.state === 'current' || sync.state === 'updated'
-        ? 'connected=1'
-        : 'error=sync_failed',
-    );
+    return finish(req, 'select=1', createResumePickerSession(email));
   } catch (error) {
     console.error('[google/callback] OAuth callback failed:', error instanceof Error ? error.message : error);
     return finish(req, 'error=callback_failed');

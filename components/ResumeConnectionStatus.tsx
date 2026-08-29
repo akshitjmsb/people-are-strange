@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import ResumeFilePicker from './ResumeFilePicker';
 
 interface StatusResponse {
-  state: 'current' | 'updated' | 'degraded' | 'reconnect_required' | 'not_connected';
+  state: 'current' | 'updated' | 'degraded' | 'selection_required' | 'reconnect_required' | 'not_connected';
   connected: boolean;
   checkedAt: string | null;
   syncedAt: string | null;
   requiresReconnect: boolean;
   usingLastKnownGood: boolean;
-  failureKind?: 'auth' | 'transient' | 'configuration' | 'source';
+  failureKind?: 'auth' | 'selection' | 'transient' | 'configuration' | 'source';
   error?: string;
   source: {
     title: string;
@@ -24,12 +25,14 @@ interface ResumeConnectionStatusProps {
   configured: boolean;
   oauthMessage: string | null;
   connectionCompleted: boolean;
+  selectionRequested: boolean;
 }
 
 export default function ResumeConnectionStatus({
   configured,
   oauthMessage,
   connectionCompleted,
+  selectionRequested,
 }: ResumeConnectionStatusProps) {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [failed, setFailed] = useState(false);
@@ -62,6 +65,7 @@ export default function ResumeConnectionStatus({
   const current = status?.state === 'current' || status?.state === 'updated';
   const degraded = status?.state === 'degraded';
   const reconnectRequired = status?.state === 'reconnect_required';
+  const selectionRequired = status?.state === 'selection_required';
   const label = failed
     ? 'Status temporarily unavailable'
     : !status
@@ -70,6 +74,8 @@ export default function ResumeConnectionStatus({
         ? 'Latest revision active'
         : degraded
           ? 'Last synced resume active · check delayed'
+          : selectionRequired
+            ? 'Choose master PDF to finish'
           : reconnectRequired
             ? 'Reconnect required · last sync retained'
             : 'Not connected';
@@ -113,6 +119,9 @@ export default function ResumeConnectionStatus({
           {status.error}
         </p>
       )}
+      {(selectionRequested || selectionRequired) && !current && (
+        <ResumeFilePicker onConnected={() => void loadStatus('GET')} />
+      )}
       {status?.syncedAt && status.usingLastKnownGood && (
         <p className="mt-2 text-xs text-asphalt/45">
           Last successful sync: {formatToronto(status.syncedAt)}
@@ -135,7 +144,7 @@ export default function ResumeConnectionStatus({
             Retry status
           </button>
         )}
-        {status?.connected && !reconnectRequired && (
+        {status?.connected && !reconnectRequired && !selectionRequired && (
           <button
             type="button"
             onClick={() => void loadStatus('POST')}
@@ -156,12 +165,12 @@ export default function ResumeConnectionStatus({
             {reconnectRequired ? 'Reconnect Google Drive' : 'Connect Google Drive'}
           </Link>
         )}
-        {status?.connected && !reconnectRequired && (
+        {status?.connected && !reconnectRequired && !selectionRequired && (
           <Link
             href="/api/google/connect"
             className="px-2 py-3 text-xs font-bold text-asphalt/45 underline decoration-asphalt/20 underline-offset-4 hover:text-asphalt"
           >
-            Reauthorize Google
+            Change selected PDF
           </Link>
         )}
       </div>

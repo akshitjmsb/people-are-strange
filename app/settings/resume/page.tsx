@@ -23,7 +23,7 @@ const ERRORS: Record<string, string> = {
 
 export default async function ResumeSettingsPage(
   props: {
-    searchParams: Promise<{ connected?: string; error?: string }>;
+    searchParams: Promise<{ connected?: string; error?: string; select?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -53,6 +53,7 @@ export default async function ResumeSettingsPage(
             configured={configured}
             oauthMessage={message}
             connectionCompleted={searchParams.connected === '1'}
+            selectionRequested={searchParams.select === '1'}
           />
 
           <div className="mt-6 w-full min-w-0 overflow-hidden rounded-2xl border border-black/5 bg-snow-white">
@@ -77,7 +78,7 @@ export default async function ResumeSettingsPage(
               loading="lazy"
             />
             <p className="border-t border-black/5 px-4 py-3 text-xs text-asphalt/50">
-              This preview is served by Google Drive and follows your Drive permissions. PAS requests read-only Drive access and never exposes the PDF through a public download endpoint.
+              This preview is served by Google Drive and follows your Drive permissions. PAS requests access only to the PDF you explicitly choose; it cannot browse the rest of your Drive.
             </p>
           </div>
 
@@ -87,7 +88,7 @@ export default async function ResumeSettingsPage(
           <h2 className="font-display text-xl font-bold">One-time setup</h2>
           <ol className="mt-4 space-y-4 text-sm leading-relaxed text-asphalt/70">
             <SetupStep number="1">
-              Open the <External href="https://console.cloud.google.com/projectselector2/home/dashboard">Google Cloud Console</External>, choose a project, and <External href="https://console.cloud.google.com/apis/library/drive.googleapis.com">enable the Google Drive API</External>.
+              Open the <External href="https://console.cloud.google.com/projectselector2/home/dashboard">Google Cloud Console</External>, choose a project, then enable the <External href="https://console.cloud.google.com/apis/library/drive.googleapis.com">Google Drive API</External> and <External href="https://console.cloud.google.com/apis/library/picker.googleapis.com">Google Picker API</External>.
             </SetupStep>
             <SetupStep number="2">
               Configure the <External href="https://console.cloud.google.com/auth/overview">OAuth consent screen</External>, then create a Web application in <External href="https://console.cloud.google.com/auth/clients">OAuth Clients</External>.
@@ -96,7 +97,7 @@ export default async function ResumeSettingsPage(
               Add <code className="rounded bg-black/5 px-1.5 py-0.5 text-xs">https://YOUR_DOMAIN/api/google/callback</code> as an authorized redirect URI.
             </SetupStep>
             <SetupStep number="4">
-              Add the five environment variables shown below, redeploy, then return here and press Connect Google Drive.
+              Create a browser API key restricted to your production web origin and the Google Picker API. Add the variables below, redeploy, then press Connect Google Drive.
             </SetupStep>
           </ol>
 
@@ -104,7 +105,8 @@ export default async function ResumeSettingsPage(
 GOOGLE_OAUTH_CLIENT_SECRET=...
 GOOGLE_OAUTH_REDIRECT_URI=https://YOUR_DOMAIN/api/google/callback
 RESUME_OWNER_EMAIL=your-google-email@example.com
-RESUME_TOKEN_ENCRYPTION_KEY=<run: openssl rand -base64 32>`}</pre>
+RESUME_TOKEN_ENCRYPTION_KEY=<run: openssl rand -base64 32>
+GOOGLE_PICKER_API_KEY=...`}</pre>
           <p className="mt-4 text-xs leading-relaxed text-asphalt/45">
             Optional: PAS_RESUME_MASTER_PDF_ID overrides the built-in master PDF ID. Do not place secrets in NEXT_PUBLIC_ variables.
           </p>
