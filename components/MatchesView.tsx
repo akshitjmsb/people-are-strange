@@ -100,81 +100,83 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
     <section className="fixed inset-0 z-10 overflow-y-auto bg-snow-white pb-28">
       <div className="mtl-hairline fixed inset-x-0 top-0 z-20 h-[3px]" aria-hidden />
       <div className="mx-auto w-full max-w-4xl px-4 pb-8 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6">
-        <header className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm sm:p-7">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-plateau-pink">
-                Automatic resume matching
-              </p>
-              <h1 className="mt-1 font-display text-2xl font-bold text-asphalt sm:text-3xl">
+        <header className="rounded-3xl border border-black/5 bg-white p-4 shadow-sm sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="font-display text-xl font-bold leading-tight text-asphalt sm:text-2xl">
                 Best matches in {city.name}
               </h1>
-              <p className="mt-2 max-w-xl text-sm leading-relaxed text-asphalt/60">
-                PAS checks verified company job boards, removes closed roles, and ranks every opening against your master resume.
-              </p>
+              {data ? (
+                <p className="mt-1 text-sm font-semibold text-asphalt/50">
+                  <span className="font-black text-asphalt">{data.candidateMatches}</span> matches from{' '}
+                  <span className="font-black text-asphalt">{data.totalOpenings}</span> live openings
+                </p>
+              ) : (
+                <p className="mt-1 text-sm font-semibold text-asphalt/45">Checking live openings…</p>
+              )}
             </div>
-            {data && (
-              <div className="flex shrink-0 gap-5">
-                <Metric value={data.candidateMatches} label="matches" />
-                <Metric value={data.totalOpenings} label="scanned" />
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={refreshMatches}
+              disabled={refreshing}
+              aria-label={refreshing ? 'Refreshing hiring matches' : 'Refresh hiring matches'}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full bg-asphalt text-xs font-black text-white transition hover:bg-asphalt/85 disabled:cursor-wait disabled:opacity-60 sm:w-auto sm:px-3.5"
+            >
+              <span className={refreshing ? 'animate-spin' : ''} aria-hidden>↻</span>
+              <span className="hidden sm:inline">{refreshing ? 'Refreshing…' : 'Refresh'}</span>
+            </button>
           </div>
 
           {data?.profile && (
-            <div className="mt-5 border-t border-black/5 pt-4">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] font-semibold text-asphalt/55">
+            <>
+              <div className="mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-[11px] font-semibold text-asphalt/50">
                 <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${
                   data.resumeSync.state === 'current' || data.resumeSync.state === 'updated'
                     ? 'bg-parc-emerald/10 text-parc-emerald'
                     : 'bg-montroyal-amber/15 text-montroyal-amber'
                 }`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-                  {data.profile.headline}
-                </span>
-                <a
-                  href={data.profile.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
-                >
-                  {data.profile.sourceTitle}
-                </a>
-                <span>resume {ago(data.profile.syncedAt)}</span>
-                <span>jobs {ago(data.refreshedAt)}</span>
-                <Link
-                  href="/settings/resume"
-                  className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
-                >
                   {data.resumeSync.requiresReconnect
-                    ? 'Reconnect resume sync'
-                    : data.resumeSync.connected
-                      ? 'Resume sync settings'
-                      : 'Connect automatic resume sync'}
-                </Link>
+                    ? 'Resume needs attention'
+                    : data.resumeSync.state === 'current' || data.resumeSync.state === 'updated'
+                      ? 'Resume current'
+                      : 'Using last synced resume'}
+                </span>
+                <span>Jobs {ago(data.refreshedAt)}</span>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-                <button
-                  type="button"
-                  onClick={refreshMatches}
-                  disabled={refreshing}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-asphalt px-5 py-2.5 text-xs font-black text-white transition hover:bg-asphalt/85 disabled:cursor-wait disabled:opacity-60"
-                >
-                  <span className={refreshing ? 'animate-spin' : ''} aria-hidden>↻</span>
-                  {refreshing ? 'Matching latest resume…' : 'Refresh hiring matches'}
-                </button>
-                <a
-                  href="https://github.com/akshitjmsb/people-are-strange/actions/workflows/refresh-roles.yml"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 text-xs font-black text-asphalt transition hover:border-black/20 hover:bg-asphalt/[0.03]"
-                >
-                  View refresh executions
-                  <span aria-hidden>↗</span>
-                </a>
-              </div>
-            </div>
+              <details className="group mt-3 border-t border-black/5 pt-2.5 text-xs text-asphalt/55">
+                <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-asphalt/55 marker:content-none">
+                  <span>Data details</span>
+                  <span className="transition group-open:rotate-180" aria-hidden>⌄</span>
+                </summary>
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-black/[0.025] p-3">
+                  <a
+                    href={data.profile.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
+                  >
+                    {data.profile.sourceTitle}
+                  </a>
+                  <span>Resume {ago(data.profile.syncedAt)}</span>
+                  <Link
+                    href="/settings/resume"
+                    className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
+                  >
+                    {data.resumeSync.requiresReconnect ? 'Reconnect sync' : 'Resume settings'}
+                  </Link>
+                  <a
+                    href="https://github.com/akshitjmsb/people-are-strange/actions/workflows/refresh-roles.yml"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-asphalt/70 underline decoration-asphalt/20 underline-offset-2"
+                  >
+                    Refresh history ↗
+                  </a>
+                </div>
+              </details>
+            </>
           )}
         </header>
 
@@ -436,15 +438,6 @@ function nextAction(stage: JobPipelineStage): string {
   if (stage === 'interview') return 'Prepare evidence stories and interview questions';
   if (stage === 'offer') return 'Evaluate compensation, scope, and negotiation points';
   return 'Restore this role when it becomes relevant again';
-}
-
-function Metric({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="text-right">
-      <div className="font-display text-2xl font-bold tabular-nums text-asphalt">{value}</div>
-      <div className="text-[10px] font-black uppercase tracking-wider text-asphalt/40">{label}</div>
-    </div>
-  );
 }
 
 function MatchCard({
