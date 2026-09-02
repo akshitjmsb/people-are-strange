@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 
+import RecruiterInbox from '@/components/RecruiterInbox';
 import { useCity, useCityId } from '@/lib/city-context';
 import {
   useJobPipeline,
@@ -48,7 +49,7 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<'matches' | 'pipeline'>('matches');
+  const [mode, setMode] = useState<'matches' | 'pipeline' | 'recruiters'>('matches');
   const pipeline = useJobPipeline();
 
   const loadMatches = useCallback(async () => {
@@ -195,6 +196,14 @@ export default function MatchesView({ focusCompanyId, onClearCompanyFocus, onSho
           />
         )}
 
+        {mode === 'recruiters' && (
+          <RecruiterInbox
+            pipelineRecords={pipeline.records}
+            profile={data?.profile}
+            resumeSync={data?.resumeSync}
+          />
+        )}
+
         {mode === 'matches' && loading && <LoadingState />}
         {mode === 'matches' && error && <ErrorState message={error} />}
         {mode === 'matches' && !loading && !error && data?.matches.length === 0 && <EmptyState />}
@@ -233,13 +242,13 @@ function WorkflowSwitch({
   matchCount,
   pipelineCount,
 }: {
-  mode: 'matches' | 'pipeline';
-  onMode: (mode: 'matches' | 'pipeline') => void;
+  mode: 'matches' | 'pipeline' | 'recruiters';
+  onMode: (mode: 'matches' | 'pipeline' | 'recruiters') => void;
   matchCount: number;
   pipelineCount: number;
 }) {
   return (
-    <div className="mt-4 grid grid-cols-2 rounded-2xl border border-black/5 bg-white p-1.5 shadow-sm">
+    <div className="mt-4 grid grid-cols-3 rounded-2xl border border-black/5 bg-white p-1.5 shadow-sm">
       <button
         type="button"
         onClick={() => onMode('matches')}
@@ -259,6 +268,16 @@ function WorkflowSwitch({
         }`}
       >
         My pipeline <span className="ml-1 opacity-60">{pipelineCount}</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onMode('recruiters')}
+        aria-pressed={mode === 'recruiters'}
+        className={`rounded-xl px-2 py-3 text-sm font-black transition ${
+          mode === 'recruiters' ? 'bg-asphalt text-white shadow-sm' : 'text-asphalt/55 hover:bg-black/[0.03]'
+        }`}
+      >
+        Recruiters
       </button>
     </div>
   );
