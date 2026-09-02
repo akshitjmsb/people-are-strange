@@ -35,9 +35,13 @@ interface PickerNamespace {
 }
 
 declare global {
+  interface GoogleBrowser {
+    picker?: PickerNamespace;
+  }
+
   interface Window {
     gapi?: { load(name: string, callback: () => void): void };
-    google?: { picker: PickerNamespace };
+    google?: GoogleBrowser;
   }
 }
 
