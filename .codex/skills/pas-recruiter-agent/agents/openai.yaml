@@ -1,0 +1,4 @@
+interface:
+  display_name: "PAS Recruiter Agent"
+  short_description: "Own and advance recruiter conversations"
+  default_prompt: "Use $pas-recruiter-agent to handle my recruiter inbox and show only decisions requiring me."
